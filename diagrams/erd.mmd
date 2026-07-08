@@ -1,0 +1,1270 @@
+%% =============================================================================
+%% SIMMAK PPKP — Enterprise Entity Relationship Diagram
+%% Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi
+%% Organization: PPKP Provinsi DKI Jakarta | 17 Clinics | Single DB PostgreSQL 17
+%% Version: 1.0.0 | Tables: 98 | Domains: 10
+%% =============================================================================
+
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#E8F4FD',
+    'primaryTextColor': '#1A365D',
+    'primaryBorderColor': '#3182CE',
+    'lineColor': '#4A5568',
+    'secondaryColor': '#F0FFF4',
+    'tertiaryColor': '#FFFAF0',
+    'fontFamily': 'Segoe UI, Inter, sans-serif',
+    'fontSize': '13px'
+  },
+  'er': { 'useMaxWidth': true, 'layoutDirection': 'TB' }
+}}%%
+
+erDiagram
+
+    %% =========================================================================
+    %% DOMAIN 1: CORE PLATFORM (14 tables) — #E3F2FD
+    %% Multi-scope: organization_id | clinic_id | unit_id on transactional data
+    %% =========================================================================
+
+    ORGANIZATIONS {
+        uuid id PK
+        varchar code UK "ORG code"
+        varchar name "PPKP DKI Jakarta"
+        varchar org_type "central|clinic"
+        text address
+        varchar phone
+        varchar email
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+        uuid created_by FK
+        uuid updated_by FK
+    }
+
+    CLINICS {
+        uuid id PK
+        uuid organization_id FK
+        varchar code UK "Klinik code"
+        varchar name
+        varchar clinic_type "utama|pratama"
+        boolean is_main_clinic
+        varchar accreditation_status
+        boolean is_active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DEPARTMENTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid parent_id FK "self-ref hierarchy"
+        varchar code UK
+        varchar name
+        varchar dept_type
+        boolean is_active
+    }
+
+    UNITS {
+        uuid id PK
+        uuid clinic_id FK
+        uuid department_id FK
+        varchar code UK
+        varchar name
+        varchar unit_type "poli|lab|farmasi|etc"
+        boolean is_active
+    }
+
+    EMPLOYEES {
+        uuid id PK
+        uuid organization_id FK
+        uuid clinic_id FK
+        uuid unit_id FK
+        varchar nip UK
+        varchar full_name
+        varchar email
+        varchar phone
+        varchar position_title
+        date hire_date
+        boolean is_active
+    }
+
+    REFERENCE_DATA {
+        uuid id PK
+        uuid organization_id FK
+        varchar category "finding_severity|risk_level|etc"
+        varchar code UK
+        varchar label
+        jsonb metadata
+        int sort_order
+        boolean is_active
+    }
+
+    REFERENCE_DATA_VALUES {
+        uuid id PK
+        uuid reference_data_id FK
+        varchar code
+        varchar label
+        varchar color_hex
+        int sort_order
+        boolean is_default
+    }
+
+    FISCAL_YEARS {
+        uuid id PK
+        uuid organization_id FK
+        int year UK
+        date start_date
+        date end_date
+        boolean is_current
+        varchar status "open|closed"
+    }
+
+    SYSTEM_SETTINGS {
+        uuid id PK
+        varchar group "app|mail|storage|ldap"
+        varchar key UK
+        text value
+        varchar value_type "string|int|bool|json"
+        boolean is_encrypted
+        text description
+    }
+
+    ORGANIZATION_SETTINGS {
+        uuid id PK
+        uuid organization_id FK
+        varchar key
+        text value
+        varchar value_type
+    }
+
+    CLINIC_SETTINGS {
+        uuid id PK
+        uuid clinic_id FK
+        varchar key
+        text value
+        varchar value_type
+    }
+
+    AUDIT_TRAILS {
+        uuid id PK
+        uuid user_id FK
+        varchar auditable_type
+        uuid auditable_id
+        varchar event "created|updated|deleted|restored"
+        jsonb old_values
+        jsonb new_values
+        varchar ip_address
+        timestamptz created_at
+    }
+
+    ACTIVITY_LOGS {
+        uuid id PK
+        uuid user_id FK
+        uuid clinic_id FK
+        varchar log_name
+        varchar subject_type
+        uuid subject_id
+        text description
+        jsonb properties
+        varchar ip_address
+        timestamptz created_at
+    }
+
+    ATTACHMENTS {
+        uuid id PK
+        uuid organization_id FK
+        varchar attachable_type "polymorphic"
+        uuid attachable_id
+        varchar file_name
+        varchar storage_disk "supabase|local"
+        varchar storage_path
+        varchar mime_type
+        bigint file_size
+        uuid uploaded_by FK
+        timestamptz created_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 2: AUTH & RBAC (11 tables) — #FFF3E0
+    %% Hybrid: Local Login + LDAP/AD Pemprov DKI Jakarta
+    %% =========================================================================
+
+    USERS {
+        uuid id PK
+        uuid organization_id FK
+        uuid employee_id FK
+        varchar email UK
+        varchar password "nullable for LDAP-only"
+        varchar ldap_guid UK
+        varchar auth_provider "local|ldap|hybrid"
+        boolean is_active
+        boolean force_password_change
+        timestamptz email_verified_at
+        timestamptz last_login_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ROLES {
+        uuid id PK
+        uuid organization_id FK
+        varchar name UK
+        varchar slug UK
+        text description
+        varchar scope "global|clinic|unit"
+        boolean is_system
+        boolean is_active
+    }
+
+    PERMISSIONS {
+        uuid id PK
+        varchar module "dms|audit|capa|risk|accreditation|quality"
+        varchar action "view|create|update|delete|approve|publish"
+        varchar slug UK
+        varchar name
+        text description
+    }
+
+    ROLE_PERMISSIONS {
+        uuid role_id PK,FK
+        uuid permission_id PK,FK
+        timestamptz granted_at
+    }
+
+    USER_ROLES {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        uuid clinic_id FK "nullable = global scope"
+        uuid unit_id FK
+        timestamptz assigned_at
+        uuid assigned_by FK
+    }
+
+    USER_CLINIC_SCOPES {
+        uuid id PK
+        uuid user_id FK
+        uuid clinic_id FK
+        boolean is_default
+        boolean can_view
+        boolean can_edit
+    }
+
+    LDAP_CONFIGURATIONS {
+        uuid id PK
+        uuid organization_id FK
+        varchar host
+        int port
+        varchar base_dn
+        varchar bind_dn
+        text bind_password_enc
+        varchar user_filter
+        varchar group_filter
+        boolean use_tls
+        boolean is_active
+        timestamptz last_sync_at
+    }
+
+    LDAP_SYNC_LOGS {
+        uuid id PK
+        uuid ldap_configuration_id FK
+        varchar sync_type "full|incremental"
+        varchar status "running|success|failed"
+        int users_created
+        int users_updated
+        int users_deactivated
+        text error_message
+        timestamptz started_at
+        timestamptz finished_at
+    }
+
+    LOGIN_ATTEMPTS {
+        uuid id PK
+        varchar email
+        varchar ip_address
+        varchar user_agent
+        boolean successful
+        varchar failure_reason
+        timestamptz attempted_at
+    }
+
+    SESSIONS {
+        uuid id PK
+        uuid user_id FK
+        varchar ip_address
+        text user_agent
+        text payload
+        int last_activity
+    }
+
+    PERSONAL_ACCESS_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        varchar token UK
+        text abilities
+        timestamptz last_used_at
+        timestamptz expires_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 3: DOCUMENT MANAGEMENT SYSTEM (12 tables) — #E8F5E9
+    %% Kebijakan | SOP | Pedoman | Formulir | IK | Version | QR | Expiry
+    %% =========================================================================
+
+    DOCUMENT_CATEGORIES {
+        uuid id PK
+        uuid organization_id FK
+        uuid parent_id FK
+        varchar code UK
+        varchar name
+        varchar doc_class "kebijakan|sop|pedoman|formulir|ik"
+        int retention_days
+        boolean is_active
+    }
+
+    DOCUMENT_TYPES {
+        uuid id PK
+        uuid organization_id FK
+        uuid category_id FK
+        varchar code UK
+        varchar name
+        uuid workflow_definition_id FK
+        int review_cycle_days
+        boolean requires_acknowledgment
+        boolean is_active
+    }
+
+    DOCUMENTS {
+        uuid id PK
+        uuid organization_id FK
+        uuid clinic_id FK "nullable = org-wide"
+        uuid document_type_id FK
+        uuid workflow_instance_id FK
+        varchar document_number UK
+        varchar title
+        varchar status "draft|review|approved|published|expired|archived"
+        date effective_date
+        date expiry_date
+        uuid owner_id FK
+        uuid current_version_id FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    DOCUMENT_VERSIONS {
+        uuid id PK
+        uuid document_id FK
+        varchar version_label "v1.0|v1.1"
+        int version_number
+        text change_summary
+        text content_html
+        varchar file_path "Supabase Storage"
+        varchar checksum_sha256
+        uuid created_by FK
+        timestamptz created_at
+    }
+
+    DOCUMENT_REVIEWS {
+        uuid id PK
+        uuid document_version_id FK
+        uuid reviewer_id FK
+        varchar status "pending|approved|rejected|revision"
+        text comments
+        timestamptz reviewed_at
+    }
+
+    DOCUMENT_APPROVALS {
+        uuid id PK
+        uuid document_version_id FK
+        uuid approver_id FK
+        varchar approval_level "reviewer|pj_mutu|kepala_klinik"
+        varchar status "pending|approved|rejected"
+        text comments
+        timestamptz approved_at
+    }
+
+    DOCUMENT_PUBLICATIONS {
+        uuid id PK
+        uuid document_id FK
+        uuid document_version_id FK
+        uuid published_by FK
+        timestamptz published_at
+        date effective_from
+        varchar publication_note
+    }
+
+    DOCUMENT_DISTRIBUTIONS {
+        uuid id PK
+        uuid document_id FK
+        uuid target_clinic_id FK
+        uuid distributed_by FK
+        timestamptz distributed_at
+        varchar distribution_method "system|email|print"
+    }
+
+    DOCUMENT_ACKNOWLEDGMENTS {
+        uuid id PK
+        uuid document_id FK
+        uuid user_id FK
+        uuid clinic_id FK
+        timestamptz acknowledged_at
+        varchar ip_address
+    }
+
+    DOCUMENT_QR_CODES {
+        uuid id PK
+        uuid document_id FK
+        varchar qr_token UK
+        varchar verification_url
+        varchar qr_image_path
+        boolean is_active
+        timestamptz generated_at
+    }
+
+    DOCUMENT_EXPIRY_ALERTS {
+        uuid id PK
+        uuid document_id FK
+        int days_before_expiry
+        varchar alert_status "pending|sent|acknowledged"
+        timestamptz alert_sent_at
+        uuid notified_user_id FK
+    }
+
+    DOCUMENT_ACCESS_LOGS {
+        uuid id PK
+        uuid document_id FK
+        uuid user_id FK
+        varchar action "view|download|print"
+        varchar ip_address
+        timestamptz accessed_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 4: INTERNAL AUDIT (11 tables) — #F3E5F5
+    %% Program | Schedule | Checklist | Finding | Report | Evidence
+    %% =========================================================================
+
+    AUDIT_PROGRAMS {
+        uuid id PK
+        uuid organization_id FK
+        uuid fiscal_year_id FK
+        varchar program_code UK
+        varchar name
+        text objective
+        varchar status "draft|active|completed|archived"
+        uuid created_by FK
+        timestamptz created_at
+    }
+
+    AUDIT_PLANS {
+        uuid id PK
+        uuid audit_program_id FK
+        uuid clinic_id FK
+        uuid unit_id FK
+        varchar plan_code UK
+        text scope
+        text criteria_reference
+        varchar status "planned|in_progress|completed"
+        uuid lead_auditor_id FK
+    }
+
+    AUDIT_SCHEDULES {
+        uuid id PK
+        uuid audit_plan_id FK
+        date scheduled_start
+        date scheduled_end
+        date actual_start
+        date actual_end
+        varchar status "scheduled|ongoing|completed|cancelled"
+        text location
+    }
+
+    AUDIT_TEAMS {
+        uuid id PK
+        uuid audit_schedule_id FK
+        uuid lead_auditor_id FK
+        text team_notes
+    }
+
+    AUDIT_TEAM_MEMBERS {
+        uuid id PK
+        uuid audit_team_id FK
+        uuid user_id FK
+        varchar member_role "auditor|observer|technical"
+    }
+
+    AUDIT_CHECKLIST_ITEMS {
+        uuid id PK
+        uuid audit_plan_id FK
+        varchar standard_reference
+        text question
+        varchar response_type "yes_no|score|text"
+        decimal weight
+        int sort_order
+    }
+
+    AUDIT_CHECKLIST_RESPONSES {
+        uuid id PK
+        uuid checklist_item_id FK
+        uuid audit_schedule_id FK
+        varchar response_value
+        decimal score
+        text notes
+        uuid responded_by FK
+        timestamptz responded_at
+    }
+
+    AUDIT_FINDINGS {
+        uuid id PK
+        uuid audit_schedule_id FK
+        uuid clinic_id FK
+        varchar finding_code UK
+        varchar severity "minor|major|critical|observation"
+        text description
+        text requirement_reference
+        varchar status "open|in_capa|closed|verified"
+        uuid assigned_to FK
+        timestamptz identified_at
+    }
+
+    AUDIT_REPORTS {
+        uuid id PK
+        uuid audit_schedule_id FK
+        varchar report_number UK
+        text executive_summary
+        text conclusion
+        varchar status "draft|review|approved|published"
+        uuid approved_by FK
+        timestamptz approved_at
+    }
+
+    AUDIT_EVIDENCE {
+        uuid id PK
+        uuid audit_finding_id FK
+        uuid attachment_id FK
+        text description
+        varchar evidence_type "photo|document|interview"
+        uuid collected_by FK
+        timestamptz collected_at
+    }
+
+    AUDIT_FOLLOW_UPS {
+        uuid id PK
+        uuid audit_finding_id FK
+        date due_date
+        varchar status "pending|overdue|completed"
+        uuid assigned_to FK
+        text follow_up_notes
+        timestamptz completed_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 5: CAPA (9 tables) — #FFEBEE
+    %% RCA | 5 Why | Fishbone | Corrective | Preventive | Verification
+    %% =========================================================================
+
+    CAPA_CASES {
+        uuid id PK
+        uuid organization_id FK
+        uuid clinic_id FK
+        varchar case_number UK
+        varchar source_type "audit_finding|risk|complaint|incident"
+        uuid source_id "polymorphic"
+        varchar priority "low|medium|high|critical"
+        text problem_statement
+        varchar status "open|analysis|action|verification|closed"
+        uuid owner_id FK
+        date target_close_date
+        timestamptz created_at
+    }
+
+    CAPA_ROOT_CAUSE_ANALYSES {
+        uuid id PK
+        uuid capa_case_id FK
+        varchar method "5why|fishbone|combined"
+        text summary
+        uuid analyzed_by FK
+        timestamptz analyzed_at
+    }
+
+    CAPA_FIVE_WHYS {
+        uuid id PK
+        uuid rca_id FK
+        int why_level "1-5"
+        text question
+        text answer
+    }
+
+    CAPA_FISHBONE_DIAGRAMS {
+        uuid id PK
+        uuid rca_id FK
+        varchar category "man|machine|method|material|environment|measurement"
+        text cause_description
+        boolean is_root_cause
+    }
+
+    CAPA_CORRECTIVE_ACTIONS {
+        uuid id PK
+        uuid capa_case_id FK
+        text action_description
+        uuid responsible_id FK
+        date planned_start
+        date due_date
+        varchar status "planned|in_progress|completed|overdue"
+        timestamptz completed_at
+    }
+
+    CAPA_PREVENTIVE_ACTIONS {
+        uuid id PK
+        uuid capa_case_id FK
+        text action_description
+        uuid responsible_id FK
+        date due_date
+        varchar status "planned|in_progress|completed"
+        timestamptz completed_at
+    }
+
+    CAPA_VERIFICATIONS {
+        uuid id PK
+        uuid capa_case_id FK
+        uuid verified_by FK
+        date verification_date
+        varchar result "effective|partially|not_effective"
+        text verification_notes
+        uuid evidence_attachment_id FK
+    }
+
+    CAPA_EFFECTIVENESS_REVIEWS {
+        uuid id PK
+        uuid capa_case_id FK
+        uuid reviewed_by FK
+        date review_date
+        boolean is_effective
+        text review_notes
+        date next_review_date
+    }
+
+    CAPA_STATUS_HISTORIES {
+        uuid id PK
+        uuid capa_case_id FK
+        varchar from_status
+        varchar to_status
+        uuid changed_by FK
+        text change_reason
+        timestamptz changed_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 6: RISK MANAGEMENT (8 tables) — #FFF8E1
+    %% Register | Assessment | Matrix | Mitigation | Monitoring
+    %% =========================================================================
+
+    RISK_CATEGORIES {
+        uuid id PK
+        uuid organization_id FK
+        varchar code UK
+        varchar name
+        varchar color_hex
+        text description
+        boolean is_active
+    }
+
+    RISK_REGISTERS {
+        uuid id PK
+        uuid organization_id FK
+        uuid clinic_id FK
+        uuid fiscal_year_id FK
+        varchar register_code UK
+        varchar name
+        varchar status "draft|active|review|archived"
+        uuid owner_id FK
+    }
+
+    RISK_ITEMS {
+        uuid id PK
+        uuid risk_register_id FK
+        uuid risk_category_id FK
+        varchar risk_code UK
+        text risk_description
+        text risk_source
+        int inherent_likelihood
+        int inherent_impact
+        int inherent_score
+        int residual_likelihood
+        int residual_impact
+        int residual_score
+        varchar risk_level "low|medium|high|extreme"
+        varchar status "identified|assessed|mitigated|accepted|closed"
+    }
+
+    RISK_ASSESSMENTS {
+        uuid id PK
+        uuid risk_item_id FK
+        uuid assessed_by FK
+        date assessment_date
+        int likelihood
+        int impact
+        int risk_score
+        text assessment_notes
+        varchar assessment_type "inherent|residual"
+    }
+
+    RISK_MATRICES {
+        uuid id PK
+        uuid organization_id FK
+        varchar name
+        jsonb likelihood_levels
+        jsonb impact_levels
+        jsonb risk_level_mapping
+        boolean is_default
+    }
+
+    RISK_MITIGATION_PLANS {
+        uuid id PK
+        uuid risk_item_id FK
+        varchar strategy "avoid|reduce|transfer|accept"
+        text plan_description
+        uuid responsible_id FK
+        date target_date
+        varchar status "planned|in_progress|completed"
+        decimal estimated_cost
+    }
+
+    RISK_MONITORING_LOGS {
+        uuid id PK
+        uuid risk_item_id FK
+        uuid monitored_by FK
+        date monitoring_date
+        int current_likelihood
+        int current_impact
+        text monitoring_notes
+        varchar trend "increasing|stable|decreasing"
+    }
+
+    RISK_REVIEWS {
+        uuid id PK
+        uuid risk_register_id FK
+        date review_date
+        uuid reviewed_by FK
+        text conclusion
+        varchar review_outcome "accept|revise|escalate"
+        date next_review_date
+    }
+
+    %% =========================================================================
+    %% DOMAIN 7: ACCREDITATION MANAGEMENT (12 tables) — #E0F7FA
+    %% FKTP & FKTL | Dynamic Standards | Self Assessment | Gap | Mock Survey
+    %% =========================================================================
+
+    ACCREDITATION_TYPES {
+        uuid id PK
+        varchar code UK "FKTP|FKTL"
+        varchar name
+        text description
+        varchar issuing_body "KARS|etc"
+        boolean is_active
+    }
+
+    ACCREDITATION_CHAPTERS {
+        uuid id PK
+        uuid accreditation_type_id FK
+        varchar chapter_number
+        varchar title
+        text description
+        int sort_order
+        boolean is_active
+    }
+
+    ACCREDITATION_STANDARDS {
+        uuid id PK
+        uuid chapter_id FK
+        varchar standard_code UK
+        varchar title
+        text description
+        int sort_order
+        boolean is_active
+    }
+
+    ACCREDITATION_CRITERIA {
+        uuid id PK
+        uuid standard_id FK
+        varchar criteria_code UK
+        text description
+        decimal weight
+        int sort_order
+        boolean is_active
+    }
+
+    ACCREDITATION_ELEMENTS {
+        uuid id PK
+        uuid criteria_id FK
+        varchar element_code UK
+        text description
+        text evidence_required
+        int sort_order
+        boolean is_mandatory
+        boolean is_active
+    }
+
+    ACCREDITATION_PROGRAMS {
+        uuid id PK
+        uuid organization_id FK
+        uuid accreditation_type_id FK
+        varchar program_name
+        varchar cycle "2024-2027"
+        date start_date
+        date target_survey_date
+        varchar status "planning|self_assessment|mock|survey|accredited"
+    }
+
+    ACCREDITATION_SELF_ASSESSMENTS {
+        uuid id PK
+        uuid program_id FK
+        uuid clinic_id FK
+        date assessment_date
+        uuid assessor_id FK
+        decimal overall_score
+        varchar status "draft|submitted|reviewed|approved"
+        text summary
+    }
+
+    ACCREDITATION_SELF_ASSESSMENT_ITEMS {
+        uuid id PK
+        uuid self_assessment_id FK
+        uuid element_id FK
+        decimal score "0-100"
+        varchar compliance "compliant|partial|non_compliant|na"
+        text notes
+        text improvement_plan
+    }
+
+    ACCREDITATION_GAP_ANALYSES {
+        uuid id PK
+        uuid self_assessment_id FK
+        uuid analyzed_by FK
+        date analysis_date
+        text executive_summary
+        varchar status "draft|final"
+    }
+
+    ACCREDITATION_GAP_ITEMS {
+        uuid id PK
+        uuid gap_analysis_id FK
+        uuid element_id FK
+        text gap_description
+        varchar priority "low|medium|high|critical"
+        text recommended_action
+        uuid assigned_to FK
+        date target_date
+    }
+
+    ACCREDITATION_MOCK_SURVEYS {
+        uuid id PK
+        uuid program_id FK
+        uuid clinic_id FK
+        date survey_date
+        uuid lead_surveyor_id FK
+        decimal readiness_score
+        text findings_summary
+        varchar status "scheduled|completed|reported"
+    }
+
+    ACCREDITATION_EVIDENCE {
+        uuid id PK
+        uuid clinic_id FK
+        uuid element_id FK
+        uuid attachment_id FK
+        varchar title
+        text description
+        date valid_from
+        date valid_until
+        uuid uploaded_by FK
+        timestamptz uploaded_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 8: QUALITY MANAGEMENT (7 tables) — #F1F8E9
+    %% Program Mutu | Indicators | Monitoring | Evaluation
+    %% =========================================================================
+
+    QUALITY_PROGRAMS {
+        uuid id PK
+        uuid organization_id FK
+        uuid fiscal_year_id FK
+        varchar program_code UK
+        varchar name
+        text objective
+        varchar status "draft|active|evaluation|closed"
+        uuid program_owner_id FK
+    }
+
+    QUALITY_INDICATORS {
+        uuid id PK
+        uuid program_id FK
+        varchar indicator_code UK
+        varchar name
+        text definition
+        varchar unit "percent|count|ratio"
+        varchar direction "higher_better|lower_better"
+        decimal baseline_value
+        varchar data_source
+    }
+
+    QUALITY_INDICATOR_TARGETS {
+        uuid id PK
+        uuid indicator_id FK
+        uuid clinic_id FK
+        varchar period "monthly|quarterly|annual"
+        decimal target_value
+        decimal threshold_warning
+        decimal threshold_critical
+    }
+
+    QUALITY_MEASUREMENTS {
+        uuid id PK
+        uuid indicator_id FK
+        uuid clinic_id FK
+        date measurement_date
+        decimal measured_value
+        varchar period_label "2026-Q1"
+        uuid recorded_by FK
+        text notes
+    }
+
+    QUALITY_MONITORING_SESSIONS {
+        uuid id PK
+        uuid program_id FK
+        uuid clinic_id FK
+        date session_date
+        uuid facilitator_id FK
+        text findings
+        varchar status "scheduled|completed"
+    }
+
+    QUALITY_EVALUATIONS {
+        uuid id PK
+        uuid program_id FK
+        uuid clinic_id FK
+        date evaluation_date
+        decimal overall_score
+        text strengths
+        text weaknesses
+        uuid evaluator_id FK
+    }
+
+    QUALITY_REPORTS {
+        uuid id PK
+        uuid program_id FK
+        varchar report_period
+        uuid generated_by FK
+        varchar file_path
+        timestamptz generated_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 9: WORKFLOW ENGINE (8 tables) — #EDE7F6
+    %% Dynamic configurable workflows — no hardcoded approval chains
+    %% =========================================================================
+
+    WORKFLOW_DEFINITIONS {
+        uuid id PK
+        uuid organization_id FK
+        varchar module "dms|audit|capa|accreditation"
+        varchar name
+        varchar code UK
+        int version
+        boolean is_active
+        jsonb configuration
+        uuid created_by FK
+    }
+
+    WORKFLOW_STEPS {
+        uuid id PK
+        uuid workflow_definition_id FK
+        int step_order
+        varchar step_code
+        varchar name
+        varchar step_type "review|approve|publish|notify"
+        uuid required_role_id FK
+        int sla_hours
+        boolean is_parallel
+    }
+
+    WORKFLOW_TRANSITIONS {
+        uuid id PK
+        uuid workflow_definition_id FK
+        uuid from_step_id FK
+        uuid to_step_id FK
+        varchar action "approve|reject|revise|skip"
+        jsonb conditions
+    }
+
+    WORKFLOW_INSTANCES {
+        uuid id PK
+        uuid workflow_definition_id FK
+        varchar subject_type "Document|CapaCase|etc"
+        uuid subject_id
+        uuid current_step_id FK
+        varchar status "running|completed|cancelled|escalated"
+        uuid initiated_by FK
+        timestamptz started_at
+        timestamptz completed_at
+    }
+
+    WORKFLOW_INSTANCE_STEPS {
+        uuid id PK
+        uuid workflow_instance_id FK
+        uuid workflow_step_id FK
+        varchar status "pending|in_progress|completed|skipped"
+        uuid assignee_id FK
+        timestamptz started_at
+        timestamptz completed_at
+        int sla_breached_hours
+    }
+
+    WORKFLOW_ASSIGNMENTS {
+        uuid id PK
+        uuid instance_step_id FK
+        uuid assignee_id FK
+        uuid assigned_by FK
+        timestamptz assigned_at
+        timestamptz due_at
+    }
+
+    WORKFLOW_APPROVALS {
+        uuid id PK
+        uuid instance_step_id FK
+        uuid approver_id FK
+        varchar decision "approved|rejected|revision_requested"
+        text comments
+        timestamptz decided_at
+    }
+
+    WORKFLOW_HISTORIES {
+        uuid id PK
+        uuid workflow_instance_id FK
+        uuid from_step_id FK
+        uuid to_step_id FK
+        varchar action
+        uuid action_by FK
+        jsonb metadata
+        timestamptz action_at
+    }
+
+    %% =========================================================================
+    %% DOMAIN 10: NOTIFICATION (6 tables) — #ECEFF1
+    %% Multi-channel: in-app | email | (future: SMS/WhatsApp)
+    %% =========================================================================
+
+    NOTIFICATION_CHANNELS {
+        uuid id PK
+        varchar code UK "in_app|email|sms"
+        varchar name
+        jsonb configuration
+        boolean is_enabled
+    }
+
+    NOTIFICATION_TEMPLATES {
+        uuid id PK
+        uuid channel_id FK
+        varchar event_type UK "document_expiry|capa_due|audit_scheduled"
+        varchar subject_template
+        text body_template
+        jsonb variables_schema
+        boolean is_active
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid organization_id FK
+        uuid clinic_id FK
+        varchar type
+        varchar title
+        text body
+        jsonb data
+        varchar priority "low|normal|high|urgent"
+        timestamptz sent_at
+        uuid triggered_by FK
+    }
+
+    NOTIFICATION_RECIPIENTS {
+        uuid id PK
+        uuid notification_id FK
+        uuid user_id FK
+        varchar delivery_status "pending|sent|delivered|failed"
+        timestamptz read_at
+        timestamptz delivered_at
+    }
+
+    NOTIFICATION_PREFERENCES {
+        uuid id PK
+        uuid user_id FK
+        varchar event_type
+        uuid channel_id FK
+        boolean is_enabled
+        varchar digest_frequency "instant|daily|weekly"
+    }
+
+    NOTIFICATION_LOGS {
+        uuid id PK
+        uuid notification_id FK
+        uuid channel_id FK
+        varchar status "queued|sent|failed|bounced"
+        text error_message
+        jsonb provider_response
+        timestamptz attempted_at
+    }
+
+    %% =========================================================================
+    %% RELATIONSHIPS — CORE PLATFORM
+    %% =========================================================================
+
+    ORGANIZATIONS ||--o{ CLINICS : "operates"
+    ORGANIZATIONS ||--o{ DEPARTMENTS : "has"
+    ORGANIZATIONS ||--o{ EMPLOYEES : "employs"
+    ORGANIZATIONS ||--o{ REFERENCE_DATA : "defines"
+    ORGANIZATIONS ||--o{ FISCAL_YEARS : "plans"
+    ORGANIZATIONS ||--o{ ORGANIZATION_SETTINGS : "configures"
+    CLINICS ||--o{ UNITS : "contains"
+    CLINICS ||--o{ CLINIC_SETTINGS : "configures"
+    CLINICS ||--o{ EMPLOYEES : "assigns"
+    DEPARTMENTS ||--o{ UNITS : "groups"
+    DEPARTMENTS ||--o{ DEPARTMENTS : "parent_of"
+    REFERENCE_DATA ||--o{ REFERENCE_DATA_VALUES : "has_values"
+    EMPLOYEES ||--o| USERS : "linked_account"
+
+    %% RELATIONSHIPS — AUTH & RBAC
+    ORGANIZATIONS ||--o{ USERS : "has_users"
+    ORGANIZATIONS ||--o{ ROLES : "defines_roles"
+    ORGANIZATIONS ||--o{ LDAP_CONFIGURATIONS : "integrates"
+    USERS ||--o{ USER_ROLES : "assigned"
+    USERS ||--o{ USER_CLINIC_SCOPES : "scoped_to"
+    USERS ||--o{ SESSIONS : "maintains"
+    USERS ||--o{ LOGIN_ATTEMPTS : "attempts"
+    USERS ||--o{ PERSONAL_ACCESS_TOKENS : "api_access"
+    ROLES ||--o{ ROLE_PERMISSIONS : "grants"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "granted_via"
+    ROLES ||--o{ USER_ROLES : "applied"
+    CLINICS ||--o{ USER_CLINIC_SCOPES : "accessible"
+    CLINICS ||--o{ USER_ROLES : "scoped"
+    LDAP_CONFIGURATIONS ||--o{ LDAP_SYNC_LOGS : "logs"
+    USERS ||--o{ AUDIT_TRAILS : "performs"
+    USERS ||--o{ ACTIVITY_LOGS : "generates"
+
+    %% RELATIONSHIPS — DMS
+    ORGANIZATIONS ||--o{ DOCUMENT_CATEGORIES : "classifies"
+    ORGANIZATIONS ||--o{ DOCUMENT_TYPES : "defines"
+    DOCUMENT_CATEGORIES ||--o{ DOCUMENT_TYPES : "categorizes"
+    DOCUMENT_TYPES ||--o{ DOCUMENTS : "templates"
+    CLINICS ||--o{ DOCUMENTS : "owns"
+    DOCUMENTS ||--o{ DOCUMENT_VERSIONS : "versions"
+    DOCUMENTS ||--o| DOCUMENT_VERSIONS : "current_version"
+    DOCUMENT_VERSIONS ||--o{ DOCUMENT_REVIEWS : "reviewed"
+    DOCUMENT_VERSIONS ||--o{ DOCUMENT_APPROVALS : "approved"
+    DOCUMENTS ||--o{ DOCUMENT_PUBLICATIONS : "published"
+    DOCUMENTS ||--o{ DOCUMENT_DISTRIBUTIONS : "distributed"
+    DOCUMENTS ||--o{ DOCUMENT_ACKNOWLEDGMENTS : "acknowledged"
+    DOCUMENTS ||--o| DOCUMENT_QR_CODES : "verified"
+    DOCUMENTS ||--o{ DOCUMENT_EXPIRY_ALERTS : "monitors"
+    DOCUMENTS ||--o{ DOCUMENT_ACCESS_LOGS : "tracked"
+    USERS ||--o{ DOCUMENT_REVIEWS : "reviews"
+    USERS ||--o{ DOCUMENT_APPROVALS : "approves"
+    WORKFLOW_INSTANCES ||--o| DOCUMENTS : "governs"
+
+    %% RELATIONSHIPS — INTERNAL AUDIT
+    ORGANIZATIONS ||--o{ AUDIT_PROGRAMS : "plans"
+    FISCAL_YEARS ||--o{ AUDIT_PROGRAMS : "within"
+    AUDIT_PROGRAMS ||--o{ AUDIT_PLANS : "contains"
+    CLINICS ||--o{ AUDIT_PLANS : "audited"
+    AUDIT_PLANS ||--o{ AUDIT_SCHEDULES : "scheduled"
+    AUDIT_SCHEDULES ||--o| AUDIT_TEAMS : "staffed"
+    AUDIT_TEAMS ||--o{ AUDIT_TEAM_MEMBERS : "includes"
+    AUDIT_PLANS ||--o{ AUDIT_CHECKLIST_ITEMS : "checklists"
+    AUDIT_CHECKLIST_ITEMS ||--o{ AUDIT_CHECKLIST_RESPONSES : "answered"
+    AUDIT_SCHEDULES ||--o{ AUDIT_CHECKLIST_RESPONSES : "during"
+    AUDIT_SCHEDULES ||--o{ AUDIT_FINDINGS : "identifies"
+    AUDIT_SCHEDULES ||--o| AUDIT_REPORTS : "reports"
+    AUDIT_FINDINGS ||--o{ AUDIT_EVIDENCE : "supports"
+    AUDIT_FINDINGS ||--o{ AUDIT_FOLLOW_UPS : "tracks"
+    ATTACHMENTS ||--o{ AUDIT_EVIDENCE : "stores"
+
+    %% RELATIONSHIPS — CAPA
+    ORGANIZATIONS ||--o{ CAPA_CASES : "manages"
+    CLINICS ||--o{ CAPA_CASES : "owns"
+    AUDIT_FINDINGS ||--o{ CAPA_CASES : "triggers"
+    CAPA_CASES ||--o| CAPA_ROOT_CAUSE_ANALYSES : "analyzed"
+    CAPA_ROOT_CAUSE_ANALYSES ||--o{ CAPA_FIVE_WHYS : "5why_chain"
+    CAPA_ROOT_CAUSE_ANALYSES ||--o{ CAPA_FISHBONE_DIAGRAMS : "fishbone"
+    CAPA_CASES ||--o{ CAPA_CORRECTIVE_ACTIONS : "corrects"
+    CAPA_CASES ||--o{ CAPA_PREVENTIVE_ACTIONS : "prevents"
+    CAPA_CASES ||--o{ CAPA_VERIFICATIONS : "verifies"
+    CAPA_CASES ||--o{ CAPA_EFFECTIVENESS_REVIEWS : "reviews"
+    CAPA_CASES ||--o{ CAPA_STATUS_HISTORIES : "audited"
+
+    %% RELATIONSHIPS — RISK
+    ORGANIZATIONS ||--o{ RISK_CATEGORIES : "classifies"
+    ORGANIZATIONS ||--o{ RISK_REGISTERS : "maintains"
+    ORGANIZATIONS ||--o{ RISK_MATRICES : "configures"
+    CLINICS ||--o{ RISK_REGISTERS : "scoped"
+    FISCAL_YEARS ||--o{ RISK_REGISTERS : "annual"
+    RISK_REGISTERS ||--o{ RISK_ITEMS : "contains"
+    RISK_CATEGORIES ||--o{ RISK_ITEMS : "categorizes"
+    RISK_ITEMS ||--o{ RISK_ASSESSMENTS : "assessed"
+    RISK_ITEMS ||--o{ RISK_MITIGATION_PLANS : "mitigated"
+    RISK_ITEMS ||--o{ RISK_MONITORING_LOGS : "monitored"
+    RISK_REGISTERS ||--o{ RISK_REVIEWS : "reviewed"
+
+    %% RELATIONSHIPS — ACCREDITATION
+    ACCREDITATION_TYPES ||--o{ ACCREDITATION_CHAPTERS : "structured"
+    ACCREDITATION_CHAPTERS ||--o{ ACCREDITATION_STANDARDS : "contains"
+    ACCREDITATION_STANDARDS ||--o{ ACCREDITATION_CRITERIA : "defines"
+    ACCREDITATION_CRITERIA ||--o{ ACCREDITATION_ELEMENTS : "breaks_down"
+    ORGANIZATIONS ||--o{ ACCREDITATION_PROGRAMS : "runs"
+    ACCREDITATION_TYPES ||--o{ ACCREDITATION_PROGRAMS : "targets"
+    ACCREDITATION_PROGRAMS ||--o{ ACCREDITATION_SELF_ASSESSMENTS : "assesses"
+    CLINICS ||--o{ ACCREDITATION_SELF_ASSESSMENTS : "evaluated"
+    ACCREDITATION_SELF_ASSESSMENTS ||--o{ ACCREDITATION_SELF_ASSESSMENT_ITEMS : "scores"
+    ACCREDITATION_ELEMENTS ||--o{ ACCREDITATION_SELF_ASSESSMENT_ITEMS : "rated"
+    ACCREDITATION_SELF_ASSESSMENTS ||--o| ACCREDITATION_GAP_ANALYSES : "gaps"
+    ACCREDITATION_GAP_ANALYSES ||--o{ ACCREDITATION_GAP_ITEMS : "items"
+    ACCREDITATION_PROGRAMS ||--o{ ACCREDITATION_MOCK_SURVEYS : "simulates"
+    CLINICS ||--o{ ACCREDITATION_EVIDENCE : "provides"
+    ACCREDITATION_ELEMENTS ||--o{ ACCREDITATION_EVIDENCE : "linked"
+    ATTACHMENTS ||--o{ ACCREDITATION_EVIDENCE : "stores"
+
+    %% RELATIONSHIPS — QUALITY
+    ORGANIZATIONS ||--o{ QUALITY_PROGRAMS : "runs"
+    FISCAL_YEARS ||--o{ QUALITY_PROGRAMS : "within"
+    QUALITY_PROGRAMS ||--o{ QUALITY_INDICATORS : "measures"
+    QUALITY_INDICATORS ||--o{ QUALITY_INDICATOR_TARGETS : "targets"
+    QUALITY_INDICATORS ||--o{ QUALITY_MEASUREMENTS : "records"
+    CLINICS ||--o{ QUALITY_INDICATOR_TARGETS : "clinic_target"
+    CLINICS ||--o{ QUALITY_MEASUREMENTS : "reports"
+    QUALITY_PROGRAMS ||--o{ QUALITY_MONITORING_SESSIONS : "monitors"
+    QUALITY_PROGRAMS ||--o{ QUALITY_EVALUATIONS : "evaluates"
+    QUALITY_PROGRAMS ||--o{ QUALITY_REPORTS : "reports"
+
+    %% RELATIONSHIPS — WORKFLOW
+    ORGANIZATIONS ||--o{ WORKFLOW_DEFINITIONS : "configures"
+    WORKFLOW_DEFINITIONS ||--o{ WORKFLOW_STEPS : "steps"
+    WORKFLOW_DEFINITIONS ||--o{ WORKFLOW_TRANSITIONS : "transitions"
+    WORKFLOW_DEFINITIONS ||--o{ WORKFLOW_INSTANCES : "executes"
+    WORKFLOW_INSTANCES ||--o{ WORKFLOW_INSTANCE_STEPS : "progress"
+    WORKFLOW_STEPS ||--o{ WORKFLOW_INSTANCE_STEPS : "instantiated"
+    WORKFLOW_INSTANCE_STEPS ||--o{ WORKFLOW_ASSIGNMENTS : "assigned"
+    WORKFLOW_INSTANCE_STEPS ||--o{ WORKFLOW_APPROVALS : "decided"
+    WORKFLOW_INSTANCES ||--o{ WORKFLOW_HISTORIES : "logged"
+    DOCUMENT_TYPES ||--o| WORKFLOW_DEFINITIONS : "uses"
+    ROLES ||--o{ WORKFLOW_STEPS : "required_role"
+
+    %% RELATIONSHIPS — NOTIFICATION
+    NOTIFICATION_CHANNELS ||--o{ NOTIFICATION_TEMPLATES : "templates"
+    ORGANIZATIONS ||--o{ NOTIFICATIONS : "broadcasts"
+    NOTIFICATIONS ||--o{ NOTIFICATION_RECIPIENTS : "delivers"
+    NOTIFICATIONS ||--o{ NOTIFICATION_LOGS : "logs"
+    USERS ||--o{ NOTIFICATION_RECIPIENTS : "receives"
+    USERS ||--o{ NOTIFICATION_PREFERENCES : "prefers"
+    NOTIFICATION_CHANNELS ||--o{ NOTIFICATION_PREFERENCES : "via"
+    NOTIFICATION_CHANNELS ||--o{ NOTIFICATION_LOGS : "channel"

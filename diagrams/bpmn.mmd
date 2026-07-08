@@ -1,0 +1,537 @@
+%% =============================================================================
+%% SIMMAK PPKP — BPMN-Style Process Flow Diagrams
+%% Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi
+%% PPKP Provinsi DKI Jakarta
+%% Syntax: flowchart with swimlanes (subgraphs) | BPMN-inspired notation
+%% =============================================================================
+
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 1 — DOCUMENT WORKFLOW (Draft → Review → Approve → Publish)
+%% Configurable via Workflow Engine | Default: Draft → Reviewer → PJ Mutu → Kepala Klinik → Published
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_DOC["📄 DOCUMENT WORKFLOW — DMS Module"]
+        direction TB
+
+        START_DOC(("⬤ Start"))
+
+        subgraph LANE_AUTHOR["Swimlane: Document Author"]
+            direction TB
+            A1["Create Document<br/>(Kebijakan / SOP / Pedoman /<br/>Formulir / Instruksi Kerja)"]
+            A2["Edit Draft Content<br/>& Attachments"]
+            A3{"Draft<br/>Complete?"}
+            A4["Revise per<br/>Reviewer Comments"]
+            A5["Revise per<br/>Approver Rejection"]
+        end
+
+        subgraph LANE_REVIEWER["Swimlane: Reviewer"]
+            direction TB
+            R1["Receive Review<br/>Task Notification"]
+            R2{"Review<br/>Decision"}
+        end
+
+        subgraph LANE_PJ["Swimlane: PJ Mutu"]
+            direction TB
+            P1["Receive Approval<br/>Task"]
+            P2{"Quality<br/>Approval?"}
+        end
+
+        subgraph LANE_KK["Swimlane: Kepala Klinik"]
+            direction TB
+            K1["Final Document<br/>Approval"]
+            K2{"Approve for<br/>Publication?"}
+        end
+
+        subgraph LANE_SYSTEM["Swimlane: System / Workflow Engine"]
+            direction TB
+            S1["Assign Workflow Steps<br/>(Dynamic Configuration)"]
+            S2["Increment Version Number"]
+            S3["Generate QR Verification Code"]
+            S4["Set Expiry Date &<br/>Schedule Monitoring"]
+            S5["Publish to Document Repository"]
+            S6["Send Distribution<br/>Notification"]
+            S7["Log Audit Trail"]
+        end
+
+        END_PUB(("⬤ Published"))
+        END_REJ(("⬤ Rejected /<br/>Archived"))
+
+        START_DOC --> A1
+        A1 --> A2 --> A3
+        A3 -->|"No"| A2
+        A3 -->|"Yes"| S1
+        S1 --> R1 --> R2
+        R2 -->|"Request Revision"| A4 --> A2
+        R2 -->|"Approved"| P1
+        R2 -->|"Rejected"| END_REJ
+        P1 --> P2
+        P2 -->|"Revision Required"| A5 --> A2
+        P2 -->|"Approved"| K1
+        K1 --> K2
+        K2 -->|"Rejected"| A5
+        K2 -->|"Approved"| S2
+        S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> END_PUB
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef task fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef gateway fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    classDef system fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    class START_DOC,END_PUB startend
+    class END_REJ fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+    class A1,A2,A4,A5,R1,P1,K1 task
+    class A3,R2,P2,K2 gateway
+    class S1,S2,S3,S4,S5,S6,S7 system
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 2 — INTERNAL AUDIT LIFECYCLE
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_AUD["🔍 INTERNAL AUDIT LIFECYCLE"]
+        direction TB
+
+        START_AUD(("⬤ Start"))
+
+        subgraph LANE_MGT["Swimlane: Manajemen Pusat / Audit Manager"]
+            direction TB
+            M1["Define Annual<br/>Audit Program"]
+            M2["Approve Audit<br/>Schedule"]
+            M3["Review Draft<br/>Audit Report"]
+            M4{"Report<br/>Approved?"}
+            M5["Approve Audit<br/>Closure"]
+        end
+
+        subgraph LANE_LEAD["Swimlane: Lead Auditor"]
+            direction TB
+            L1["Create Audit Schedule<br/>(Clinic / Unit / Scope)"]
+            L2["Assign Audit Team<br/>& Lead Auditor"]
+            L3["Prepare Audit Checklist<br/>(from Template)"]
+            L4["Conduct Opening<br/>Meeting"]
+            L6["Compile Audit<br/>Findings"]
+            L7["Draft Audit Report"]
+            L8["Conduct Closing<br/>Meeting"]
+        end
+
+        subgraph LANE_TEAM["Swimlane: Auditor Team"]
+            direction TB
+            T1["Execute Fieldwork<br/>& Checklist"]
+            T2["Collect Evidence<br/>(Photos, Documents)"]
+            T3["Document Observations<br/>& Non-Conformities"]
+        end
+
+        subgraph LANE_AUDITEE["Swimlane: Auditee / Klinik"]
+            direction TB
+            D1["Receive Audit<br/>Notification"]
+            D2["Provide Documents<br/>& Access"]
+            D3["Receive Findings<br/>& Report"]
+            D4["Acknowledge<br/>Audit Results"]
+        end
+
+        subgraph LANE_SYS_AUD["Swimlane: System"]
+            direction TB
+            SA1["Register Findings<br/>in Finding Register"]
+            SA2["Auto-Create CAPA<br/>for Each Major NC"]
+            SA3["Update Audit Status<br/>& Dashboard Metrics"]
+        end
+
+        END_AUD_OK(("⬤ Audit Closed"))
+        END_AUD_REV(("⬤ Report Revision"))
+
+        START_AUD --> M1 --> L1 --> M2
+        M2 --> L2 --> L3 --> D1
+        D1 --> L4 --> D2 --> T1
+        T1 --> T2 --> T3 --> L6
+        L6 --> SA1 --> L7 --> M3 --> M4
+        M4 -->|"Revision"| END_AUD_REV --> L7
+        M4 -->|"Approved"| L8 --> D3 --> D4
+        D4 --> M5 --> SA2 --> SA3 --> END_AUD_OK
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef mgmt fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef lead fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px
+    classDef team fill:#EDE7F6,stroke:#4527A0,stroke-width:2px
+    classDef auditee fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef sys fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef gw fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    class START_AUD,END_AUD_OK startend
+    class M1,M2,M3,M5 mgmt
+    class L1,L2,L3,L4,L6,L7,L8 lead
+    class T1,T2,T3 team
+    class D1,D2,D3,D4 auditee
+    class SA1,SA2,SA3 sys
+    class M4 gw
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 3 — CAPA LIFECYCLE
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_CAPA["⚙️ CAPA LIFECYCLE — Corrective & Preventive Action"]
+        direction TB
+
+        START_CAPA(("⬤ Start"))
+
+        subgraph LANE_SRC["Swimlane: Finding Source"]
+            direction TB
+            FS1["Audit Finding /<br/>Risk Escalation /<br/>Quality Issue"]
+        end
+
+        subgraph LANE_COORD["Swimlane: PJ Mutu / CAPA Coordinator"]
+            direction TB
+            C1["Register CAPA Record"]
+            C2["Assign CAPA Owner<br/>& Set Due Date"]
+            C3["Monitor CAPA<br/>Progress"]
+            C4{"Verification<br/>Passed?"}
+            C5{"Effectiveness<br/>Review OK?"}
+            C6["Approve CAPA<br/>Closure"]
+        end
+
+        subgraph LANE_OWNER["Swimlane: CAPA Owner / PIC"]
+            direction TB
+            O1["Perform Root Cause Analysis"]
+            O2{"RCA Method?"}
+            O3["5 Why Analysis"]
+            O4["Fishbone Diagram"]
+            O5["Define Corrective<br/>Action Plan"]
+            O6["Define Preventive<br/>Action Plan"]
+            O7["Implement Actions<br/>& Upload Evidence"]
+        end
+
+        subgraph LANE_VER["Swimlane: Verifier / QA"]
+            direction TB
+            V1["Verify Implementation<br/>of Actions"]
+            V2["Conduct Effectiveness<br/>Review (30/60/90 days)"]
+        end
+
+        subgraph LANE_KK_CAPA["Swimlane: Kepala Klinik"]
+            direction TB
+            KK1["Approve CAPA<br/>Assignment"]
+            KK2["Sign-off CAPA<br/>Closure"]
+        end
+
+        subgraph LANE_SYS_CAPA["Swimlane: System"]
+            direction TB
+            SC1["Link to Source Finding"]
+            SC2["Send Deadline Reminders"]
+            SC3["Update CAPA Dashboard<br/>& Open Findings Count"]
+        end
+
+        END_CAPA_OK(("⬤ CAPA Closed"))
+        END_CAPA_REOPEN(("⬤ CAPA Reopened"))
+
+        START_CAPA --> FS1 --> C1 --> SC1 --> KK1
+        KK1 --> C2 --> O1 --> O2
+        O2 -->|"5 Why"| O3 --> O5
+        O2 -->|"Fishbone"| O4 --> O5
+        O5 --> O6 --> O7
+        O7 --> SC2 --> V1 --> C4
+        C4 -->|"Failed"| END_CAPA_REOPEN --> O1
+        C4 -->|"Passed"| V2 --> C5
+        C5 -->|"Not Effective"| END_CAPA_REOPEN
+        C5 -->|"Effective"| C6 --> KK2 --> SC3 --> END_CAPA_OK
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef coord fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    classDef owner fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef ver fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef kk fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef sys fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef gw fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    class START_CAPA,END_CAPA_OK startend
+    class FS1 coord
+    class C1,C2,C3,C6 coord
+    class O1,O3,O4,O5,O6,O7 owner
+    class V1,V2 ver
+    class KK1,KK2 kk
+    class SC1,SC2,SC3 sys
+    class C4,C5,O2 gw
+    class END_CAPA_REOPEN fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 4 — RISK ASSESSMENT
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_RISK["⚠️ RISK ASSESSMENT PROCESS"]
+        direction TB
+
+        START_RISK(("⬤ Start"))
+
+        subgraph LANE_IDENT["Swimlane: Risk Identifier (Staff / Unit)"]
+            direction TB
+            I1["Identify Risk Event<br/>(Hazard / Threat / Opportunity)"]
+            I2["Describe Risk Context<br/>& Category"]
+        end
+
+        subgraph LANE_OWNER_R["Swimlane: Risk Owner"]
+            direction TB
+            RO1["Register Risk<br/>in Risk Register"]
+            RO2["Assess Likelihood<br/>(1–5 Scale)"]
+            RO3["Assess Impact<br/>(1–5 Scale)"]
+            RO4{"Inherent Risk<br/>Level?"}
+            RO5["Define Mitigation<br/>Actions & Timeline"]
+            RO6["Implement Mitigation<br/>Controls"]
+            RO7["Re-assess Residual<br/>Risk Score"]
+        end
+
+        subgraph LANE_COMM["Swimlane: Risk Committee / Manajemen Pusat"]
+            direction TB
+            RC1["Review High & Extreme<br/>Risks"]
+            RC2{"Accept Residual<br/>Risk?"}
+            RC3["Escalate to CAPA"]
+            RC4["Approve Risk<br/>Acceptance"]
+        end
+
+        subgraph LANE_PJ_R["Swimlane: PJ Mutu"]
+            direction TB
+            PJ1["Validate Risk<br/>Assessment Method"]
+            PJ2["Monitor Risk Register<br/>& Heatmap"]
+        end
+
+        subgraph LANE_SYS_R["Swimlane: System"]
+            direction TB
+            SR1["Calculate Risk Score<br/>(L × I)"]
+            SR2["Plot on Risk Matrix<br/>& Heatmap"]
+            SR3["Schedule Periodic<br/>Risk Review"]
+            SR4["Update Executive<br/>Dashboard"]
+        end
+
+        END_RISK_MON(("⬤ Under Monitoring"))
+        END_RISK_CAPA(("⬤ Escalated to CAPA"))
+
+        START_RISK --> I1 --> I2 --> RO1
+        RO1 --> PJ1 --> RO2 --> RO3 --> SR1 --> RO4
+        RO4 -->|"Low / Medium"| RO5
+        RO4 -->|"High / Extreme"| RC1
+        RC1 --> RO5
+        RO5 --> RO6 --> RO7 --> SR2 --> RC2
+        RC2 -->|"Not Acceptable"| RC3 --> END_RISK_CAPA
+        RC2 -->|"Acceptable"| RC4 --> SR3 --> PJ2 --> SR4 --> END_RISK_MON
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef ident fill:#FFEBEE,stroke:#B71C1C,stroke-width:2px
+    classDef owner fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef comm fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef pj fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef sys fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef gw fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    class START_RISK,END_RISK_MON startend
+    class I1,I2 ident
+    class RO1,RO2,RO3,RO5,RO6,RO7 owner
+    class RC1,RC3,RC4 comm
+    class PJ1,PJ2 pj
+    class SR1,SR2,SR3,SR4 sys
+    class RO4,RC2 gw
+    class END_RISK_CAPA fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 5 — ACCREDITATION SELF ASSESSMENT
+%% Supports FKTP & FKTL | Dynamic Standard Hierarchy from UI
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_SA["📋 ACCREDITATION SELF ASSESSMENT"]
+        direction TB
+
+        START_SA(("⬤ Start"))
+
+        subgraph LANE_ADMIN["Swimlane: Accreditation Admin"]
+            direction TB
+            AD1["Select Accreditation Type<br/>(FKTP / FKTL)"]
+            AD2["Configure Assessment Period<br/>& Target Clinic"]
+            AD3["Activate Self Assessment<br/>Campaign"]
+        end
+
+        subgraph LANE_STD["Swimlane: System — Standard Engine"]
+            direction TB
+            ST1["Load Standard Hierarchy<br/>Bab → Standar → Kriteria<br/>→ Elemen Penilaian"]
+            ST2["Generate Assessment<br/>Checklist per Clinic"]
+        end
+
+        subgraph LANE_ASSESSOR["Swimlane: Clinic Assessor / PJ Mutu Klinik"]
+            direction TB
+            AS1["Receive Self Assessment<br/>Assignment"]
+            AS2["Evaluate Each<br/>Elemen Penilaian"]
+            AS3{"Compliance<br/>Status?"}
+            AS4["Mark: Ya (Comply)"]
+            AS5["Mark: Tidak (Non-Comply)"]
+            AS6["Mark: N/A"]
+            AS7["Attach Evidence<br/>per Element"]
+            AS8{"All Elements<br/>Completed?"}
+            AS9["Submit Self Assessment<br/>for Review"]
+        end
+
+        subgraph LANE_STAFF["Swimlane: Unit Staff"]
+            direction TB
+            US1["Provide Supporting<br/>Documents & Data"]
+            US2["Upload Evidence<br/>to Repository"]
+        end
+
+        subgraph LANE_KK_SA["Swimlane: Kepala Klinik"]
+            direction TB
+            KKSA1["Review Self Assessment<br/>Results"]
+            KKSA2{"Approve<br/>Submission?"}
+            KKSA3["Sign-off Self<br/>Assessment Report"]
+        end
+
+        subgraph LANE_SYS_SA["Swimlane: System"]
+            direction TB
+            SSA1["Calculate Compliance %<br/>per Kriteria / Standar / Bab"]
+            SSA2["Identify Non-Compliant<br/>Elements for Gap Analysis"]
+            SSA3["Update Readiness<br/>Dashboard"]
+        end
+
+        END_SA(("⬤ Self Assessment Complete"))
+        END_SA_REV(("⬤ Returned for Revision"))
+
+        START_SA --> AD1 --> AD2 --> AD3 --> ST1 --> ST2 --> AS1
+        AS1 --> AS2 --> AS3
+        AS3 -->|"Comply"| AS4 --> AS7
+        AS3 -->|"Non-Comply"| AS5 --> AS7
+        AS3 -->|"Not Applicable"| AS6 --> AS8
+        AS7 --> US1 --> US2 --> AS8
+        AS8 -->|"No"| AS2
+        AS8 -->|"Yes"| AS9 --> KKSA1 --> KKSA2
+        KKSA2 -->|"Revision"| END_SA_REV --> AS2
+        KKSA2 -->|"Approved"| KKSA3 --> SSA1 --> SSA2 --> SSA3 --> END_SA
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef admin fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef std fill:#EDE7F6,stroke:#4527A0,stroke-width:2px
+    classDef assess fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef staff fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef kk fill:#F1F8E9,stroke:#558B2F,stroke-width:2px
+    classDef sys fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef gw fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    class START_SA,END_SA startend
+    class AD1,AD2,AD3 admin
+    class ST1,ST2 std
+    class AS1,AS2,AS4,AS5,AS6,AS7,AS9 assess
+    class US1,US2 staff
+    class KKSA1,KKSA3 kk
+    class SSA1,SSA2,SSA3 sys
+    class AS3,AS8,KKSA2 gw
+    class END_SA_REV fill:#FF9800,stroke:#E65100,stroke-width:3px,color:#fff
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS 6 — GAP ANALYSIS
+%% Triggered after Self Assessment | Links to CAPA & Evidence Repository
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph SW_GAP["📊 GAP ANALYSIS PROCESS"]
+        direction TB
+
+        START_GAP(("⬤ Start"))
+
+        subgraph LANE_TRIGGER["Swimlane: System Trigger"]
+            direction TB
+            GT1["Receive Non-Compliant<br/>Elements from<br/>Self Assessment"]
+            GT2["Auto-Generate<br/>Gap Records"]
+        end
+
+        subgraph LANE_PJ_GAP["Swimlane: PJ Mutu / Clinic Quality Officer"]
+            direction TB
+            G1["Review Identified Gaps<br/>per Standar & Kriteria"]
+            G2["Categorize Gap Type<br/>(Documentation / Process /<br/>Infrastructure / Competency)"]
+            G3["Determine Root Cause<br/>of Each Gap"]
+            G4["Assign Priority<br/>(Critical / Major / Minor)"]
+            G5["Define Remediation<br/>Action Plan"]
+            G6["Set Target Date<br/>& Responsible PIC"]
+            G7{"Gap Remediation<br/>Completed?"}
+            G8["Verify Closure<br/>Evidence"]
+        end
+
+        subgraph LANE_PIC["Swimlane: PIC / Unit Owner"]
+            direction TB
+            P1["Execute Remediation<br/>Actions"]
+            P2["Upload Closure<br/>Evidence"]
+            P3["Link DMS Documents<br/>to Gap Record"]
+        end
+
+        subgraph LANE_MGT_GAP["Swimlane: Manajemen Pusat"]
+            direction TB
+            MG1["Review Critical & Major<br/>Gaps Across 17 Clinics"]
+            MG2["Approve Remediation<br/>Plan (if Critical)"]
+            MG3["Monitor Clinic<br/>Gap Closure Rate"]
+        end
+
+        subgraph LANE_SYS_GAP["Swimlane: System"]
+            direction TB
+            SG1["Calculate Gap Score<br/>& Readiness Impact"]
+            SG2{"Critical Gap<br/>Unresolved?"}
+            SG3["Auto-Create CAPA<br/>from Critical Gap"]
+            SG4["Update Gap Dashboard<br/>& Clinic Ranking"]
+            SG5["Generate Gap Analysis<br/>Report (PDF)"]
+        end
+
+        END_GAP_OK(("⬤ Gap Closed"))
+        END_GAP_CAPA(("⬤ CAPA Created"))
+
+        START_GAP --> GT1 --> GT2 --> G1 --> G2 --> G3 --> G4 --> G5 --> G6
+        G6 --> MG1 --> MG2 --> P1
+        P1 --> P2 --> P3 --> G7
+        G7 -->|"No"| P1
+        G7 -->|"Yes"| G8 --> SG1 --> SG2
+        SG2 -->|"Yes, Overdue"| SG3 --> END_GAP_CAPA
+        SG2 -->|"No / Resolved"| SG4 --> MG3 --> SG5 --> END_GAP_OK
+    end
+
+    classDef startend fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff
+    classDef trigger fill:#EDE7F6,stroke:#4527A0,stroke-width:2px
+    classDef pj fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef pic fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef mgmt fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef sys fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef gw fill:#FFE082,stroke:#F57F17,stroke-width:2px
+    class START_GAP,END_GAP_OK startend
+    class GT1,GT2 trigger
+    class G1,G2,G3,G4,G5,G6,G8 pj
+    class P1,P2,P3 pic
+    class MG1,MG2,MG3 mgmt
+    class SG1,SG2,SG3,SG4,SG5 sys
+    class G7,SG2 gw
+    class END_GAP_CAPA fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% PROCESS OVERVIEW — CROSS-MODULE INTEGRATION MAP
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart LR
+    subgraph OVERVIEW["SIMMAK PPKP — Process Integration Overview"]
+        direction LR
+
+        DOC_WF["📄 Document Workflow<br/>Draft → Review → Approve → Publish"]
+        AUD_LC["🔍 Internal Audit<br/>Lifecycle"]
+        CAPA_LC["⚙️ CAPA<br/>Lifecycle"]
+        RISK_P["⚠️ Risk Assessment"]
+        SA_P["📋 Self Assessment"]
+        GAP_P["📊 Gap Analysis"]
+
+        DOC_WF -->|"Controlled Documents<br/>as Audit Evidence"| AUD_LC
+        AUD_LC -->|"Findings"| CAPA_LC
+        RISK_P -->|"High/Extreme Risk"| CAPA_LC
+        SA_P -->|"Non-Compliant Elements"| GAP_P
+        GAP_P -->|"Critical Gaps"| CAPA_LC
+        GAP_P -->|"Evidence Links"| DOC_WF
+        CAPA_LC -->|"Effectiveness Data"| RISK_P
+        CAPA_LC -->|"Closure Updates"| SA_P
+    end
+
+    classDef p1 fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef p2 fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px
+    classDef p3 fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    classDef p4 fill:#FFEBEE,stroke:#B71C1C,stroke-width:2px
+    classDef p5 fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef p6 fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    class DOC_WF p1
+    class AUD_LC p2
+    class CAPA_LC p3
+    class RISK_P p4
+    class SA_P p5
+    class GAP_P p6

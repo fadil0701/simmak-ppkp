@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source "../**/*.blade.php";
+@source "../**/*.js";
+@source "../**/*.vue";
+
+@theme {
+    --font-sans: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    --color-primary-50: #e8f6f6;
+    --color-primary-100: #c5e8e8;
+    --color-primary-500: #14919b;
+    --color-primary-700: #0d7377;
+    --color-primary-800: #0a5c5f;
+    --color-primary-900: #074548;
+}

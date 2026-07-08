@@ -1,0 +1,599 @@
+%% =============================================================================
+%% SIMMAK PPKP — Data Flow Diagrams (DFD)
+%% Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi
+%% PPKP Provinsi DKI Jakarta
+%% Syntax: flowchart with subgraphs | Notation: Yourdon-DeMarco style
+%% =============================================================================
+
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 0 — CONTEXT DIAGRAM
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT["External Entities"]
+        direction TB
+        E1["👤 Manajemen Pusat<br/>(Executive / Direksi)"]
+        E2["👤 Kepala Klinik<br/>(17 Entitas Klinik)"]
+        E3["👤 PJ Mutu / Quality Officer"]
+        E4["👤 Auditor Internal"]
+        E5["👤 Staff Klinik / Unit Kerja"]
+        E6["🔐 Active Directory<br/>Pemprov DKI Jakarta"]
+        E7["📦 Supabase / S3<br/>Object Storage"]
+    end
+
+    subgraph SYS["Process 0 — SIMMAK PPKP<br/>Sistem Informasi Manajemen Mutu,<br/>Audit Internal dan Akreditasi"]
+        direction TB
+        P0["0<br/>SIMMAK PPKP<br/>Integrated Quality Platform"]
+    end
+
+    E1 -->|"KPI, Readiness Report,<br/>Executive Dashboard"| P0
+    P0 -->|"Accreditation Readiness,<br/>Risk Heatmap, Clinic Ranking"| E1
+
+    E2 -->|"Approval Dokumen,<br/>Audit Schedule, CAPA Assignment"| P0
+    P0 -->|"Clinic Dashboard,<br/>Open Findings, Expired Docs"| E2
+
+    E3 -->|"Document Draft/Review,<br/>Quality Program, Indicators"| P0
+    P0 -->|"Workflow Tasks, CAPA Status,<br/>Quality Monitoring Alerts"| E3
+
+    E4 -->|"Audit Program, Checklist,<br/>Findings, Audit Report"| P0
+    P0 -->|"Audit Schedule, Finding Register,<br/>CAPA Trigger"| E4
+
+    E5 -->|"Self Assessment Input,<br/>Evidence Upload, Risk Input"| P0
+    P0 -->|"Notifications, Document Access,<br/>Task Assignments"| E5
+
+    E6 -->|"LDAP Authentication<br/>User Credentials"| P0
+    P0 -->|"User Sync / SSO Token<br/>Validation Request"| E6
+
+    P0 <-->|"Document Files,<br/>Evidence Attachments"| E7
+
+    classDef external fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef system fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20
+    class E1,E2,E3,E4,E5,E6,E7 external
+    class P0 system
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 1 — SYSTEM DECOMPOSITION (ALL MODULES)
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph ENT["External Entities"]
+        direction LR
+        U1["Users / Staff"]
+        U2["LDAP / AD"]
+        U3["Object Storage"]
+    end
+
+    subgraph CORE["1.0 Core Platform"]
+        direction TB
+        P1["1.1 Authentication<br/>& Session Mgmt"]
+        P2["1.2 RBAC &<br/>Permission Engine"]
+        P3["1.3 Workflow<br/>Engine"]
+        P4["1.4 Notification<br/>Service"]
+        P5["1.5 Audit Trail &<br/>Activity Log"]
+        D1[("D1: users<br/>roles<br/>permissions")]
+        D2[("D2: workflow_defs<br/>workflow_instances")]
+        D3[("D3: audit_logs<br/>activity_logs")]
+    end
+
+    subgraph DMS["2.0 Document Management System"]
+        direction TB
+        P6["2.1 Document<br/>Lifecycle Mgmt"]
+        P7["2.2 Version Control<br/>& QR Verify"]
+        P8["2.3 Expiry<br/>Monitoring"]
+        D4[("D4: documents<br/>document_versions<br/>document_types")]
+    end
+
+    subgraph AUD["3.0 Internal Audit"]
+        direction TB
+        P9["3.1 Audit Program<br/>& Schedule"]
+        P10["3.2 Checklist<br/>Execution"]
+        P11["3.3 Finding<br/>Registration"]
+        D5[("D5: audit_programs<br/>audit_schedules<br/>audit_findings")]
+    end
+
+    subgraph CAPA["4.0 CAPA Management"]
+        direction TB
+        P12["4.1 Root Cause<br/>Analysis"]
+        P13["4.2 Corrective &<br/>Preventive Action"]
+        P14["4.3 Verification &<br/>Effectiveness Review"]
+        D6[("D6: capa_records<br/>rca_analyses<br/>capa_actions")]
+    end
+
+    subgraph RISK["5.0 Risk Management"]
+        direction TB
+        P15["5.1 Risk Register<br/>& Assessment"]
+        P16["5.2 Risk Matrix<br/>& Heatmap"]
+        P17["5.3 Mitigation Plan<br/>& Monitoring"]
+        D7[("D7: risks<br/>risk_assessments<br/>mitigation_plans")]
+    end
+
+    subgraph ACC["6.0 Accreditation Management"]
+        direction TB
+        P18["6.1 Standard<br/>Configuration"]
+        P19["6.2 Self Assessment<br/>& Mock Survey"]
+        P20["6.3 Gap Analysis<br/>& Evidence Repo"]
+        D8[("D8: standards<br/>criteria<br/>assessments<br/>gaps")]
+    end
+
+    subgraph QMS["7.0 Quality Management"]
+        direction TB
+        P21["7.1 Quality Program<br/>& Indicators"]
+        P22["7.2 Quality Monitoring<br/>& Evaluation"]
+        D9[("D9: quality_programs<br/>quality_indicators<br/>evaluations")]
+    end
+
+    subgraph DASH["8.0 Dashboard & Reporting"]
+        direction TB
+        P23["8.1 Executive<br/>Dashboard"]
+        P24["8.2 Clinic<br/>Dashboard"]
+        P25["8.3 Report<br/>Generator"]
+        D10[("D10: dashboard_cache<br/>report_snapshots")]
+    end
+
+    subgraph ORG["9.0 Organization Scope"]
+        D11[("D11: organizations<br/>clinics<br/>units")]
+    end
+
+    U1 --> P1 & P6 & P9 & P12 & P15 & P18 & P21 & P23
+    U2 <-->|"LDAP Auth"| P1
+    P1 --> D1
+    P1 --> P2
+    P2 --> D1
+    P2 --> P3
+    P3 --> D2
+    P3 --> P4
+    P4 --> U1
+    P5 --> D3
+
+    P6 --> D4
+    P6 --> P3
+    P7 --> D4
+    P7 --> U3
+    P8 --> D4
+    P8 --> P4
+
+    P9 --> D5
+    P10 --> D5
+    P11 --> D5
+    P11 -->|"Finding Trigger"| P12
+
+    P12 --> D6
+    P13 --> D6
+    P13 --> P3
+    P14 --> D6
+    P14 --> P4
+
+    P15 --> D7
+    P16 --> D7
+    P17 --> D7
+    P17 --> P4
+
+    P18 --> D8
+    P19 --> D8
+    P19 --> U3
+    P20 --> D8
+    P20 --> D4
+
+    P21 --> D9
+    P22 --> D9
+
+    P23 --> D10
+    P24 --> D10
+    P25 --> D10
+    D4 & D5 & D6 & D7 & D8 & D9 --> P23 & P24
+
+    P1 & P6 & P9 & P12 & P15 & P18 & P21 --> P5
+    D11 -.->|"organization_id<br/>clinic_id<br/>unit_id"| D1 & D4 & D5 & D6 & D7 & D8 & D9
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef core fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef dms fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef audit fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px
+    classDef capa fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    classDef risk fill:#FFEBEE,stroke:#B71C1C,stroke-width:2px
+    classDef acc fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef qms fill:#F1F8E9,stroke:#558B2F,stroke-width:2px
+    classDef dash fill:#EDE7F6,stroke:#4527A0,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px,color:#E65100
+
+    class U1,U2,U3 ext
+    class P1,P2,P3,P4,P5 core
+    class P6,P7,P8 dms
+    class P9,P10,P11 audit
+    class P12,P13,P14 capa
+    class P15,P16,P17 risk
+    class P18,P19,P20 acc
+    class P21,P22 qms
+    class P23,P24,P25 dash
+    class D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11 ds
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 2 — DOCUMENT MANAGEMENT SYSTEM (DMS)
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT_DMS["External Entities"]
+        ED1["Document Author"]
+        ED2["Reviewer"]
+        ED3["Approver<br/>(PJ Mutu / Kepala Klinik)"]
+        ED4["End User / Staff"]
+        ED5["Object Storage"]
+    end
+
+    subgraph P_DMS["2.0 Document Management System"]
+        direction TB
+        P21["2.1.1 Create &<br/>Edit Document"]
+        P22["2.1.2 Submit for<br/>Review Workflow"]
+        P23["2.1.3 Review &<br/>Comment"]
+        P24["2.1.4 Approve /<br/>Reject"]
+        P25["2.1.5 Publish &<br/>Distribute"]
+        P26["2.2.1 Version<br/>Increment"]
+        P27["2.2.2 Generate QR<br/>Verification Code"]
+        P28["2.3.1 Expiry Date<br/>Calculation"]
+        P29["2.3.2 Expiry Alert<br/>Notification"]
+    end
+
+    subgraph DS_DMS["Data Stores"]
+        DD1[("documents")]
+        DD2[("document_versions")]
+        DD3[("document_workflows")]
+        DD4[("document_types<br/>Kebijakan/SOP/Pedoman<br/>Formulir/IK")]
+        DD5[("document_access_logs")]
+        DD6[("expiry_alerts")]
+    end
+
+    ED1 -->|"Draft Content,<br/>Metadata, Attachments"| P21
+    P21 --> DD1 & DD2 & DD4
+    P21 -->|"Upload File"| ED5
+    ED5 -->|"Stored File URL"| P21
+
+    P21 -->|"Submit Request"| P22
+    P22 --> DD3
+    P22 -->|"Workflow Task"| ED2
+
+    ED2 -->|"Review Comments,<br/>Approve/Reject"| P23
+    P23 --> DD3 & DD2
+
+    P23 --> P24
+    ED3 -->|"Final Approval"| P24
+    P24 --> DD3
+
+    P24 -->|"Approved"| P25
+    P25 --> DD1
+    P25 -->|"Published Doc<br/>Notification"| ED4
+
+    P25 --> P26
+    P26 --> DD2
+    P26 --> P27
+    P27 --> DD1
+    P27 -->|"QR Code Label"| ED4
+
+    P25 --> P28
+    P28 --> DD1 & DD6
+    P28 --> P29
+    P29 --> DD6
+    P29 -->|"Expiry Warning<br/>30/60/90 days"| ED1 & ED3
+
+    ED4 -->|"QR Scan / Access Request"| P27
+    P27 --> DD5
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef proc fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px
+    class ED1,ED2,ED3,ED4,ED5 ext
+    class P21,P22,P23,P24,P25,P26,P27,P28,P29 proc
+    class DD1,DD2,DD3,DD4,DD5,DD6 ds
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 2 — INTERNAL AUDIT
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT_AUD["External Entities"]
+        EA1["Audit Manager /<br/>Manajemen Pusat"]
+        EA2["Lead Auditor"]
+        EA3["Auditor Team"]
+        EA4["Auditee /<br/>Unit Klinik"]
+        EA5["Kepala Klinik"]
+    end
+
+    subgraph P_AUD["3.0 Internal Audit Module"]
+        direction TB
+        P31["3.2.1 Define Audit<br/>Program (Annual)"]
+        P32["3.2.2 Create Audit<br/>Schedule"]
+        P33["3.2.3 Assign Audit<br/>Team & Scope"]
+        P34["3.2.4 Prepare<br/>Checklist"]
+        P35["3.2.5 Conduct<br/>Audit (Fieldwork)"]
+        P36["3.2.6 Record<br/>Findings"]
+        P37["3.2.7 Draft Audit<br/>Report"]
+        P38["3.2.8 Review &<br/>Approve Report"]
+        P39["3.2.9 Close Audit &<br/>Trigger CAPA"]
+    end
+
+    subgraph DS_AUD["Data Stores"]
+        DA1[("audit_programs")]
+        DA2[("audit_schedules")]
+        DA3[("audit_teams")]
+        DA4[("audit_checklists<br/>audit_checklist_items")]
+        DA5[("audit_findings<br/>observations<br/>non_conformities")]
+        DA6[("audit_reports")]
+        DA7[("audit_evidence")]
+    end
+
+    EA1 -->|"Annual Audit Plan,<br/>Scope Definition"| P31
+    P31 --> DA1
+
+    P31 --> P32
+    EA1 -->|"Schedule Approval"| P32
+    P32 --> DA2
+    P32 -->|"Schedule Notification"| EA4 & EA5
+
+    P32 --> P33
+    EA2 -->|"Team Assignment"| P33
+    P33 --> DA3
+
+    P33 --> P34
+    P34 --> DA4
+    P34 -->|"Checklist Template"| EA3
+
+    EA3 -->|"Checklist Responses,<br/>Evidence Photos"| P35
+    P35 --> DA4 & DA7
+
+    P35 --> P36
+    EA3 -->|"Finding Details,<br/>Severity, Clause Ref"| P36
+    P36 --> DA5
+
+    P36 --> P37
+    P37 --> DA6
+    P37 -->|"Draft Report"| EA2
+
+    P37 --> P38
+    EA1 & EA5 -->|"Report Approval"| P38
+    P38 --> DA6
+
+    P38 --> P39
+    P39 --> DA2
+    P39 -->|"CAPA Request<br/>(per Finding)"| CAPA_PROC["4.0 CAPA Module"]
+    P39 -->|"Audit Completion<br/>Notification"| EA4
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef proc fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px
+    classDef cross fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    class EA1,EA2,EA3,EA4,EA5 ext
+    class P31,P32,P33,P34,P35,P36,P37,P38,P39 proc
+    class DA1,DA2,DA3,DA4,DA5,DA6,DA7 ds
+    class CAPA_PROC cross
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 2 — CAPA MANAGEMENT
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT_CAPA["External Entities"]
+        EC1["Finding Source<br/>(Audit / Risk / Quality)"]
+        EC2["CAPA Owner /<br/>PIC Unit"]
+        EC3["Root Cause<br/>Analyst"]
+        EC4["Verifier /<br/>PJ Mutu"]
+        EC5["Kepala Klinik"]
+    end
+
+    subgraph P_CAPA["4.0 CAPA Management"]
+        direction TB
+        P41["4.3.1 Register CAPA<br/>from Finding"]
+        P42["4.3.2 Assign CAPA<br/>Owner & Due Date"]
+        P43["4.3.3 Root Cause<br/>Analysis"]
+        P44["4.3.4 Define Corrective<br/>Action Plan"]
+        P45["4.3.5 Define Preventive<br/>Action Plan"]
+        P46["4.3.6 Implement<br/>Actions"]
+        P47["4.3.7 Verification<br/>of Implementation"]
+        P48["4.3.8 Effectiveness<br/>Review"]
+        P49["4.3.9 Close / Reopen<br/>CAPA"]
+    end
+
+    subgraph DS_CAPA["Data Stores"]
+        DC1[("capa_records")]
+        DC2[("rca_analyses<br/>5 Why / Fishbone")]
+        DC3[("corrective_actions")]
+        DC4[("preventive_actions")]
+        DC5[("capa_verifications")]
+        DC6[("effectiveness_reviews")]
+        DC7[("capa_attachments")]
+    end
+
+    EC1 -->|"Finding ID, Severity,<br/>Source Reference"| P41
+    P41 --> DC1
+
+    P41 --> P42
+    EC5 -->|"Owner Assignment<br/>Approval"| P42
+    P42 --> DC1
+    P42 -->|"CAPA Assignment<br/>Notification"| EC2
+
+    EC2 --> P43
+    EC3 -->|"RCA Input<br/>(5 Why / Fishbone)"| P43
+    P43 --> DC2
+
+    P43 --> P44 & P45
+    EC2 -->|"Action Plan,<br/>Timeline, Resources"| P44 & P45
+    P44 --> DC3
+    P45 --> DC4
+
+    P44 & P45 --> P46
+    EC2 -->|"Implementation Evidence,<br/>Progress Updates"| P46
+    P46 --> DC3 & DC4 & DC7
+
+    P46 --> P47
+    EC4 -->|"Verification Result,<br/>Evidence Check"| P47
+    P47 --> DC5
+
+    P47 --> P48
+    EC4 -->|"Effectiveness Assessment,<br/>Follow-up Period"| P48
+    P48 --> DC6
+
+    P48 --> P49
+    EC5 -->|"Close Approval"| P49
+    P49 --> DC1
+    P49 -->|"CAPA Closed<br/>Notification"| EC1 & EC2
+    P49 -->|"Reopen Request"| P43
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef proc fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px
+    class EC1,EC2,EC3,EC4,EC5 ext
+    class P41,P42,P43,P44,P45,P46,P47,P48,P49 proc
+    class DC1,DC2,DC3,DC4,DC5,DC6,DC7 ds
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 2 — RISK MANAGEMENT
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT_RISK["External Entities"]
+        ER1["Risk Owner /<br/>Unit Head"]
+        ER2["Risk Committee /<br/>Manajemen Pusat"]
+        ER3["PJ Mutu"]
+        ER4["All Clinic Staff"]
+    end
+
+    subgraph P_RISK["5.0 Risk Management"]
+        direction TB
+        P51["5.4.1 Identify &<br/>Register Risk"]
+        P52["5.4.2 Risk Assessment<br/>(Likelihood × Impact)"]
+        P53["5.4.3 Risk Matrix<br/>Classification"]
+        P54["5.4.4 Define Mitigation<br/>Plan"]
+        P55["5.4.5 Implement<br/>Mitigation"]
+        P56["5.4.6 Risk Monitoring<br/>& Review"]
+        P57["5.4.7 Generate Risk<br/>Heatmap"]
+        P58["5.4.8 Escalate High<br/>Risk to CAPA"]
+    end
+
+    subgraph DS_RISK["Data Stores"]
+        DR1[("risk_register")]
+        DR2[("risk_assessments<br/>likelihood<br/>impact scores")]
+        DR3[("risk_matrix_config")]
+        DR4[("mitigation_plans<br/>mitigation_actions")]
+        DR5[("risk_reviews<br/>residual_risk")]
+        DR6[("risk_heatmap_cache")]
+    end
+
+    ER4 -->|"Risk Identification<br/>(Hazard, Event, Context)"| P51
+    ER1 -->|"Risk Description,<br/>Category, Clinic Scope"| P51
+    P51 --> DR1
+
+    P51 --> P52
+    ER1 -->|"Assessment Input<br/>(L × I Scores)"| P52
+    P52 --> DR2
+
+    P52 --> P53
+    P53 --> DR2 & DR3
+    P53 -->|"Risk Level<br/>(Low/Med/High/Extreme)"| ER1
+
+    P53 --> P54
+    ER1 & ER3 -->|"Mitigation Strategy,<br/>Action Items, Timeline"| P54
+    P54 --> DR4
+
+    P54 --> P55
+    ER1 -->|"Implementation Status,<br/>Evidence"| P55
+    P55 --> DR4
+
+    P55 --> P56
+    ER2 -->|"Periodic Review,<br/>Acceptance Decision"| P56
+    P56 --> DR5
+
+    P56 --> P57
+    P57 --> DR6
+    P57 -->|"Heatmap Data"| ER2 & ER3
+
+    P56 -->|"High/Extreme Risk<br/>Unresolved"| P58
+    P58 -->|"CAPA Trigger"| CAPA_R["4.0 CAPA Module"]
+    P58 --> DR1
+
+    ER2 -->|"Risk Appetite<br/>Threshold Config"| DR3
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef proc fill:#FFEBEE,stroke:#B71C1C,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px
+    classDef cross fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    class ER1,ER2,ER3,ER4 ext
+    class P51,P52,P53,P54,P55,P56,P57,P58 proc
+    class DR1,DR2,DR3,DR4,DR5,DR6 ds
+    class CAPA_R cross
+
+---
+%% ─────────────────────────────────────────────────────────────────────────────
+%% DFD LEVEL 2 — ACCREDITATION MANAGEMENT
+%% ─────────────────────────────────────────────────────────────────────────────
+flowchart TB
+    subgraph EXT_ACC["External Entities"]
+        EX1["Accreditation Admin<br/>(Manajemen Pusat)"]
+        EX2["Clinic Assessor /<br/>PJ Mutu Klinik"]
+        EX3["Unit Staff /<br/>Evidence Provider"]
+        EX4["Surveyors<br/>(Mock Survey Team)"]
+        EX5["Kepala Klinik"]
+    end
+
+    subgraph P_ACC["6.0 Accreditation Management"]
+        direction TB
+        P61["6.5.1 Configure Standards<br/>(FKTP / FKTL)"]
+        P62["6.5.2 Manage Hierarchy<br/>Bab → Standar → Kriteria<br/>→ Elemen Penilaian"]
+        P63["6.5.3 Self Assessment<br/>Execution"]
+        P64["6.5.4 Score & Compliance<br/>Calculation"]
+        P65["6.5.5 Gap Analysis<br/>& Prioritization"]
+        P66["6.5.6 Evidence Repository<br/>Management"]
+        P67["6.5.7 Mock Survey<br/>Simulation"]
+        P68["6.5.8 Readiness Dashboard<br/>Aggregation"]
+    end
+
+    subgraph DS_ACC["Data Stores"]
+        DS1[("accreditation_standards<br/>standard_types: FKTP/FKTL")]
+        DS2[("standard_chapters<br/>standards<br/>criteria<br/>assessment_elements")]
+        DS3[("self_assessments<br/>assessment_responses")]
+        DS4[("gap_records<br/>gap_priority<br/>action_required")]
+        DS5[("evidence_repository<br/>evidence_links")]
+        DS6[("mock_surveys<br/>survey_results")]
+        DS7[("readiness_scores<br/>clinic_rankings")]
+    end
+
+    EX1 -->|"Add/Edit/Disable<br/>Standard Elements"| P61
+    P61 --> DS1
+
+    P61 --> P62
+    EX1 -->|"Hierarchy CRUD<br/>(No Hardcoding)"| P62
+    P62 --> DS2
+
+    P62 --> P63
+    EX2 -->|"Compliance Response<br/>per Element (Ya/Tidak/NA)"| P63
+    EX3 -->|"Supporting Narrative"| P63
+    P63 --> DS3
+
+    P63 --> P64
+    P64 --> DS3
+    P64 -->|"Compliance %<br/>per Standard/Bab"| EX2
+
+    P64 --> P65
+    EX2 -->|"Gap Confirmation,<br/>Root Cause, Priority"| P65
+    P65 --> DS4
+    P65 -->|"Gap Action Items"| CAPA_A["4.0 CAPA Module"]
+
+    P63 --> P66
+    EX3 -->|"Upload Evidence<br/>(Doc, Photo, Link)"| P66
+    P66 --> DS5
+    P66 -->|"Link to DMS<br/>Documents"| DMS_A["2.0 DMS Module"]
+
+    P65 --> P67
+    EX4 -->|"Mock Survey Scoring,<br/>Observations"| P67
+    P67 --> DS6
+
+    P64 & P65 & P67 --> P68
+    P68 --> DS7
+    P68 -->|"Readiness Score,<br/>Clinic Ranking"| EX1 & EX5
+
+    EX5 -->|"Self Assessment<br/>Approval & Sign-off"| P63
+
+    classDef ext fill:#E3F2FD,stroke:#1565C0,stroke-width:2px
+    classDef proc fill:#E0F7FA,stroke:#00695C,stroke-width:2px
+    classDef ds fill:#FFFDE7,stroke:#F9A825,stroke-width:2px
+    classDef cross fill:#FFF3E0,stroke:#E65100,stroke-width:2px
+    class EX1,EX2,EX3,EX4,EX5 ext
+    class P61,P62,P63,P64,P65,P66,P67,P68 proc
+    class DS1,DS2,DS3,DS4,DS5,DS6,DS7 ds
+    class CAPA_A,DMS_A cross

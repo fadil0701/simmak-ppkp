@@ -1,0 +1,294 @@
+%% =============================================================================
+%% SIMMAK PPKP — Solution Architecture Diagram
+%% Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi
+%% Organization: PPKP Provinsi DKI Jakarta | Laravel 12 | PostgreSQL 17
+%% Version: 1.0.0 | Deployment: Docker Compose on Ubuntu Server
+%% =============================================================================
+
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#EBF8FF',
+    'primaryTextColor': '#1A365D',
+    'primaryBorderColor': '#3182CE',
+    'lineColor': '#4A5568',
+    'secondaryColor': '#F0FFF4',
+    'tertiaryColor': '#FAF5FF',
+    'fontFamily': 'Segoe UI, Inter, sans-serif',
+    'fontSize': '13px'
+  },
+  'flowchart': { 'htmlLabels': true, 'curve': 'basis', 'padding': 16 }
+}}%%
+
+flowchart TB
+
+    %% =========================================================================
+    %% LAYER 1: CLIENT TIER
+    %% =========================================================================
+
+    subgraph CLIENT["🖥️ CLIENT LAYER — Presentation Tier"]
+        direction TB
+
+        subgraph WEB["Web Application"]
+            BROWSER["Web Browser<br/>(Chrome / Edge / Firefox)"]
+            SPA["Blade + Livewire / Inertia.js<br/>Responsive UI — Desktop & Tablet"]
+            PWA["Progressive Web App<br/>(Offline-capable dashboards)"]
+        end
+
+        subgraph DASHBOARDS["Role-Based Dashboards"]
+            EXEC_DASH["Executive Dashboard<br/>Readiness · CAPA · Risk Heatmap · Rankings"]
+            CLINIC_DASH["Clinic Dashboard<br/>Audit · CAPA · Risiko · Akreditasi · Mutu"]
+            ACCRED_DASH["Accreditation Dashboard<br/>Self Assessment · Gap · Mock Survey"]
+        end
+
+        subgraph CLIENT_MODULES["Application Modules"]
+            MOD_DMS["DMS Module"]
+            MOD_AUDIT["Internal Audit Module"]
+            MOD_CAPA["CAPA Module"]
+            MOD_RISK["Risk Management Module"]
+            MOD_ACCRED["Accreditation Module"]
+            MOD_QUALITY["Quality Management Module"]
+            MOD_ADMIN["System Administration"]
+        end
+
+        BROWSER --> SPA
+        SPA --> PWA
+        SPA --> DASHBOARDS
+        SPA --> CLIENT_MODULES
+    end
+
+    %% =========================================================================
+    %% LAYER 2: EDGE / REVERSE PROXY
+    %% =========================================================================
+
+    subgraph NGINX_LAYER["⚡ NGINX REVERSE PROXY — Edge Tier"]
+        direction TB
+
+        NGINX["Nginx 1.27+<br/>Reverse Proxy & Load Balancer"]
+        SSL["SSL/TLS Termination<br/>Let's Encrypt / Internal CA"]
+        GZIP["Gzip / Brotli Compression"]
+        RATE["Rate Limiting & DDoS Protection"]
+        STATIC["Static Asset Serving<br/>CSS · JS · Fonts · Images"]
+        UPSTREAM["Upstream Pool<br/>PHP-FPM Socket / TCP"]
+
+        NGINX --> SSL
+        NGINX --> GZIP
+        NGINX --> RATE
+        NGINX --> STATIC
+        NGINX --> UPSTREAM
+    end
+
+    %% =========================================================================
+    %% LAYER 3: APPLICATION TIER — LARAVEL 12
+    %% =========================================================================
+
+    subgraph LARAVEL["🚀 LARAVEL APPLICATION LAYER — Business Logic Tier"]
+        direction TB
+
+        subgraph ENTRY["Request Pipeline"]
+            PHP_FPM["PHP 8.4-FPM<br/>Process Pool"]
+            KERNEL["HTTP Kernel<br/>Middleware Stack"]
+            ROUTES["Route Layer<br/>Web · API v1 · Health"]
+        end
+
+        subgraph MIDDLEWARE["Cross-Cutting Middleware"]
+            MW_AUTH["Authenticate<br/>Local + LDAP Session"]
+            MW_RBAC["RBAC Authorization<br/>Spatie Permission / Custom"]
+            MW_SCOPE["Org/Clinic Scope Filter<br/>organization_id · clinic_id"]
+            MW_AUDIT["Audit Trail Middleware"]
+            MW_THROTTLE["Throttle & CSRF Protection"]
+        end
+
+        subgraph APP_CORE["Application Core"]
+            CONTROLLERS["Controllers<br/>Web · API · Admin"]
+            SERVICES["Domain Services<br/>DMS · Audit · CAPA · Risk · Accreditation · Quality"]
+            REPOS["Repository Layer<br/>Eloquent ORM Abstraction"]
+            EVENTS["Events & Listeners<br/>Domain Event Bus"]
+            POLICIES["Policies & Gates<br/>Fine-grained Authorization"]
+        end
+
+        subgraph WORKFLOW_NOTIF["Workflow & Notification Engine"]
+            WF_ENGINE["Workflow Engine<br/>Dynamic Step Configuration"]
+            WF_STATE["State Machine<br/>Draft → Review → Approve → Publish"]
+            NOTIF_SVC["Notification Service<br/>In-App · Email · Queue"]
+            SCHEDULER["Laravel Scheduler<br/>Expiry Alerts · SLA Escalation"]
+        end
+
+        subgraph BACKGROUND["Background Processing"]
+            QUEUE_WORKER["Queue Workers<br/>Horizon / Supervisor"]
+            JOBS["Async Jobs<br/>LDAP Sync · Report Gen · Email · Export"]
+            CACHE_SVC["Cache Service<br/>Redis-backed"]
+        end
+
+        subgraph INTEGRATION["Integration Layer"]
+            LDAP_CLIENT["LDAP Client<br/>DirectoryService"]
+            STORAGE_CLIENT["Storage Client<br/>Supabase SDK / S3 Flysystem"]
+            EXPORT["Export Engine<br/>PDF · Excel · CSV"]
+            QR_SVC["QR Code Service<br/>Document Verification"]
+        end
+
+        PHP_FPM --> KERNEL
+        KERNEL --> ROUTES
+        ROUTES --> MIDDLEWARE
+        MIDDLEWARE --> APP_CORE
+        APP_CORE --> WORKFLOW_NOTIF
+        APP_CORE --> BACKGROUND
+        APP_CORE --> INTEGRATION
+        WORKFLOW_NOTIF --> BACKGROUND
+    end
+
+    %% =========================================================================
+    %% LAYER 4: DATA TIER
+    %% =========================================================================
+
+    subgraph DATA["🗄️ DATA LAYER — Persistence Tier"]
+        direction LR
+
+        subgraph POSTGRES["PostgreSQL 17 — Primary Database"]
+            PG_MAIN["simmak_ppkp<br/>Single Centralized Database"]
+            PG_SCHEMA["Schemas<br/>public · audit_log"]
+            PG_FEATURES["Features<br/>JSONB · UUID · Full-Text Search<br/>Row-Level Audit · Partitioning"]
+            PG_BACKUP["pg_dump + WAL Archiving<br/>Daily Backup · PITR"]
+        end
+
+        subgraph REDIS_LAYER["Redis 7 — Cache & Queue"]
+            REDIS_CACHE["Cache Store<br/>Config · RBAC · Dashboard KPIs"]
+            REDIS_SESSION["Session Store<br/>Distributed Sessions"]
+            REDIS_QUEUE["Queue Backend<br/>notifications · reports · ldap_sync"]
+            REDIS_LOCK["Distributed Locks<br/>Workflow Concurrency"]
+        end
+    end
+
+    %% =========================================================================
+    %% LAYER 5: EXTERNAL SERVICES
+    %% =========================================================================
+
+    subgraph EXTERNAL["🌐 EXTERNAL SERVICES — Integration Tier"]
+        direction TB
+
+        subgraph LDAP_AD["LDAP / Active Directory"]
+            AD_SERVER["AD Pemprov DKI Jakarta<br/>ldap:// / ldaps://"]
+            AD_AUTH["Authentication<br/>Bind + Search User"]
+            AD_SYNC["User Provisioning Sync<br/>Scheduled + On-Demand"]
+            AD_GROUPS["Group → Role Mapping<br/>OU-based Clinic Scope"]
+        end
+
+        subgraph SUPABASE["Supabase Storage — Object Storage"]
+            SB_BUCKET["Buckets<br/>documents · evidence · reports · attachments"]
+            SB_RLS["Row-Level Security Policies"]
+            SB_CDN["CDN Edge Delivery<br/>Signed URLs · TTL"]
+            SB_BACKUP["Cross-Region Replication<br/>(DR Strategy)"]
+        end
+
+        subgraph OPTIONAL["Optional Integrations"]
+            SMTP["SMTP / Mail Gateway<br/>Notification Delivery"]
+            MONITOR["Monitoring<br/>Prometheus · Grafana · Sentry"]
+        end
+    end
+
+    %% =========================================================================
+    %% LAYER 6: INFRASTRUCTURE — DOCKER COMPOSE
+    %% =========================================================================
+
+    subgraph INFRA["🐳 INFRASTRUCTURE — Docker Compose on Ubuntu Server"]
+        direction LR
+        DOCKER_NGINX["Container: nginx"]
+        DOCKER_APP["Container: app<br/>(PHP-FPM + Laravel)"]
+        DOCKER_WORKER["Container: worker<br/>(Queue + Scheduler)"]
+        DOCKER_PG["Container: postgres:17"]
+        DOCKER_REDIS["Container: redis:7-alpine"]
+        DOCKER_VOL["Volumes<br/>pg_data · redis_data · app_storage"]
+    end
+
+    %% =========================================================================
+    %% PRIMARY DATA FLOWS
+    %% =========================================================================
+
+    CLIENT -->|"HTTPS :443"| NGINX_LAYER
+    NGINX_LAYER -->|"FastCGI / Proxy Pass"| ENTRY
+
+    REPOS -->|"SQL Queries<br/>Read/Write"| POSTGRES
+    CACHE_SVC -->|"GET/SET/PUBLISH"| REDIS_LAYER
+    QUEUE_WORKER -->|"BRPOP/LPUSH"| REDIS_LAYER
+    BACKGROUND -->|"Persist Job Results"| POSTGRES
+
+    LDAP_CLIENT -->|"LDAP Bind / Search<br/>Port 389/636"| LDAP_AD
+    STORAGE_CLIENT -->|"REST API / S3 Protocol<br/>Upload · Download · Delete"| SUPABASE
+    NOTIF_SVC -->|"SMTP TLS"| SMTP
+
+    DOCKER_NGINX --- NGINX
+    DOCKER_APP --- PHP_FPM
+    DOCKER_WORKER --- QUEUE_WORKER
+    DOCKER_PG --- PG_MAIN
+    DOCKER_REDIS --- REDIS_CACHE
+
+    %% =========================================================================
+    %% SECURITY BOUNDARIES
+    %% =========================================================================
+
+    subgraph SECURITY["🔒 SECURITY ARCHITECTURE"]
+        direction LR
+        SEC_WAF["WAF Rules<br/>(Nginx ModSecurity optional)"]
+        SEC_JWT["API Token Auth<br/>Sanctum Personal Access Tokens"]
+        SEC_ENCRYPT["Encryption at Rest<br/>PG TDE · Supabase AES-256"]
+        SEC_TRANSIT["Encryption in Transit<br/>TLS 1.3 Everywhere"]
+        SEC_AUDIT["Immutable Audit Trail<br/>audit_trails · activity_logs"]
+    end
+
+    NGINX --> SEC_WAF
+    MW_AUTH --> SEC_JWT
+    POSTGRES --> SEC_ENCRYPT
+    SSL --> SEC_TRANSIT
+    MW_AUDIT --> SEC_AUDIT
+
+    %% =========================================================================
+    %% DOMAIN MODULE → DATA STORE MAPPING
+    %% =========================================================================
+
+    subgraph DATA_FLOW["📊 Module Data Flow Summary"]
+        direction TB
+        DF1["DMS → PostgreSQL (metadata) + Supabase (files) + Workflow Engine"]
+        DF2["Audit/CAPA/Risk → PostgreSQL + Workflow + Notification"]
+        DF3["Accreditation → PostgreSQL (dynamic standards) + Supabase (evidence)"]
+        DF4["Quality → PostgreSQL + Redis Cache (KPI dashboards)"]
+        DF5["Auth → PostgreSQL (users/RBAC) + LDAP/AD + Redis (sessions)"]
+    end
+
+    CLIENT_MODULES -.->|"Business Operations"| DATA_FLOW
+    DATA_FLOW -.-> DATA
+
+    %% =========================================================================
+    %% STYLING — Layer Colors
+    %% =========================================================================
+
+    classDef clientStyle fill:#EBF8FF,stroke:#3182CE,stroke-width:2px,color:#1A365D
+    classDef nginxStyle fill:#FFF5EB,stroke:#DD6B20,stroke-width:2px,color:#7B341E
+    classDef laravelStyle fill:#F0FFF4,stroke:#38A169,stroke-width:2px,color:#22543D
+    classDef dataStyle fill:#FAF5FF,stroke:#805AD5,stroke-width:2px,color:#44337A
+    classDef externalStyle fill:#FFF5F5,stroke:#E53E3E,stroke-width:2px,color:#742A2A
+    classDef infraStyle fill:#EDF2F7,stroke:#4A5568,stroke-width:2px,color:#2D3748
+    classDef securityStyle fill:#FFFFF0,stroke:#D69E2E,stroke-width:2px,color:#744210
+    classDef flowStyle fill:#E6FFFA,stroke:#319795,stroke-width:1px,color:#234E52
+
+    class BROWSER,SPA,PWA,EXEC_DASH,CLINIC_DASH,ACCRED_DASH,MOD_DMS,MOD_AUDIT,MOD_CAPA,MOD_RISK,MOD_ACCRED,MOD_QUALITY,MOD_ADMIN clientStyle
+    class NGINX,SSL,GZIP,RATE,STATIC,UPSTREAM nginxStyle
+    class PHP_FPM,KERNEL,ROUTES,MW_AUTH,MW_RBAC,MW_SCOPE,MW_AUDIT,MW_THROTTLE,CONTROLLERS,SERVICES,REPOS,EVENTS,POLICIES,WF_ENGINE,WF_STATE,NOTIF_SVC,SCHEDULER,QUEUE_WORKER,JOBS,CACHE_SVC,LDAP_CLIENT,STORAGE_CLIENT,EXPORT,QR_SVC laravelStyle
+    class PG_MAIN,PG_SCHEMA,PG_FEATURES,PG_BACKUP,REDIS_CACHE,REDIS_SESSION,REDIS_QUEUE,REDIS_LOCK dataStyle
+    class AD_SERVER,AD_AUTH,AD_SYNC,AD_GROUPS,SB_BUCKET,SB_RLS,SB_CDN,SB_BACKUP,SMTP,MONITOR externalStyle
+    class DOCKER_NGINX,DOCKER_APP,DOCKER_WORKER,DOCKER_PG,DOCKER_REDIS,DOCKER_VOL infraStyle
+    class SEC_WAF,SEC_JWT,SEC_ENCRYPT,SEC_TRANSIT,SEC_AUDIT securityStyle
+    class DF1,DF2,DF3,DF4,DF5 flowStyle
+
+    %% Subgraph styling
+    style CLIENT fill:#EBF8FF,stroke:#3182CE,stroke-width:3px
+    style NGINX_LAYER fill:#FFF5EB,stroke:#DD6B20,stroke-width:3px
+    style LARAVEL fill:#F0FFF4,stroke:#38A169,stroke-width:3px
+    style DATA fill:#FAF5FF,stroke:#805AD5,stroke-width:3px
+    style POSTGRES fill:#EDE9FE,stroke:#7C3AED,stroke-width:2px
+    style REDIS_LAYER fill:#FEE2E2,stroke:#DC2626,stroke-width:2px
+    style EXTERNAL fill:#FFF5F5,stroke:#E53E3E,stroke-width:3px
+    style LDAP_AD fill:#FEF3C7,stroke:#D97706,stroke-width:2px
+    style SUPABASE fill:#DBEAFE,stroke:#2563EB,stroke-width:2px
+    style INFRA fill:#EDF2F7,stroke:#4A5568,stroke-width:3px
+    style SECURITY fill:#FFFFF0,stroke:#D69E2E,stroke-width:3px
+    style DATA_FLOW fill:#E6FFFA,stroke:#319795,stroke-width:2px
