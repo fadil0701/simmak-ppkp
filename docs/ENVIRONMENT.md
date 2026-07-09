@@ -48,11 +48,6 @@ DB_PASSWORD=<secret>
 
 ---
 
-## Frontend (React Material Dashboard)
+## Frontend (React SPA)
 
-```env
-# API backend untuk React SPA
-VITE_API_URL=http://localhost:8000/api/v1
-```
-
-Template UI: `react-dashboard-material-1.0.0/`
+UI disajikan dari `public/app/` oleh Laravel. API backend: `/api/v1/*`

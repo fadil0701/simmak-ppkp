@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Support\SimmakMenu;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -16,7 +17,7 @@ class LoginController extends Controller
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect(SimmakMenu::homeRouteFor(Auth::user()));
         }
 
         return view('auth.login');
@@ -27,25 +28,23 @@ class LoginController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'auth_provider' => ['nullable', 'in:local,ldap'],
         ]);
 
-        $authProvider = $credentials['auth_provider'] ?? 'local';
+        $authProvider = 'local';
         $identifier = $credentials['email'];
 
-        $userQuery = \App\Models\User::query()
+        $user = \App\Models\User::query()
             ->where('is_active', true)
+            ->where('auth_provider', $authProvider)
             ->where(function ($query) use ($identifier) {
                 $query->where('email', $identifier)
                     ->orWhere('username', $identifier);
             })
-            ->where('auth_provider', $authProvider);
-
-        $user = $userQuery->first();
+            ->first();
 
         $successful = false;
 
-        if ($user && $authProvider === 'local' && Auth::attempt([
+        if ($user && Auth::attempt([
             'email' => $user->email,
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
@@ -64,14 +63,14 @@ class LoginController extends Controller
 
         if (! $successful) {
             throw ValidationException::withMessages([
-                'email' => __('Kredensial tidak valid atau metode login tidak sesuai.'),
+                'email' => __('Email/username atau password tidak valid.'),
             ]);
         }
 
         $request->session()->regenerate();
         $user->update(['last_login_at' => now()]);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(SimmakMenu::homeRouteFor($user));
     }
 
     public function destroy(Request $request): RedirectResponse

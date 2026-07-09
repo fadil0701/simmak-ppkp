@@ -1,8 +1,9 @@
 /.phpunit.cache
 /node_modules
-/react-dashboard-material-1.0.0/node_modules
 /public/build
 /public/hot
+/public/app
+/react-dashboard-material-1.0.0
 /public/storage
 /storage/*.key
 /storage/pail

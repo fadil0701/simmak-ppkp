@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Clinic;
 use App\Models\Organization;
-use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -53,8 +51,6 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        $mainClinic = $clinicModels->firstWhere('code', 'KU');
-
         $permissions = [
             'dashboard.view',
             'dashboard.executive',
@@ -94,6 +90,12 @@ class DatabaseSeeder extends Seeder
             'staff' => [
                 'dashboard.view', 'dms.view', 'capa.view', 'accreditation.view',
             ],
+            'tim-akreditasi' => [
+                'dashboard.view', 'dashboard.clinic',
+                'dms.view',
+                'accreditation.view', 'accreditation.manage',
+                'capa.view', 'quality.view',
+            ],
         ];
 
         foreach ($roles as $roleName => $rolePermissions) {
@@ -101,21 +103,12 @@ class DatabaseSeeder extends Seeder
             $role->syncPermissions($rolePermissions);
         }
 
-        $admin = User::create([
-            'organization_id' => $organization->id,
-            'default_clinic_id' => $mainClinic?->id,
-            'name' => 'Administrator SIMMAK',
-            'username' => 'admin',
-            'email' => 'admin@simmak.ppkp.local',
-            'password' => Hash::make('password'),
-            'auth_provider' => 'local',
-            'is_active' => true,
-            'email_verified_at' => now(),
-        ]);
+        $this->call(RoleUsersSeeder::class);
 
-        $admin->assignRole('super-admin');
-        $admin->clinics()->sync($clinicModels->pluck('id')->mapWithKeys(
-            fn ($id) => [$id => ['is_default' => $id === $mainClinic?->id]]
-        ));
+        $this->call(DocumentSeeder::class);
+        $this->call(AuditCapaSeeder::class);
+        $this->call(RiskSeeder::class);
+        $this->call(AccreditationSeeder::class);
+        $this->call(ExtendedModuleSeeder::class);
     }
 }

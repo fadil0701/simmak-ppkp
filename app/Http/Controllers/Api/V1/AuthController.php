@@ -21,24 +21,22 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'auth_provider' => ['nullable', 'in:local,ldap'],
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $authProvider = $credentials['auth_provider'] ?? 'local';
+        $authProvider = 'local';
         $identifier = $credentials['email'];
 
         $user = User::query()
             ->where('is_active', true)
+            ->where('auth_provider', $authProvider)
             ->where(function ($query) use ($identifier) {
                 $query->where('email', $identifier)
                     ->orWhere('username', $identifier);
             })
-            ->where('auth_provider', $authProvider)
             ->first();
 
         $successful = $user
-            && $authProvider === 'local'
             && $user->password
             && Hash::check($credentials['password'], $user->password);
 
@@ -54,7 +52,7 @@ class AuthController extends Controller
 
         if (! $successful) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial tidak valid atau metode login tidak sesuai.'],
+                'email' => ['Email/username atau password tidak valid.'],
             ]);
         }
 
