@@ -22,8 +22,8 @@ Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi untuk PPKP Provin
 | Fase | Modul | Status |
 |------|-------|--------|
 | 0 | Blueprint enterprise | ✅ Selesai |
-| 1 | Core Platform, Auth, RBAC, 17 klinik | 🟡 ~65% |
-| 1b | Integrasi React Material Dashboard + Login | 🔜 |
+| 1 | Core Platform, Auth, RBAC, 17 klinik | 🟡 ~85% |
+| 1b | React Material Dashboard + API Sanctum | 🟡 ~70% |
 | 2 | DMS + Workflow Engine | ⬜ |
 | 3 | Audit Internal + CAPA | ⬜ |
 | 4 | Risk + Quality Management | ⬜ |
@@ -34,7 +34,7 @@ Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi untuk PPKP Provin
 
 ```bash
 # 1. Buat database MySQL
-# CREATE DATABASE simmak_ppkp;
+php scripts/create_mysql_db.php
 
 # 2. Environment
 cp .env.example .env
@@ -43,16 +43,26 @@ php artisan key:generate
 # 3. Migration & seed
 php artisan migrate:fresh --seed
 
-# 4. Backend
+# 4. Backend API
 php artisan serve
 
-# 5. Frontend React (terminal terpisah)
+# 5. React Dashboard (terminal terpisah)
 cd react-dashboard-material-1.0.0
 npm install
 npm start
+# Buka http://localhost:3000/login
 ```
 
 **Login default:** `admin@simmak.ppkp.local` / `password`
+
+### API Endpoints (Fase 1b)
+
+| Method | Endpoint | Keterangan |
+|--------|----------|------------|
+| POST | `/api/v1/auth/login` | Login, dapat token |
+| GET | `/api/v1/auth/me` | Profil user (Bearer token) |
+| POST | `/api/v1/auth/logout` | Revoke token |
+| GET | `/api/v1/dashboard/executive` | Data dashboard eksekutif |
 
 ## Frontend — React Material Dashboard
 

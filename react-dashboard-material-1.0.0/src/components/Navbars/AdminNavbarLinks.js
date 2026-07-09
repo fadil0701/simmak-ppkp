@@ -19,12 +19,14 @@ import Search from "@material-ui/icons/Search";
 import CustomInput from "components/CustomInput/CustomInput.js";
 import Button from "components/CustomButtons/Button.js";
 
+import { useAuth } from "context/AuthContext.js";
 import styles from "assets/jss/material-dashboard-react/components/headerLinksStyle.js";
 
 const useStyles = makeStyles(styles);
 
 export default function AdminNavbarLinks() {
   const classes = useStyles();
+  const { user, logout } = useAuth();
   const [openNotification, setOpenNotification] = React.useState(null);
   const [openProfile, setOpenProfile] = React.useState(null);
   const handleClickNotification = event => {
@@ -55,7 +57,7 @@ export default function AdminNavbarLinks() {
             className: classes.margin + " " + classes.search
           }}
           inputProps={{
-            placeholder: "Search",
+            placeholder: "Cari modul, dokumen...",
             inputProps: {
               "aria-label": "Search"
             }
@@ -193,24 +195,22 @@ export default function AdminNavbarLinks() {
               <Paper>
                 <ClickAwayListener onClickAway={handleCloseProfile}>
                   <MenuList role="menu">
-                    <MenuItem
-                      onClick={handleCloseProfile}
-                      className={classes.dropdownItem}
-                    >
-                      Profile
+                    <MenuItem className={classes.dropdownItem} disabled>
+                      {user?.name || "Pengguna"}
                     </MenuItem>
-                    <MenuItem
-                      onClick={handleCloseProfile}
-                      className={classes.dropdownItem}
-                    >
-                      Settings
+                    <MenuItem className={classes.dropdownItem} disabled>
+                      {user?.default_clinic?.name || user?.organization?.name}
                     </MenuItem>
                     <Divider light />
                     <MenuItem
-                      onClick={handleCloseProfile}
+                      onClick={async () => {
+                        handleCloseProfile();
+                        await logout();
+                        window.location.href = "/login";
+                      }}
                       className={classes.dropdownItem}
                     >
-                      Logout
+                      Keluar
                     </MenuItem>
                   </MenuList>
                 </ClickAwayListener>

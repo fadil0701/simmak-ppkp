@@ -1,0 +1,10 @@
+<?php
+
+try {
+    $pdo = new PDO('mysql:host=127.0.0.1;port=3306', 'root', '');
+    $pdo->exec('CREATE DATABASE IF NOT EXISTS simmak_ppkp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    echo "Database simmak_ppkp created.\n";
+} catch (Throwable $e) {
+    echo 'Error: '.$e->getMessage()."\n";
+    exit(1);
+}

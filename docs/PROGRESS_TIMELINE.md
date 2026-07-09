@@ -5,7 +5,7 @@
 | Proyek | SIMMAK PPKP |
 | Organisasi | PPKP Provinsi DKI Jakarta |
 | Versi dokumen | 1.0.0 |
-| Tanggal pembaruan | 8 Juli 2026 |
+| Tanggal pembaruan | 9 Juli 2026 |
 | Pemilik dokumen | Tim Pengembangan SIMMAK PPKP |
 | Status proyek | **Development — Fase 1 (Core Platform)** |
 
@@ -23,9 +23,9 @@ Pembangunan sistem mengacu pada blueprint enterprise di folder `docs/` (BRD, PRD
 |------|----------|------------|
 | Blueprint & desain | ✅ 100% | 6 volume dokumen + diagram + mockup |
 | Fase 0 — Mobilisasi | ✅ Selesai | Validasi requirement, struktur repo |
-| Fase 1 — Core Platform | 🟡 ~65% | Laravel 12, auth, RBAC, master data 17 klinik |
-| Frontend React (Material) | 🔴 0% | Template tersedia, integrasi direncanakan Fase 1b |
-| Database Development | 🟡 Migrasi | **MySQL lokal** (Laragon) |
+| Fase 1 — Core Platform | 🟡 ~85% | Laravel 12, API Sanctum, React login + dashboard |
+| Frontend React (Material) | 🟡 ~70% | Login, auth, executive dashboard terhubung API |
+| Database Development | ✅ | **MySQL 8** lokal (`simmak_ppkp`) — migration & seed OK |
 | Database Production | ⬜ Belum deploy | **PostgreSQL 17** di VM/Docker |
 | Modul bisnis (DMS–Mutu) | ⬜ 0% | Fase 2–6 |
 
@@ -178,7 +178,7 @@ gantt
 
 ---
 
-### Fase 1 — Core Platform & Master Data 🟡 BERJALAN (~65%)
+### Fase 1 — Core Platform & Master Data 🟡 BERJALAN (~85%)
 **Periode:** Juli 2026  
 **Target selesai:** 7 Agustus 2026
 
@@ -186,28 +186,37 @@ gantt
 |------|--------|----------|---------|
 | Inisialisasi Laravel 12 | ✅ | 100% | PHP 8.3+ (target 8.4 prod) |
 | Package: Spatie Permission, Livewire | ✅ | 100% | RBAC aktif |
-| Migration Core (org, klinik, unit) | ✅ | 100% | 7 migration files |
+| Package: Laravel Sanctum | ✅ | 100% | API token auth |
+| Migration Core (org, klinik, unit) | ✅ | 100% | 8 migration files |
 | Migration Auth (users UUID, LDAP stub) | ✅ | 100% | Hybrid auth structure |
-| Migration RBAC (Spatie) | ✅ | 100% | UUID model morph key |
+| Migration RBAC (Spatie) + Sanctum tokens | ✅ | 100% | UUID morph key |
 | Seeder 17 entitas PPKP | ✅ | 100% | MP + KU + 15 KP |
 | Seeder roles & permissions | ✅ | 100% | 6 role, 20+ permission |
-| Login controller (local) | ✅ | 100% | Blade sementara |
-| Dashboard controller (placeholder) | ✅ | 100% | Blade sementara |
+| **MySQL dev database** | ✅ | 100% | `scripts/create_mysql_db.php` |
+| **API `/api/v1/auth/*`** | ✅ | 100% | login, me, logout |
+| **API `/api/v1/dashboard/executive`** | ✅ | 100% | Stats + clinic ranking |
+| **AuditTrailService** | ✅ | 100% | Login/logout tercatat |
+| **React Login page** | ✅ | 100% | Material UI custom |
+| **React Executive Dashboard** | ✅ | 100% | Data dari API |
+| **React sidebar modul SIMMAK** | ✅ | 100% | DMS, Audit, CAPA, dll. (placeholder) |
+| Login controller Blade (legacy) | ✅ | 100% | Fallback sementara |
 | Middleware clinic context | ✅ | 100% | `SetClinicContext` |
 | Docker compose (prod) | ✅ | 100% | Tanpa PG bundled |
-| **Switch DB ke MySQL dev** | 🟡 | 50% | Dokumentasi & .env.example |
-| **Integrasi React Material Dashboard** | ⬜ | 0% | Fase 1b — target 31 Jul |
-| Halaman Login/Landing React | ⬜ | 0% | Custom dari komponen template |
-| API auth Sanctum | ⬜ | 0% | Untuk React SPA |
 | LDAP AD DKI integrasi | ⬜ | 0% | Butuh akses jaringan AD |
-| Audit trail service | ⬜ | 20% | Tabel ada, service belum |
 | UAT Fase 1 | ⬜ | 0% | Target awal Agustus |
 
-**Yang sudah bisa diuji hari ini:**
+**Cara menjalankan (Fase 1b):**
 ```bash
+# Terminal 1 — API Backend
+php scripts/create_mysql_db.php   # sekali saja
 php artisan migrate:fresh --seed
 php artisan serve
-# Login: admin@simmak.ppkp.local / password
+
+# Terminal 2 — React Dashboard
+cd react-dashboard-material-1.0.0
+npm install
+npm start
+# Buka http://localhost:3000/login
 ```
 
 ---
@@ -309,11 +318,17 @@ php artisan serve
 - 📝 Keputusan: MySQL untuk development, PostgreSQL untuk production
 - 📝 Keputusan: Frontend menggunakan `react-dashboard-material-1.0.0`
 
-### Minggu 3 (9 – 15 Juli 2026) — RENCANA
-- [ ] Konfigurasi MySQL Laragon + migrate:fresh --seed
-- [ ] Setup folder `frontend/` dari template React
-- [ ] API login Sanctum untuk React
-- [ ] Halaman login Material UI custom
+### Minggu 3 (9 – 15 Juli 2026) — BERJALAN
+- [x] Database MySQL `simmak_ppkp` dibuat & migration berhasil
+- [x] Laravel Sanctum — API auth (`/api/v1/auth/login`, `me`, `logout`)
+- [x] API Executive Dashboard (`/api/v1/dashboard/executive`)
+- [x] AuditTrailService — log login/logout
+- [x] React: halaman Login Material UI
+- [x] React: Executive Dashboard terhubung API
+- [x] React: sidebar modul SIMMAK (placeholder Fase 2–5)
+- [ ] Clinic dashboard React page
+- [ ] Accreditation dashboard React page
+- [ ] UAT skenario Fase 1
 
 ---
 
@@ -321,23 +336,23 @@ php artisan serve
 
 ```
 Blueprint & Desain     ████████████████████ 100%
-Fase 1 — Core Platform █████████████░░░░░░░  65%
+Fase 1 — Core Platform █████████████████░░░  85%
 Fase 2 — DMS           ░░░░░░░░░░░░░░░░░░░░   0%
 Fase 3 — Audit & CAPA  ░░░░░░░░░░░░░░░░░░░░   0%
 Fase 4 — Risk & Mutu   ░░░░░░░░░░░░░░░░░░░░   0%
 Fase 5 — Akreditasi    ░░░░░░░░░░░░░░░░░░░░   0%
-Fase 6 — Dashboard     ░░░░░░░░░░░░░░░░░░░░   0%
-Frontend React         ░░░░░░░░░░░░░░░░░░░░   0%
+Fase 6 — Dashboard     ████░░░░░░░░░░░░░░░░  20%
+Frontend React         ██████████████░░░░░░  70%
 ─────────────────────────────────────────────
-TOTAL PROYEK           ████░░░░░░░░░░░░░░░░  ~18%
+TOTAL PROYEK           ██████░░░░░░░░░░░░░░  ~28%
 ```
 
 | Metrik | Nilai |
 |--------|-------|
-| Tabel database (target 104) | 28 / 104 (27%) |
+| Tabel database (target 104) | 29 / 104 (28%) |
 | Modul fungsional (target 8) | 1 / 8 (12.5%) |
-| API endpoints (estimasi 200+) | ~5 (2.5%) |
-| Halaman React (estimasi 40+) | 0 |
+| API endpoints (estimasi 200+) | 4 / 200 (2%) |
+| Halaman React (estimasi 40+) | 9 (login + dashboard + 7 placeholder) |
 
 ---
 

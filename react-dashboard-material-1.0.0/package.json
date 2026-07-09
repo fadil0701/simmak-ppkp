@@ -3,6 +3,7 @@
   "version": "1.9.0",
   "description": "Material Dashboard React. Coded by Creative Tim",
   "private": false,
+  "proxy": "http://localhost:8000",
   "main": "dist/index.js",
   "homepage": "https://themewagon.github.io/react-dashboard-material",
   "dependencies": {
