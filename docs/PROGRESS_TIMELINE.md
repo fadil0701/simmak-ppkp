@@ -7,7 +7,7 @@
 | Versi dokumen | 1.1.0 |
 | Tanggal pembaruan | 9 Juli 2026 |
 | Pemilik dokumen | Tim Pengembangan SIMMAK PPKP |
-| Status proyek | **Fase 1–6 MVP Selesai — Penyempurnaan UI & UAT** |
+| Status proyek | **Fase 1–6 MVP Selesai — Siap UAT & Fase 7** |
 
 ---
 
@@ -30,7 +30,7 @@ Pembangunan sistem mengacu pada blueprint enterprise di folder `docs/` (BRD, PRD
 | Fase 4 — Risk & Quality | ✅ 100% | Mitigation, matrix, program mutu & indikator |
 | Fase 5 — Akreditasi | ✅ 100% | Mock survey, evidence DMS, standar admin |
 | Fase 6 — Dashboard Enterprise | ✅ 100% | Data real, export, cache, UI mockup |
-| Penyempurnaan UI & RBAC | 🟡 ~90% | Dashboard eksekutif/klinik, lokalisasi ID, akun demo |
+| Penyempurnaan UI & RBAC | ✅ 100% | Dashboard eksekutif/klinik/akreditasi, lokalisasi ID, akun demo |
 | Fase 7 — Optimasi & Scale | ⬜ 0% | Redis prod, DR drill, PG staging parity |
 
 ---
@@ -133,7 +133,7 @@ gantt
     section Fase 5
     Akreditasi FKTP/FKTL dinamis      :done, f5a, 2026-07-08, 2026-07-09
     Self assessment + gap + mock survey :done, f5b, 2026-07-08, 2026-07-09
-    Dashboard akreditasi (dasar)      :active, f5c, 2026-07-09, 2026-07-20
+    Dashboard akreditasi (mockup FKTP) :done, f5c, 2026-07-09, 2026-07-11
     UAT Fase 5                        :f5d, 2026-07-20, 2026-07-31
 
     section Fase 6
@@ -275,7 +275,7 @@ php artisan serve
 |------|--------|----------|---------|
 | Migration akreditasi (9 tabel) | ✅ | 100% | types, chapters, standards, programs, SA, gap, evidence, mock |
 | Seeder FKTP & FKTL | ✅ | 100% | 6 bab FKTP, program KU + KP06, gap & bukti contoh |
-| Dashboard Akreditasi | 🟡 | ~85% | `/accreditation` — readiness dasar; tree FKTP & layout penuh belum |
+| Dashboard Akreditasi | ✅ | 100% | `/accreditation` — tree struktur, KPI, timeline, aktivitas (mockup FKTP) |
 | Self Assessment | ✅ | 100% | `/accreditation/self-assessment` |
 | Gap Analysis | ✅ | 100% | `/accreditation/gaps` |
 | Mock survey detail | ✅ | 100% | `/accreditation/mock-survey` |
@@ -307,12 +307,12 @@ php artisan serve
 
 **Go-Live Production:** 31 Maret 2027 (target)
 
-**Sisa penyempurnaan UI:**
-- Dashboard Akreditasi FKTP — sidebar tree standar & layout penuh (`mockups/accreditation-dashboard.png`) 🟡
+**Sisa penyempurnaan UI:** —
+Dashboard Akreditasi FKTP sudah diselaraskan dengan `mockups/accreditation-dashboard.png` (Juli 2026).
 
 ---
 
-### Fase 6b — Penyempurnaan UI Dashboard (Juli 2026) 🟡 ~90%
+### Fase 6b — Penyempurnaan UI Dashboard (Juli 2026) ✅ 100%
 
 | Task | Status | Catatan |
 |------|--------|---------|
@@ -322,7 +322,7 @@ php artisan serve
 | Tabel peringkat + pagination | ✅ | 15 baris, sticky header, export CSV |
 | Kartu dokumen kedaluwarsa + aktivitas | ✅ | Kolom kiri baris bawah |
 | Dashboard klinik line chart & heatmap compact | ✅ | `ClinicDashboardService` |
-| Dashboard akreditasi sesuai mockup FKTP | 🟡 | Dasar ada, tree sidebar belum |
+| Dashboard akreditasi sesuai mockup FKTP | ✅ | Tree bab/standar, 3+3 kartu, timeline 5 tahap, aktivitas |
 
 ---
 
@@ -408,12 +408,13 @@ Password semua akun: **`password`** — dijalankan via `php artisan db:seed --cl
 - [x] **Dashboard Eksekutif** — baris bawah: dokumen kedaluwarsa, aktivitas, peringkat klinik (16 klinik)
 - [x] **Dashboard Klinik** — layout mockup `clinic-dashboard.png`
 - [x] Badge status outline + pagination tabel peringkat
-- [ ] Dashboard Akreditasi FKTP penuh (`accreditation-dashboard.png`) — dalam progres
+- [x] **Dashboard Akreditasi FKTP** — tree struktur, skor kesiapan, progres bab, gap, SA/mock/bukti, timeline 5 tahap (`accreditation-dashboard.png`)
+- [x] **Panduan pengguna PDF** — 14 dokumen di `pdf/manual/` (fitur + matriks role/akses)
 
-### Minggu 4 (16 – 22 Juli 2026) — RENCANA
-- [ ] Dashboard Akreditasi FKTP — sidebar tree standar & widget readiness
+### Minggu 4 (16 – 22 Juli 2026) — RENCANA (Fase 7 awal)
 - [ ] UAT formal dengan stakeholder (sign-off Fase 1–6)
 - [ ] Uji migrasi PostgreSQL staging
+- [ ] Redis cache production (driver)
 - [ ] Perbaikan temuan UAT prioritas tinggi
 
 ---
@@ -426,13 +427,13 @@ Fase 1 — Core Platform ██████████████████�
 Fase 2 — DMS           ████████████████████ 100%
 Fase 3 — Audit & CAPA  ████████████████████ 100%
 Fase 4 — Risk & Mutu   ████████████████████ 100%
-Fase 5 — Akreditasi    ██████████████████░░  90%  (UI dashboard FKTP)
+Fase 5 — Akreditasi    ████████████████████ 100%
 Fase 6 — Dashboard     ████████████████████ 100%
-Penyempurnaan UI       ██████████████████░░  90%
+Penyempurnaan UI       ████████████████████ 100%
 ─────────────────────────────────────────────
-Fase 1–6 (MVP)         ██████████████████░░  95%
+Fase 1–6 (MVP)         ████████████████████ 100%
 Fase 7 — Optimasi      ░░░░░░░░░░░░░░░░░░░░   0%
-TOTAL PROYEK (MVP)     ████████████████░░░░  ~82%
+TOTAL PROYEK (MVP)     ████████████████░░░░  ~85%
 ```
 
 | Metrik | Nilai |
@@ -441,7 +442,7 @@ TOTAL PROYEK (MVP)     ████████████████░░░
 | Modul fungsional MVP (target 8) | 8 / 8 (100%) |
 | Halaman web (Blade) | 40+ halaman aktif |
 | Akun demo per role | 7 akun (`RoleUsersSeeder`) |
-| Mockup dashboard selesai | 2 / 3 (eksekutif ✅, klinik ✅, akreditasi 🟡) |
+| Mockup dashboard selesai | 3 / 3 (eksekutif ✅, klinik ✅, akreditasi ✅) |
 | UAT checklist | `docs/UAT_CHECKLIST.md` |
 
 ---
@@ -486,6 +487,8 @@ Setiap fase dianggap **selesai** jika:
 | UI utama | `resources/views/` | Blade + Tailwind — mockup SIMMAK |
 | Mockup referensi | `mockups/*.png` | Widget dashboard |
 | Panduan setup | `README.md` | Onboarding developer |
+| Panduan pengguna (MD) | `docs/manual/` | Fitur, cara pakai, role |
+| Panduan pengguna (PDF) | `pdf/manual/` | Distribusi ke stakeholder/UAT |
 
 ---
 

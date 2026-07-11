@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div>
-                <h2 class="text-3xl font-bold leading-tight">Kelola mutu, audit, dan akreditasi<br>17 entitas PPKP DKI Jakarta</h2>
+                <h2 class="text-3xl font-bold leading-tight">Kelola mutu, audit, dan akreditasi<br>16 KLINIK PPKP DKI Jakarta</h2>
                 <p class="mt-4 max-w-md text-slate-400">Platform terintegrasi untuk manajemen dokumen, audit internal, CAPA, risiko, dan kesiapan akreditasi FKTP/FKTL.</p>
             </div>
             <div class="text-xs text-slate-500">© {{ date('Y') }} PPKP Provinsi DKI Jakarta</div>

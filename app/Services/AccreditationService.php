@@ -57,9 +57,10 @@ class AccreditationService
                 'status' => $mockSurvey?->status ?? 'belum_dijadwalkan',
             ],
             'evidence' => $evidenceStats,
-            'timeline' => $this->timeline($program, $daysToSurvey),
-            'activities' => $this->recentActivities($organizationId, $program->id),
-            'structure' => $this->structureTree($program->accreditation_type_id),
+            'timeline' => $this->timeline($program),
+            'days_to_survey' => $daysToSurvey,
+            'activities' => $this->recentActivities($organizationId, $program->id, $assessment, $mockSurvey),
+            'structure' => $this->structureTree($program->accreditation_type_id, $chapterProgress),
         ];
     }
 
@@ -162,28 +163,57 @@ class AccreditationService
         return compact('total', 'uploaded', 'pct');
     }
 
-  /**
-     * @return array<int, array{label: string, status: string, date: ?string}>
+    /**
+     * @return array<int, array{label: string, status: string, date: ?string, icon: string}>
      */
-    private function timeline(AccreditationProgram $program, int $daysToSurvey): array
+    private function timeline(AccreditationProgram $program): array
     {
         $status = $program->status;
+        $hasAssessment = (bool) $program->latestSelfAssessment;
+        $hasMock = (bool) $program->latestMockSurvey;
+
+        $prepDone = in_array($status, ['self_assessment', 'mock', 'survey', 'accredited'], true) || $hasAssessment;
+        $saDone = in_array($status, ['mock', 'survey', 'accredited'], true)
+            || ($hasAssessment && in_array($program->latestSelfAssessment?->status, ['completed', 'submitted', 'reviewed'], true));
+        $saActive = ! $saDone && ($status === 'self_assessment' || ($hasAssessment && ! $saDone));
+        $mockDone = in_array($status, ['survey', 'accredited'], true)
+            || ($hasMock && in_array($program->latestMockSurvey?->status, ['completed', 'done'], true));
+        $mockActive = ! $mockDone && ($status === 'mock' || ($hasMock && ! $mockDone));
+        $fixDone = in_array($status, ['survey', 'accredited'], true);
+        $fixActive = ! $fixDone && $mockDone;
+        $surveyDone = $status === 'accredited';
+        $surveyActive = $status === 'survey';
 
         return [
             [
-                'label' => 'Persiapan & Self Assessment',
-                'status' => in_array($status, ['self_assessment', 'mock', 'survey', 'accredited']) ? 'done' : ($status === 'planning' ? 'active' : 'pending'),
+                'label' => 'Persiapan',
+                'status' => $prepDone ? 'done' : ($status === 'planning' ? 'active' : 'pending'),
                 'date' => $program->start_date?->format('d M Y'),
+                'icon' => 'check',
+            ],
+            [
+                'label' => 'Self Assessment',
+                'status' => $saDone ? 'done' : ($saActive ? 'active' : 'pending'),
+                'date' => $program->latestSelfAssessment?->updated_at?->format('d M Y'),
+                'icon' => 'check',
             ],
             [
                 'label' => 'Survei Simulasi',
-                'status' => in_array($status, ['mock', 'survey', 'accredited']) ? ($status === 'mock' ? 'active' : 'done') : 'pending',
-                'date' => null,
+                'status' => $mockDone ? 'done' : ($mockActive ? 'active' : 'pending'),
+                'date' => $program->latestMockSurvey?->survey_date?->format('d M Y'),
+                'icon' => 'circle',
             ],
             [
-                'label' => 'Perbaikan & Survei Akreditasi',
-                'status' => in_array($status, ['survey', 'accredited']) ? 'active' : 'pending',
+                'label' => 'Perbaikan & Tindak Lanjut',
+                'status' => $fixDone ? 'done' : ($fixActive ? 'active' : 'pending'),
+                'date' => null,
+                'icon' => 'circle',
+            ],
+            [
+                'label' => 'Survei Akreditasi',
+                'status' => $surveyDone ? 'done' : ($surveyActive ? 'active' : 'pending'),
                 'date' => $program->target_survey_date?->format('d M Y'),
+                'icon' => 'star',
             ],
         ];
     }
@@ -191,67 +221,111 @@ class AccreditationService
     /**
      * @return array<int, array{icon: string, text: string, time: string}>
      */
-    private function recentActivities(string $organizationId, string $programId): array
-    {
+    private function recentActivities(
+        string $organizationId,
+        string $programId,
+        ?AccreditationSelfAssessment $assessment,
+        mixed $mockSurvey,
+    ): array {
+        $activities = [];
+
+        $evidence = AccreditationEvidence::forOrganization($organizationId)
+            ->where('program_id', $programId)
+            ->whereIn('status', ['uploaded', 'verified'])
+            ->latest()
+            ->limit(2)
+            ->get();
+
+        foreach ($evidence as $item) {
+            $activities[] = [
+                'icon' => 'upload',
+                'text' => 'Unggah bukti: '.$item->title,
+                'time' => $item->updated_at->diffForHumans(),
+                'sort' => $item->updated_at?->timestamp ?? 0,
+            ];
+        }
+
         $gaps = AccreditationGapItem::forOrganization($organizationId)
             ->where('program_id', $programId)
             ->latest()
             ->limit(2)
             ->get();
 
-        $evidence = AccreditationEvidence::forOrganization($organizationId)
-            ->where('program_id', $programId)
-            ->where('status', 'uploaded')
-            ->latest()
-            ->limit(2)
-            ->get();
-
-        $activities = [];
-
-        foreach ($evidence as $item) {
-            $activities[] = [
-                'icon' => 'upload',
-                'text' => 'Upload bukti baru: '.$item->title,
-                'time' => $item->updated_at->diffForHumans(),
-            ];
-        }
-
         foreach ($gaps as $gap) {
             $activities[] = [
                 'icon' => 'alert',
-                'text' => 'Gap '.ucfirst($gap->severity).': '.\Illuminate\Support\Str::limit($gap->gap_description, 50),
-                'time' => $gap->created_at->diffForHumans(),
+                'text' => 'Tindak lanjut kesenjangan '.ucfirst($gap->severity),
+                'time' => $gap->updated_at->diffForHumans(),
+                'sort' => $gap->updated_at?->timestamp ?? 0,
             ];
         }
 
-        if (empty($activities)) {
+        if ($assessment) {
+            $activities[] = [
+                'icon' => 'doc',
+                'text' => 'Pembaruan Self Assessment',
+                'time' => $assessment->updated_at->diffForHumans(),
+                'sort' => $assessment->updated_at?->timestamp ?? 0,
+            ];
+        }
+
+        if ($mockSurvey) {
+            $activities[] = [
+                'icon' => 'check',
+                'text' => 'Survei Simulasi — skor '.((int) round((float) $mockSurvey->score)).'%',
+                'time' => $mockSurvey->updated_at?->diffForHumans() ?? '—',
+                'sort' => $mockSurvey->updated_at?->timestamp ?? 0,
+            ];
+        }
+
+        usort($activities, fn ($a, $b) => ($b['sort'] ?? 0) <=> ($a['sort'] ?? 0));
+
+        $activities = array_map(function (array $row) {
+            unset($row['sort']);
+
+            return $row;
+        }, $activities);
+
+        if ($activities === []) {
             return [
                 ['icon' => 'doc', 'text' => 'Program akreditasi dimulai', 'time' => 'baru saja'],
             ];
         }
 
-        return array_slice($activities, 0, 5);
+        return array_slice($activities, 0, 4);
     }
 
     /**
-     * @return array<int, array{number: string, title: string, standards: array}>
+     * @param  array<int, array{number: string, title: string, pct: int, color: string}>  $chapterProgress
+     * @return array<int, array{number: string, title: string, pct: int, status: string, expanded: bool, standards: array}>
      */
-    private function structureTree(string $typeId): array
+    private function structureTree(string $typeId, array $chapterProgress = []): array
     {
+        $pctByNumber = collect($chapterProgress)->keyBy('number');
+
         return AccreditationChapter::query()
             ->where('accreditation_type_id', $typeId)
             ->where('is_active', true)
             ->with(['standards' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get()
-            ->map(fn ($ch) => [
-                'number' => $ch->chapter_number,
-                'title' => $ch->title,
-                'standards' => $ch->standards->map(fn ($s) => [
-                    'code' => $s->standard_code,
-                    'title' => $s->title,
-                ])->all(),
-            ])
+            ->values()
+            ->map(function ($ch, int $index) use ($pctByNumber) {
+                $pct = (int) ($pctByNumber[$ch->chapter_number]['pct'] ?? 0);
+                $status = $pct >= 80 ? 'good' : ($pct >= 60 ? 'warn' : 'low');
+
+                return [
+                    'number' => $ch->chapter_number,
+                    'title' => $ch->title,
+                    'pct' => $pct,
+                    'status' => $status,
+                    'expanded' => $index === 0,
+                    'standards' => $ch->standards->map(fn ($s) => [
+                        'code' => $s->standard_code,
+                        'title' => $s->title,
+                    ])->all(),
+                ];
+            })
             ->all();
     }
 
@@ -268,6 +342,7 @@ class AccreditationService
             'mock_survey' => ['score' => 0, 'survey_date' => null, 'surveyor' => '—', 'status' => 'belum_dijadwalkan'],
             'evidence' => ['total' => 0, 'uploaded' => 0, 'pct' => 0],
             'timeline' => [],
+            'days_to_survey' => 0,
             'activities' => [['icon' => 'doc', 'text' => 'Belum ada program akreditasi aktif', 'time' => '—']],
             'structure' => [],
         ];

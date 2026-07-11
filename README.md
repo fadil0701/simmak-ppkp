@@ -15,7 +15,15 @@ Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi untuk PPKP Provin
 ## Dokumentasi Progres
 
 📋 **[PROGRESS_TIMELINE.md](docs/PROGRESS_TIMELINE.md)** — Timeline, status fase, metrik progres  
-📋 **[ENVIRONMENT.md](docs/ENVIRONMENT.md)** — Konfigurasi MySQL dev / PostgreSQL prod
+📋 **[ENVIRONMENT.md](docs/ENVIRONMENT.md)** — Konfigurasi MySQL dev / PostgreSQL prod  
+📘 **[Panduan Pengguna](docs/manual/00_INDEX.md)** — Fitur, cara pakai, role & akses (PDF di `pdf/manual/`)
+
+### Generate PDF Panduan Pengguna
+
+```bash
+python scripts/generate_manual_pdfs.py
+# Output: pdf/manual/*.pdf
+```
 
 ## Fase Implementasi
 
@@ -26,7 +34,7 @@ Sistem Informasi Manajemen Mutu, Audit Internal dan Akreditasi untuk PPKP Provin
 | 2 | DMS + Workflow + QR verifikasi | ✅ Selesai |
 | 3 | Audit Internal + CAPA + RCA | ✅ Selesai |
 | 4 | Risk + Quality Management | ✅ Selesai |
-| 5 | Accreditation (FKTP/FKTL) | 🟡 ~90% (UI dashboard FKTP) |
+| 5 | Accreditation (FKTP/FKTL) + dashboard mockup | ✅ Selesai |
 | 6 | Dashboard Enterprise + Export | ✅ Selesai |
 | 7 | Optimasi, Redis prod, DR drill | ⬜ Belum dimulai |
 
@@ -112,6 +120,8 @@ SIMMAK-PPKP/
 - `docs/ARCHITECTURE.md` — Arsitektur teknis & deployment
 - `docs/UIUX.md` — Design system
 - `docs/PROGRESS_TIMELINE.md` — **Progres & timeline pembangunan**
+- `docs/manual/` — **Panduan pengguna per fitur (Markdown)**
+- `pdf/manual/` — **PDF panduan pengguna per fitur + matriks role**
 
 ## Perintah Berguna
 

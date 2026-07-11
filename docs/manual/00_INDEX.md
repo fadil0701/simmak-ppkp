@@ -1,0 +1,48 @@
+# SIMMAK PPKP — Indeks Panduan Pengguna
+
+| Atribut | Nilai |
+|---------|-------|
+| Sistem | SIMMAK PPKP |
+| Organisasi | PPKP Provinsi DKI Jakarta |
+| Versi | 1.0.0 |
+| Tanggal | 11 Juli 2026 |
+| Format | Markdown + PDF (`pdf/manual/`) |
+
+## Daftar Dokumen
+
+| No | Dokumen | PDF |
+|----|---------|-----|
+| 00 | Indeks (dokumen ini) | — |
+| 01 | Role, Permission & Matriks Akses | `01_Role_dan_Akses.pdf` |
+| 02 | Login & Autentikasi | `02_Login_dan_Autentikasi.pdf` |
+| 03 | Dashboard Eksekutif | `03_Dashboard_Eksekutif.pdf` |
+| 04 | Dashboard Klinik | `04_Dashboard_Klinik.pdf` |
+| 05 | Manajemen (DMS) | `05_Dokumen_DMS.pdf` |
+| 06 | Audit Internal | `06_Audit_Internal.pdf` |
+| 07 | Temuan Audit | `07_Temuan_Audit.pdf` |
+| 08 | CAPA | `08_CAPA.pdf` |
+| 09 | Manajemen Risiko | `09_Manajemen_Risiko.pdf` |
+| 10 | Program Mutu | `10_Program_Mutu.pdf` |
+| 11 | Akreditasi FKTP/FKTL | `11_Akreditasi.pdf` |
+| 12 | Pelaporan | `12_Pelaporan.pdf` |
+| 13 | Pengguna & Pengaturan | `13_Pengguna_dan_Pengaturan.pdf` |
+
+## Cara Generate Ulang PDF
+
+```bash
+python scripts/generate_manual_pdfs.py
+```
+
+Output tersimpan di folder `pdf/manual/`.
+
+## Akun Demo (password: `password`)
+
+| Email | Role |
+|-------|------|
+| admin@simmak.ppkp.local | super-admin |
+| mutu@simmak.ppkp.local | admin-mutu |
+| kepala@simmak.ppkp.local | kepala-klinik |
+| pjmutu@simmak.ppkp.local | pj-mutu |
+| akreditasi@simmak.ppkp.local | tim-akreditasi |
+| auditor@simmak.ppkp.local | auditor |
+| staff@simmak.ppkp.local | staff |
