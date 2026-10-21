@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoginAttempt;
+use App\Models\User;
+use App\Support\SimmakMenu;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use App\Support\SimmakMenu;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -33,7 +34,7 @@ class LoginController extends Controller
         $authProvider = 'local';
         $identifier = $credentials['email'];
 
-        $user = \App\Models\User::query()
+        $user = User::query()
             ->where('is_active', true)
             ->where('auth_provider', $authProvider)
             ->where(function ($query) use ($identifier) {

@@ -7,13 +7,24 @@ use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleUsersSeeder extends Seeder
 {
     /**
-     * Akun demo per role — password semua: password
+     * Akun demo per role.
+     *
+     * Kredensial TIDAK ditulis di codebase, melainkan diambil dari environment
+     * di berkas .env:
+     *   - SUPERADMIN_EMAIL / SUPERADMIN_USERNAME / SUPERADMIN_NAME / SUPERADMIN_PASSWORD
+     *     untuk akun super admin (administrator sistem);
+     *   - DEFAULT_USER_PASSWORD untuk seluruh akun user selain super admin.
+     *
+     * Bila password kosong, dibuat acak dan dicetak satu kali ke console hanya
+     * saat seeder dijalankan. DEMO_ACCOUNT_PASSWORD lama tetap didukung sebagai
+     * fallback untuk keduanya.
      *
      * @see docs/UAT_CHECKLIST.md
      */
@@ -24,19 +35,25 @@ class RoleUsersSeeder extends Seeder
             return;
         }
 
+        $userPassword = config('simmak.default_user_password');
+
+        $generatedUserPassword = $userPassword === null || $userPassword === '';
+
+        // Di produksi, akun demo tidak dibuat sama sekali kecuali password
+        // di-set eksplisit melalui .env.
+        if (app()->environment('production') && $generatedUserPassword) {
+            $this->command?->warn('RoleUsersSeeder dilewati di produksi (DEFAULT_USER_PASSWORD tidak diset).');
+
+            return;
+        }
+
         $this->ensureRoles();
+
+        $userPassword = $userPassword ?: Str::random(16);
 
         $clinics = Clinic::where('organization_id', $organization->id)->get()->keyBy('code');
 
         $accounts = [
-            [
-                'role' => 'super-admin',
-                'name' => 'Administrator SIMMAK',
-                'username' => 'admin',
-                'email' => 'admin@simmak.ppkp.local',
-                'clinic_codes' => $clinics->keys()->all(),
-                'default_clinic' => 'KU',
-            ],
             [
                 'role' => 'admin-mutu',
                 'name' => 'Admin Mutu PPKP',
@@ -88,6 +105,7 @@ class RoleUsersSeeder extends Seeder
         ];
 
         foreach ($accounts as $account) {
+            $accountPassword = $account['password'] ?? $userPassword;
             $defaultClinic = $clinics->get($account['default_clinic']);
 
             $user = User::firstOrCreate(
@@ -97,7 +115,7 @@ class RoleUsersSeeder extends Seeder
                     'default_clinic_id' => $defaultClinic?->id,
                     'name' => $account['name'],
                     'username' => $account['username'],
-                    'password' => Hash::make('password'),
+                    'password' => Hash::make($accountPassword),
                     'auth_provider' => 'local',
                     'is_active' => true,
                     'email_verified_at' => now(),
@@ -105,13 +123,20 @@ class RoleUsersSeeder extends Seeder
             );
 
             if (! $user->wasRecentlyCreated) {
-                $user->update([
+                $update = [
                     'name' => $account['name'],
                     'username' => $account['username'],
                     'default_clinic_id' => $defaultClinic?->id,
-                    'password' => Hash::make('password'),
                     'is_active' => true,
-                ]);
+                ];
+
+                // Password akun lama hanya disetel ulang jika password default
+                // di-set eksplisit — akun yang sudah diganti pengguna tidak dirusak.
+                if (! $generatedUserPassword) {
+                    $update['password'] = Hash::make($accountPassword);
+                }
+
+                $user->update($update);
             }
 
             $user->syncRoles([$account['role']]);
@@ -124,6 +149,13 @@ class RoleUsersSeeder extends Seeder
                 ]);
 
             $user->clinics()->sync($clinicSync);
+        }
+
+        if ($generatedUserPassword) {
+            // Hanya dicetak di console saat seeding — tidak pernah ditulis ke codebase/log.
+            $this->command?->warn('Password akun user diacak (DEFAULT_USER_PASSWORD tidak diset):');
+            $this->command?->warn('  '.$userPassword);
+            $this->command?->info('Set DEFAULT_USER_PASSWORD di .env untuk password yang deterministik.');
         }
 
         Role::where('guard_name', 'web')->get()->each(fn (Role $role) => $role->forgetCachedPermissions());

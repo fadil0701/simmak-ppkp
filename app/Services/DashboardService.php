@@ -105,7 +105,7 @@ class DashboardService
             ->pluck('total', 'clinic_id');
 
         $capaByClinic = CapaCase::forOrganization($organizationId)
-            ->selectRaw('clinic_id, COUNT(*) as total, SUM(CASE WHEN status = "closed" THEN 1 ELSE 0 END) as closed')
+            ->selectRaw("clinic_id, COUNT(*) as total, SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed")
             ->groupBy('clinic_id')
             ->get()
             ->keyBy('clinic_id');
@@ -286,15 +286,6 @@ class DashboardService
             ->orderBy('city')
             ->pluck('city')
             ->all();
-    }
-
-    private function regionLabel(string $code): string
-    {
-        return match (true) {
-            str_starts_with($code, 'KU') || str_starts_with($code, 'MP') => 'Jakarta Pusat',
-            (int) filter_var($code, FILTER_SANITIZE_NUMBER_INT) % 2 === 0 => 'Jakarta Selatan',
-            default => 'Jakarta Timur',
-        };
     }
 
     private function statusLabel(int $score): string

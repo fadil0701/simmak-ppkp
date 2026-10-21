@@ -103,9 +103,9 @@
 
                 <form method="POST" action="{{ route('capa.store-rca', $capa) }}" class="space-y-3 border-t border-slate-100 pt-4">
                     @csrf
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-600">Metode RCA</label>
-                        <select name="method" id="rca-method" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" onchange="document.getElementById('five-why-fields').classList.toggle('hidden', this.value !== 'five_why'); document.getElementById('fishbone-fields').classList.toggle('hidden', this.value !== 'fishbone');">
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Metode RCA</label>
+                        <select name="method" id="rca-method" class="sim-form-select" onchange="document.getElementById('five-why-fields').classList.toggle('hidden', this.value !== 'five_why'); document.getElementById('fishbone-fields').classList.toggle('hidden', this.value !== 'fishbone');">
                             <option value="five_why">5 Why</option>
                             <option value="fishbone">Fishbone (Ishikawa)</option>
                         </select>
@@ -114,26 +114,26 @@
                         @for ($i = 1; $i <= 5; $i++)
                             <div class="grid gap-2 sm:grid-cols-2">
                                 <input type="text" name="whys[{{ $i - 1 }}][question]" placeholder="Pertanyaan Why #{{ $i }}"
-                                       class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                                       class="sim-form-input">
                                 <input type="text" name="whys[{{ $i - 1 }}][answer]" placeholder="Jawaban"
-                                       class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                                       class="sim-form-input">
                             </div>
                         @endfor
                     </div>
                     <div id="fishbone-fields" class="hidden space-y-2">
                         @foreach (['Manusia', 'Metode', 'Mesin', 'Material'] as $idx => $catName)
-                            <div>
+                            <div class="sim-form-group">
                                 <input type="hidden" name="categories[{{ $idx }}][name]" value="{{ $catName }}">
-                                <label class="mb-1 block text-xs font-medium text-slate-600">{{ $catName }} (satu penyebab per baris)</label>
-                                <textarea name="categories[{{ $idx }}][causes]" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" placeholder="Penyebab..."></textarea>
+                                <label class="sim-form-label">{{ $catName }} (satu penyebab per baris)</label>
+                                <textarea name="categories[{{ $idx }}][causes]" rows="2" class="sim-form-textarea" placeholder="Penyebab..."></textarea>
                             </div>
                         @endforeach
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-600">Akar Masalah</label>
-                        <textarea name="root_cause" rows="2" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Akar Masalah</label>
+                        <textarea name="root_cause" rows="2" required class="sim-form-textarea"></textarea>
                     </div>
-                    <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Simpan RCA</button>
+                    <button type="submit" class="sim-btn sim-btn-primary">Simpan RCA</button>
                 </form>
             </div>
         </div>
@@ -156,24 +156,24 @@
 
                 <form method="POST" action="{{ route('capa.store-verification', $capa) }}" class="space-y-3 border-t border-slate-100 pt-4">
                     @csrf
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-600">Tanggal Verifikasi</label>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Tanggal Verifikasi</label>
                         <input type="date" name="verification_date" value="{{ now()->toDateString() }}" required
-                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                               class="sim-form-input">
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-600">Hasil</label>
-                        <select name="result" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Hasil</label>
+                        <select name="result" required class="sim-form-select">
                             <option value="pending">Pending</option>
                             <option value="effective">Efektif</option>
                             <option value="not_effective">Tidak Efektif</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-medium text-slate-600">Catatan</label>
-                        <textarea name="notes" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Catatan</label>
+                        <textarea name="notes" rows="2" class="sim-form-textarea"></textarea>
                     </div>
-                    <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Catat Verifikasi</button>
+                    <button type="submit" class="sim-btn sim-btn-primary">Catat Verifikasi</button>
                 </form>
             </div>
         </div>

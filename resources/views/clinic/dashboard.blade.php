@@ -84,7 +84,7 @@
         <div class="simmak-card xl:col-span-2">
             <div class="simmak-card-header flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800">Tren Indikator Mutu</h3>
-                <select class="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600">
+                <select class="sim-form-select px-2 py-1 text-xs text-slate-600">
                     <option>6 Bulan Terakhir</option>
                 </select>
             </div>

@@ -49,8 +49,8 @@
         </div>
     </div>
 
-    <div class="simmak-kpi-footer">
-        Total Risiko: <strong class="font-semibold text-slate-800">{{ $total }}</strong>
+    <div class="sim-card-footer">
+        Total Risiko: <strong class="font-semibold text-sim-ink">{{ $total }}</strong>
     </div>
 </div>
 @endif

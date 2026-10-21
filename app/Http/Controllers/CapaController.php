@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CapaCase;
 use App\Models\CapaRootCauseAnalysis;
 use App\Models\CapaVerification;
+use App\Services\AuditTrailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,9 +14,9 @@ class CapaController extends Controller
 {
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
+        $user = $request->user();
 
-        $query = CapaCase::forOrganization($orgId)
+        $query = CapaCase::forUserClinics($user)
             ->with(['clinic', 'owner', 'sourceFinding'])
             ->orderByDesc('created_at');
 
@@ -26,11 +27,11 @@ class CapaController extends Controller
         $cases = $query->paginate(15)->withQueryString();
 
         $stats = [
-            'total' => CapaCase::forOrganization($orgId)->count(),
-            'open' => CapaCase::forOrganization($orgId)->whereIn('status', ['open', 'analysis'])->count(),
-            'action' => CapaCase::forOrganization($orgId)->where('status', 'action')->count(),
-            'closed' => CapaCase::forOrganization($orgId)->where('status', 'closed')->count(),
-            'overdue' => CapaCase::forOrganization($orgId)
+            'total' => CapaCase::forUserClinics($user)->count(),
+            'open' => CapaCase::forUserClinics($user)->whereIn('status', ['open', 'analysis'])->count(),
+            'action' => CapaCase::forUserClinics($user)->where('status', 'action')->count(),
+            'closed' => CapaCase::forUserClinics($user)->where('status', 'closed')->count(),
+            'overdue' => CapaCase::forUserClinics($user)
                 ->whereNotIn('status', ['closed'])
                 ->where('target_close_date', '<', now()->toDateString())
                 ->count(),
@@ -41,7 +42,7 @@ class CapaController extends Controller
 
     public function show(Request $request, CapaCase $capa): View
     {
-        abort_unless($capa->organization_id === $request->user()->organization_id, 403);
+        $this->authorize('view', $capa);
 
         $capa->load(['clinic', 'owner', 'sourceFinding.schedule', 'actions.assignee', 'rca.creator', 'verifications.verifier']);
 
@@ -50,7 +51,7 @@ class CapaController extends Controller
 
     public function storeRca(Request $request, CapaCase $capa): RedirectResponse
     {
-        abort_unless($capa->organization_id === $request->user()->organization_id, 403);
+        $this->authorize('update', $capa);
 
         $validated = $request->validate([
             'method' => ['required', 'in:five_why,fishbone'],
@@ -90,12 +91,20 @@ class CapaController extends Controller
             $capa->update(['status' => 'analysis', 'updated_by' => $request->user()->id]);
         }
 
+        (new AuditTrailService)->log(
+            'capa.rca_created',
+            $capa,
+            null,
+            ['method' => $validated['method'], 'status' => 'analysis'],
+            ['actor' => $request->user()->name]
+        );
+
         return back()->with('status', 'Analisis akar masalah berhasil disimpan.');
     }
 
     public function storeVerification(Request $request, CapaCase $capa): RedirectResponse
     {
-        abort_unless($capa->organization_id === $request->user()->organization_id, 403);
+        $this->authorize('verify', $capa);
 
         $validated = $request->validate([
             'verification_date' => ['required', 'date'],
@@ -123,6 +132,15 @@ class CapaController extends Controller
         } elseif ($capa->status !== 'verification') {
             $capa->update(['status' => 'verification', 'updated_by' => $request->user()->id]);
         }
+
+        // Audit trail
+        (new AuditTrailService)->log(
+            'capa.verified',
+            $capa,
+            null,
+            ['result' => $validated['result'], 'capa_case_id' => $capa->id],
+            ['actor' => $request->user()->name]
+        );
 
         return back()->with('status', 'Verifikasi CAPA berhasil dicatat.');
     }

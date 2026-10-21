@@ -29,7 +29,7 @@ return new class extends Migration
         Schema::create('document_categories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->constrained('organizations')->cascadeOnDelete();
-            $table->foreignUuid('parent_id')->nullable()->constrained('document_categories')->nullOnDelete();
+            $table->foreignUuid('parent_id')->nullable();
             $table->string('code', 80);
             $table->string('name');
             $table->string('doc_class', 50);
@@ -43,6 +43,10 @@ return new class extends Migration
 
             $table->unique(['organization_id', 'code']);
             $table->index(['organization_id', 'deleted_at']);
+        });
+
+        Schema::table('document_categories', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('document_categories')->nullOnDelete();
         });
 
         Schema::create('document_types', function (Blueprint $table) {

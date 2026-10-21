@@ -288,7 +288,7 @@ def build_index_pdf(font_regular: Path, font_bold: Path | None) -> None:
         rows.append([str(idx).zfill(2), title, filename])
     pdf.table(rows)
     pdf.h2("Akun Demo")
-    pdf.para("Password semua akun: password")
+    pdf.para("Password semua akun berasal dari environment DEMO_ACCOUNT_PASSWORD (tidak ditulis di codebase). Jika kosong, seeder membuat password acak dan mencetaknya sekali ke console.")
     pdf.table(
         [
             ["Email", "Role"],

@@ -35,7 +35,11 @@ python scripts/generate_manual_pdfs.py
 
 Output tersimpan di folder `pdf/manual/`.
 
-## Akun Demo (password: `password`)
+## Akun Demo
+
+Password akun demo tidak ada di codebase — diambil dari environment
+`DEMO_ACCOUNT_PASSWORD`, atau dibuat acak oleh seeder dan dicetak sekali
+ke console saat seeding.
 
 | Email | Role |
 |-------|------|

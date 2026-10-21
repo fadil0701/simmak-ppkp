@@ -182,7 +182,7 @@ gantt
 | Migration RBAC (Spatie) + Sanctum tokens | ✅ | 100% | UUID morph key |
 | Seeder 17 entitas PPKP | ✅ | 100% | MP + KU + 15 KP |
 | Seeder roles & permissions | ✅ | 100% | 7 role, 20+ permission |
-| **RoleUsersSeeder — akun demo** | ✅ | 100% | 7 akun per role (password: `password`) |
+| **RoleUsersSeeder — akun demo** | ✅ | 100% | 7 akun per role (password dari `DEMO_ACCOUNT_PASSWORD` / acak — tidak di codebase) |
 | **SimmakMenu + redirect per role** | ✅ | 100% | Menu & landing page sesuai permission |
 | **RoleLabel & UiLabel** | ✅ | 100% | Label role & status UI bahasa Indonesia |
 | **MySQL dev database** | ✅ | 100% | `scripts/create_mysql_db.php` |
@@ -328,7 +328,10 @@ Dashboard Akreditasi FKTP sudah diselaraskan dengan `mockups/accreditation-dashb
 
 ### Akun Demo per Role
 
-Password semua akun: **`password`** — dijalankan via `php artisan db:seed --class=RoleUsersSeeder`
+Password semua akun berasal dari environment `DEMO_ACCOUNT_PASSWORD` (tidak ditulis
+di codebase). Jalankan `php artisan db:seed --class=RoleUsersSeeder`; jika variabel
+tersebut kosong, seeder membuat password acak dan mencetaknya sekali ke console.
+Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
 
 | Email | Role | Halaman utama |
 |-------|------|---------------|

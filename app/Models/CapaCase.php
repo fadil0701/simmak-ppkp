@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Models\Concerns\BaseModel;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Concerns\ClinicScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CapaCase extends BaseModel
 {
     use BelongsToOrganization;
+    use ClinicScope;
 
     protected $fillable = [
         'organization_id', 'clinic_id', 'case_number', 'source_type', 'source_id',

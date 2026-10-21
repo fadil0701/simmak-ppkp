@@ -42,7 +42,7 @@ class AccreditationProgram extends BaseModel
 
     public function latestSelfAssessment(): HasOne
     {
-        return $this->hasOne(AccreditationSelfAssessment::class, 'program_id')->latestOfMany();
+        return $this->latestOf(AccreditationSelfAssessment::class);
     }
 
     public function gapItems(): HasMany
@@ -62,6 +62,17 @@ class AccreditationProgram extends BaseModel
 
     public function latestMockSurvey(): HasOne
     {
-        return $this->hasOne(AccreditationMockSurvey::class, 'program_id')->latestOfMany();
+        return $this->latestOf(AccreditationMockSurvey::class);
+    }
+
+    /**
+     * Relasi "terakhir" tanpa agregasi MAX() pada kolom UUID,
+     * yang tidak tersedia di PostgreSQL.
+     */
+    private function latestOf(string $related): HasOne
+    {
+        return $this->hasOne($related, 'program_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 }

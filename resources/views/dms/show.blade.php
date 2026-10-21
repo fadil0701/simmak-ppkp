@@ -48,26 +48,26 @@
                     <div class="flex flex-wrap gap-3">
                         <form method="POST" action="{{ route('dms.submit-review', $document) }}">
                             @csrf
-                            <button type="submit" class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Ajukan Tinjauan</button>
+                            <button type="submit" class="sim-btn sim-btn-primary">Ajukan Tinjauan</button>
                         </form>
                         <form method="POST" action="{{ route('dms.publish', $document) }}">
                             @csrf
-                            <button type="submit" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Terbitkan Langsung</button>
+                            <button type="submit" class="sim-btn sim-btn-outline">Terbitkan Langsung</button>
                         </form>
                     </div>
                 @elseif ($document->status === 'review')
                     <form method="POST" action="{{ route('dms.approve-review', $document) }}" class="space-y-3">
                         @csrf
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-600">Komentar Tinjauan (opsional)</label>
-                            <textarea name="comments" rows="2" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"></textarea>
+                            <label class="sim-form-label text-xs">Komentar Tinjauan (opsional)</label>
+                            <textarea name="comments" rows="2" class="sim-form-textarea"></textarea>
                         </div>
-                        <button type="submit" class="rounded-lg bg-indigo-700 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-800">Setujui Tinjauan</button>
+                        <button type="submit" class="sim-btn sim-btn-primary">Setujui Tinjauan</button>
                     </form>
                 @elseif ($document->status === 'approved')
                     <form method="POST" action="{{ route('dms.publish', $document) }}">
                         @csrf
-                        <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Terbitkan Dokumen</button>
+                        <button type="submit" class="sim-btn sim-btn-primary">Terbitkan Dokumen</button>
                     </form>
                 @endif
 

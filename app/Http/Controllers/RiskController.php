@@ -9,8 +9,8 @@ use App\Models\RiskRegister;
 use App\Services\RiskService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class RiskController extends Controller
 {
@@ -56,7 +56,7 @@ class RiskController extends Controller
 
     public function show(Request $request, RiskItem $risk): View
     {
-        abort_unless($risk->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($risk->organization_id), 403);
         $risk->load(['category', 'clinic', 'register', 'owner', 'mitigationPlans.owner']);
 
         return view('risk.show', compact('risk'));
@@ -64,7 +64,7 @@ class RiskController extends Controller
 
     public function storeMitigation(Request $request, RiskItem $risk): RedirectResponse
     {
-        abort_unless($risk->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($risk->organization_id), 403);
 
         $validated = $request->validate([
             'plan_description' => ['required', 'string'],

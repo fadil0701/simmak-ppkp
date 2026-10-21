@@ -14,7 +14,7 @@
 
     <div class="simmak-card">
         <form method="GET" class="border-b border-slate-100 px-5 py-4">
-            <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" onchange="this.form.submit()">
+            <select name="status" class="sim-form-select" onchange="this.form.submit()">
                 <option value="">Semua Status</option>
                 @foreach (['open' => 'Terbuka', 'analysis' => 'Analisis', 'action' => 'Tindakan', 'verification' => 'Verifikasi', 'closed' => 'Selesai'] as $val => $label)
                     <option value="{{ $val }}" @selected(request('status') === $val)>{{ $label }}</option>

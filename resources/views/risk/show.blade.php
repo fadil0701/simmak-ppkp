@@ -7,7 +7,7 @@
     @php $riskService = app(\App\Services\RiskService::class); @endphp
 
     @if (session('status'))
-        <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('status') }}</div>
+        <div class="sim-alert sim-alert-success mb-4"><span class="sim-alert-icon">!</span>{{ session('status') }}</div>
     @endif
 
     <div class="mb-4">
@@ -92,24 +92,24 @@
             <form method="POST" action="{{ route('risk.store-mitigation', $risk) }}" class="space-y-3 border-t border-slate-100 pt-4">
                 @csrf
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Deskripsi Rencana Mitigasi</label>
-                    <textarea name="plan_description" rows="3" required class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100"></textarea>
+                    <label class="sim-form-label">Deskripsi Rencana Mitigasi<span class="sim-form-label-required"></span></label>
+                    <textarea name="plan_description" rows="3" required class="sim-form-textarea"></textarea>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Target Tanggal</label>
-                        <input type="date" name="target_date" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100">
+                        <label class="sim-form-label">Target Tanggal</label>
+                        <input type="date" name="target_date" class="sim-form-input">
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700">Status</label>
-                        <select name="status" required class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100">
+                        <label class="sim-form-label">Status<span class="sim-form-label-required"></span></label>
+                        <select name="status" required class="sim-form-select">
                             @foreach (['planned', 'in_progress', 'completed', 'cancelled'] as $s)
                                 <option value="{{ $s }}">{{ ucfirst(str_replace('_', ' ', $s)) }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">Tambah Mitigasi</button>
+                <button type="submit" class="sim-btn sim-btn-primary">Tambah Mitigasi</button>
             </form>
         </div>
     </div>

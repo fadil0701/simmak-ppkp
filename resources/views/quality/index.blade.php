@@ -27,27 +27,27 @@
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+                <table class="sim-table">
+                    <thead>
                         <tr>
-                            <th class="px-5 py-3">Kode</th>
-                            <th class="px-5 py-3">Indikator</th>
-                            <th class="px-5 py-3">Target</th>
-                            <th class="px-5 py-3">Terakhir</th>
-                            <th class="px-5 py-3">Pengukuran Terbaru</th>
+                            <th>Kode</th>
+                            <th>Indikator</th>
+                            <th>Target</th>
+                            <th>Terakhir</th>
+                            <th>Pengukuran Terbaru</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         @forelse ($program->indicators as $indicator)
                             @php $latest = $indicator->measurements->first(); @endphp
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-5 py-3 font-mono text-xs">{{ $indicator->indicator_code }}</td>
-                                <td class="px-5 py-3">
+                            <tr>
+                                <td class="font-mono text-xs">{{ $indicator->indicator_code }}</td>
+                                <td>
                                     <div class="font-medium text-slate-800">{{ $indicator->name }}</div>
                                     <div class="text-xs text-slate-500">{{ $indicator->unit }} · {{ $indicator->direction === 'higher_better' ? 'Semakin tinggi baik' : 'Semakin rendah baik' }}</div>
                                 </td>
-                                <td class="px-5 py-3 font-semibold">{{ number_format($indicator->target_value, 2) }} {{ $indicator->unit }}</td>
-                                <td class="px-5 py-3">
+                                <td class="font-semibold">{{ number_format($indicator->target_value, 2) }} {{ $indicator->unit }}</td>
+                                <td>
                                     @if ($latest)
                                         <span class="font-semibold {{ $indicator->direction === 'higher_better' ? ($latest->value >= $indicator->target_value ? 'text-emerald-600' : 'text-amber-600') : ($latest->value <= $indicator->target_value ? 'text-emerald-600' : 'text-amber-600') }}">
                                             {{ number_format($latest->value, 2) }}
@@ -57,7 +57,7 @@
                                         <span class="text-slate-400">—</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-3 text-xs text-slate-500">
+                                <td class="text-xs text-slate-500">
                                     @if ($indicator->measurements->isNotEmpty())
                                         <div class="flex flex-wrap gap-1">
                                             @foreach ($indicator->measurements->take(6)->reverse() as $m)
@@ -70,7 +70,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-5 py-6 text-center text-slate-500">Belum ada indikator mutu.</td></tr>
+                            <tr><td colspan="5" class="sim-table-empty">Belum ada indikator mutu.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

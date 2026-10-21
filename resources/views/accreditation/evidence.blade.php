@@ -19,41 +19,41 @@
 
         <div class="simmak-card">
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+                <table class="sim-table">
+                    <thead>
                         <tr>
-                            <th class="px-5 py-3">Judul Bukti</th>
-                            <th class="px-5 py-3">Status</th>
-                            <th class="px-5 py-3">Dokumen Terkait</th>
-                            <th class="px-5 py-3">Tautkan Dokumen</th>
+                            <th>Judul Bukti</th>
+                            <th>Status</th>
+                            <th>Dokumen Terkait</th>
+                            <th>Tautkan Dokumen</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         @forelse ($evidence as $item)
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-5 py-3 font-medium text-slate-800">{{ $item->title }}</td>
-                                <td class="px-5 py-3">
+                            <tr>
+                                <td class="font-medium text-slate-800">{{ $item->title }}</td>
+                                <td>
                                     @php $ec = $item->status === 'uploaded' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'; @endphp
                                     <span class="simmak-badge {{ $ec }}">{{ ucfirst($item->status) }}</span>
                                 </td>
-                                <td class="px-5 py-3 text-slate-600">
+                                <td class="text-slate-600">
                                     @if ($item->document)
                                         <a href="{{ route('dms.show', $item->document) }}" class="text-teal-700 hover:underline">{{ $item->document->document_number }}</a>
                                     @else
                                         —
                                     @endif
                                 </td>
-                                <td class="px-5 py-3">
+                                <td>
                                     @if ($item->status !== 'uploaded')
                                         <form method="POST" action="{{ route('accreditation.link-evidence', $item) }}" class="flex flex-wrap items-center gap-2">
                                             @csrf
-                                            <select name="document_id" required class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs">
+                                            <select name="document_id" required class="sim-form-select sim-btn-sm">
                                                 <option value="">Pilih dokumen...</option>
                                                 @foreach ($documents as $doc)
                                                     <option value="{{ $doc->id }}">{{ $doc->document_number }} — {{ \Illuminate\Support\Str::limit($doc->title, 40) }}</option>
                                                 @endforeach
                                             </select>
-                                            <button type="submit" class="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-800">Tautkan</button>
+                                            <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Tautkan</button>
                                         </form>
                                     @else
                                         <span class="text-xs text-slate-400">Sudah tertaut</span>
@@ -61,7 +61,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-5 py-8 text-center text-slate-500">Belum ada bukti akreditasi.</td></tr>
+                            <tr><td colspan="4" class="sim-table-empty">Belum ada bukti akreditasi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

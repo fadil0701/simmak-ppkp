@@ -17,7 +17,7 @@
 
     <div class="simmak-card">
         <form method="GET" class="border-b border-slate-100 px-5 py-4">
-            <select name="severity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" onchange="this.form.submit()">
+            <select name="severity" class="sim-form-select" onchange="this.form.submit()">
                 <option value="">Semua Tingkat</option>
                 @foreach (['critical' => 'Kritikal', 'major' => 'Mayor', 'minor' => 'Ringan'] as $val => $label)
                     <option value="{{ $val }}" @selected(request('severity') === $val)>{{ $label }}</option>
@@ -26,17 +26,17 @@
         </form>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+            <table class="sim-table">
+                <thead>
                     <tr>
-                        <th class="px-5 py-3">Standar</th>
-                        <th class="px-5 py-3">Deskripsi Kesenjangan</th>
-                        <th class="px-5 py-3">Tingkat</th>
-                        <th class="px-5 py-3">Status</th>
-                        <th class="px-5 py-3">Target</th>
+                        <th>Standar</th>
+                        <th>Deskripsi Kesenjangan</th>
+                        <th>Tingkat</th>
+                        <th>Status</th>
+                        <th>Target</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody>
                     @forelse ($gaps as $gap)
                         @php
                             $sevClass = match($gap->severity) {
@@ -45,15 +45,15 @@
                                 default => 'bg-emerald-100 text-emerald-800',
                             };
                         @endphp
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-5 py-3 font-mono text-xs">{{ $gap->standard?->standard_code ?? '—' }}</td>
-                            <td class="px-5 py-3 max-w-md text-slate-800">{{ $gap->gap_description }}</td>
-                            <td class="px-5 py-3"><span class="simmak-badge {{ $sevClass }}">{{ \App\Support\UiLabel::gapSeverity($gap->severity) }}</span></td>
-                            <td class="px-5 py-3"><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::gapStatus($gap->status) }}</span></td>
-                            <td class="px-5 py-3 text-slate-600">{{ $gap->target_date?->format('d M Y') ?? '—' }}</td>
+                        <tr>
+                            <td class="font-mono text-xs">{{ $gap->standard?->standard_code ?? '—' }}</td>
+                            <td class="max-w-md text-slate-800">{{ $gap->gap_description }}</td>
+                            <td><span class="simmak-badge {{ $sevClass }}">{{ \App\Support\UiLabel::gapSeverity($gap->severity) }}</span></td>
+                            <td><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::gapStatus($gap->status) }}</span></td>
+                            <td class="text-slate-600">{{ $gap->target_date?->format('d M Y') ?? '—' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Belum ada kesenjangan teridentifikasi.</td></tr>
+                        <tr><td colspan="5" class="sim-table-empty">Belum ada kesenjangan teridentifikasi.</td></tr>
                     @endforelse
                 </tbody>
             </table>

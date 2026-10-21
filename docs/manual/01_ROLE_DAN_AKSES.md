@@ -63,7 +63,7 @@ Keterangan: **V** = view (lihat), **M** = manage (ubah/buat), **—** = tidak ad
 
 ## 6. Akun Demo
 
-Password semua akun: **`password`**
+Password semua akun demo: lihat output seeder (dari `DEMO_ACCOUNT_PASSWORD` atau acak) — tidak ada di codebase.
 
 | Email | Username | Role | Klinik default |
 |-------|----------|------|----------------|

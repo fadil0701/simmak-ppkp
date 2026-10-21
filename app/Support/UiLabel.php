@@ -122,4 +122,25 @@ class UiLabel
             default => $status ?? '—',
         };
     }
+
+    public static function auditType(?string $type): string
+    {
+        return match ($type) {
+            'periodic' => 'Periodik',
+            'thematic' => 'Tematik',
+            'special' => 'Khusus',
+            'follow_up' => 'Ulang',
+            default => $type ?? '—',
+        };
+    }
+
+    public static function clinicType(?string $type): string
+    {
+        return match ($type) {
+            'pratama' => 'Klinik Pratama',
+            'utama' => 'Klinik Utama',
+            'pusat' => 'Manajemen Pusat',
+            default => $type ?? '—',
+        };
+    }
 }

@@ -6,7 +6,7 @@
 @section('content')
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-slate-600">Register risiko organisasi, peta panas risiko inheren, dan daftar item risiko.</p>
-        <a href="{{ route('risk.create') }}" class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800">+ Catat Risiko</a>
+        <a href="{{ route('risk.create') }}" class="sim-btn sim-btn-primary">+ Catat Risiko</a>
     </div>
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
@@ -81,13 +81,13 @@
 
     <div class="simmak-card">
         <form method="GET" class="flex flex-wrap gap-3 border-b border-slate-100 px-5 py-4">
-            <select name="level" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" onchange="this.form.submit()">
+            <select name="level" class="sim-form-select" onchange="this.form.submit()">
                 <option value="">Semua Level</option>
                 @foreach (['extreme' => 'Sangat Tinggi', 'high' => 'Tinggi', 'medium' => 'Sedang', 'low' => 'Rendah'] as $val => $label)
                     <option value="{{ $val }}" @selected(request('level') === $val)>{{ $label }}</option>
                 @endforeach
             </select>
-            <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm" onchange="this.form.submit()">
+            <select name="status" class="sim-form-select" onchange="this.form.submit()">
                 <option value="">Semua Status</option>
                 @foreach (['identified', 'assessed', 'mitigated', 'monitored', 'closed'] as $s)
                     <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
@@ -96,47 +96,47 @@
         </form>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+            <table class="sim-table">
+                <thead>
                     <tr>
-                        <th class="px-5 py-3">Kode</th>
-                        <th class="px-5 py-3">Judul / Kategori</th>
-                        <th class="px-5 py-3">Klinik</th>
-                        <th class="px-5 py-3">Inheren</th>
-                        <th class="px-5 py-3">Residual</th>
-                        <th class="px-5 py-3">Level</th>
-                        <th class="px-5 py-3">Status</th>
+                        <th>Kode</th>
+                        <th>Judul / Kategori</th>
+                        <th>Klinik</th>
+                        <th>Inheren</th>
+                        <th>Residual</th>
+                        <th>Level</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody>
                     @forelse ($items as $item)
                         @php $riskService = app(\App\Services\RiskService::class); @endphp
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-5 py-3 font-mono text-xs">
+                        <tr>
+                            <td class="font-mono text-xs">
                                 <a href="{{ route('risk.show', $item) }}" class="font-medium text-teal-700 hover:underline">{{ $item->risk_code }}</a>
                             </td>
-                            <td class="px-5 py-3">
+                            <td>
                                 <div class="font-medium text-slate-800">{{ \Illuminate\Support\Str::limit($item->title, 50) }}</div>
                                 <div class="text-xs text-slate-500">{{ $item->category?->name }}</div>
                             </td>
-                            <td class="px-5 py-3 text-slate-600">{{ $item->clinic?->name ?? '—' }}</td>
-                            <td class="px-5 py-3 text-center">
+                            <td class="text-slate-600">{{ $item->clinic?->name ?? '—' }}</td>
+                            <td class="text-center">
                                 <span class="font-semibold">{{ $item->inherent_score }}</span>
                                 <span class="text-xs text-slate-500">({{ $item->inherent_likelihood }}×{{ $item->inherent_impact }})</span>
                             </td>
-                            <td class="px-5 py-3 text-center">
+                            <td class="text-center">
                                 <span class="font-semibold">{{ $item->residual_score }}</span>
                                 <span class="text-xs text-slate-500">({{ $item->residual_likelihood }}×{{ $item->residual_impact }})</span>
                             </td>
-                            <td class="px-5 py-3">
+                            <td>
                                 <span class="simmak-badge {{ $riskService->riskLevelColor($item->risk_level) }}">
                                     {{ $riskService->riskLevelLabel($item->risk_level) }}
                                 </span>
                             </td>
-                            <td class="px-5 py-3"><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::riskStatus($item->status) }}</span></td>
+                            <td><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::riskStatus($item->status) }}</span></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="px-5 py-8 text-center text-slate-500">Belum ada item risiko.</td></tr>
+                        <tr><td colspan="7" class="sim-table-empty">Belum ada item risiko.</td></tr>
                     @endforelse
                 </tbody>
             </table>

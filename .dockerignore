@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+
+.git
+.gitignore
+node_modules
+vendor
+public/build
+public/hot
+storage
+bootstrap/cache
+.env
+.env.*
+!.env.example
+.kilo
+mockups
+pdf
+diagrams
+docs
+tests
+*.md
+docker-compose*.yml
+phpunit.xml

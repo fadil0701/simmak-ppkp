@@ -51,7 +51,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('organization_id')->constrained('organizations')->cascadeOnDelete();
             $table->foreignUuid('clinic_id')->nullable()->constrained('clinics')->nullOnDelete();
-            $table->foreignUuid('parent_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->foreignUuid('parent_id')->nullable();
             $table->string('code', 80);
             $table->string('name');
             $table->boolean('is_active')->default(true);
@@ -60,6 +60,10 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->unique(['organization_id', 'code']);
+        });
+
+        Schema::table('departments', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('departments')->nullOnDelete();
         });
 
         Schema::create('units', function (Blueprint $table) {

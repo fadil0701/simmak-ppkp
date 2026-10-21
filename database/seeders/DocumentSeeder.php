@@ -32,22 +32,26 @@ class DocumentSeeder extends Seeder
         $documentService = app(DocumentService::class);
 
         foreach ($categories as $cat) {
-            $category = DocumentCategory::create([
-                ...$cat,
-                'organization_id' => $organization->id,
-                'is_active' => true,
-                'created_by' => $admin->id,
-            ]);
+            $category = DocumentCategory::firstOrCreate(
+                ['code' => $cat['code'], 'organization_id' => $organization->id],
+                array_merge($cat, [
+                    'organization_id' => $organization->id,
+                    'is_active' => true,
+                    'created_by' => $admin->id,
+                ])
+            );
 
-            $type = DocumentType::create([
-                'organization_id' => $organization->id,
-                'category_id' => $category->id,
-                'code' => $cat['code'],
-                'name' => $cat['name'],
-                'review_cycle_days' => $cat['retention_days'],
-                'requires_acknowledgment' => in_array($cat['doc_class'], ['sop', 'ik']),
-                'is_active' => true,
-            ]);
+            $type = DocumentType::firstOrCreate(
+                ['code' => $cat['code'], 'organization_id' => $organization->id],
+                [
+                    'organization_id' => $organization->id,
+                    'category_id' => $category->id,
+                    'name' => $cat['name'],
+                    'review_cycle_days' => $cat['retention_days'],
+                    'requires_acknowledgment' => in_array($cat['doc_class'], ['sop', 'ik']),
+                    'is_active' => true,
+                ]
+            );
 
             if ($cat['code'] === 'SOP') {
                 $doc = Document::create([

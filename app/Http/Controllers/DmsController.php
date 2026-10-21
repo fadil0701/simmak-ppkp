@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use App\Models\DocumentReview;
 use App\Models\DocumentQrCode;
+use App\Models\DocumentReview;
 use App\Models\DocumentType;
 use App\Services\AttachmentService;
 use App\Services\DocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class DmsController extends Controller
 {
@@ -60,7 +60,7 @@ class DmsController extends Controller
 
     public function show(Request $request, Document $document): View
     {
-        abort_unless($document->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
         $document->load(['documentType.category', 'owner', 'versions.attachment', 'qrCode', 'clinic', 'reviews.reviewer']);
 
@@ -126,7 +126,7 @@ class DmsController extends Controller
 
     public function publish(Request $request, Document $document): RedirectResponse
     {
-        abort_unless($document->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
         if (! in_array($document->status, ['draft', 'review', 'approved'])) {
             return back()->withErrors(['document' => 'Dokumen tidak dapat dipublikasikan dari status saat ini.']);
@@ -139,7 +139,7 @@ class DmsController extends Controller
 
     public function submitReview(Request $request, Document $document): RedirectResponse
     {
-        abort_unless($document->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
         if ($document->status !== 'draft') {
             return back()->withErrors(['document' => 'Hanya dokumen berstatus draft yang dapat diajukan untuk review.']);
@@ -164,7 +164,7 @@ class DmsController extends Controller
 
     public function approveReview(Request $request, Document $document): RedirectResponse
     {
-        abort_unless($document->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
         if ($document->status !== 'review') {
             return back()->withErrors(['document' => 'Hanya dokumen berstatus review yang dapat disetujui.']);

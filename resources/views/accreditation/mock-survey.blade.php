@@ -29,27 +29,27 @@
                 <h3 class="font-semibold text-slate-800">Riwayat Survei Simulasi</h3>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+                <table class="sim-table">
+                    <thead>
                         <tr>
-                            <th class="px-5 py-3">Tanggal</th>
-                            <th class="px-5 py-3">Skor</th>
-                            <th class="px-5 py-3">Surveor</th>
-                            <th class="px-5 py-3">Catatan</th>
-                            <th class="px-5 py-3">Status</th>
+                            <th>Tanggal</th>
+                            <th>Skor</th>
+                            <th>Surveor</th>
+                            <th>Catatan</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody>
                         @forelse ($surveys as $survey)
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-5 py-3">{{ $survey->survey_date?->format('d M Y') ?? '—' }}</td>
-                                <td class="px-5 py-3 font-semibold text-teal-700">{{ $survey->score }}%</td>
-                                <td class="px-5 py-3 text-slate-600">{{ $survey->surveyor_name }}</td>
-                                <td class="px-5 py-3 text-slate-600">{{ $survey->notes ?? '—' }}</td>
-                                <td class="px-5 py-3"><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::auditStatus($survey->status) }}</span></td>
+                            <tr>
+                                <td>{{ $survey->survey_date?->format('d M Y') ?? '—' }}</td>
+                                <td class="font-semibold text-teal-700">{{ $survey->score }}%</td>
+                                <td class="text-slate-600">{{ $survey->surveyor_name }}</td>
+                                <td class="text-slate-600">{{ $survey->notes ?? '—' }}</td>
+                                <td><span class="simmak-badge bg-blue-100 text-blue-800">{{ \App\Support\UiLabel::auditStatus($survey->status) }}</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-5 py-8 text-center text-slate-500">Belum ada data survei simulasi.</td></tr>
+                            <tr><td colspan="5" class="sim-table-empty">Belum ada data survei simulasi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

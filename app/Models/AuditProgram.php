@@ -12,8 +12,9 @@ class AuditProgram extends BaseModel
     use BelongsToOrganization;
 
     protected $fillable = [
-        'organization_id', 'fiscal_year_id', 'program_code', 'name',
-        'objective', 'status', 'metadata', 'created_by', 'updated_by',
+        'organization_id', 'fiscal_year_id', 'program_code', 'audit_type',
+        'scope_notes', 'name', 'objective', 'status', 'metadata',
+        'created_by', 'updated_by',
     ];
 
     public function fiscalYear(): BelongsTo

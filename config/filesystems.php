@@ -60,6 +60,13 @@ return [
             'report' => false,
         ],
 
+        'quarantine' => [
+            'driver' => 'local',
+            'root' => storage_path('app/quarantine'),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

@@ -10,6 +10,7 @@ use App\Models\QualityIndicator;
 use App\Models\QualityMeasurement;
 use App\Models\RiskItem;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class ClinicDashboardService
 {
@@ -66,7 +67,7 @@ class ClinicDashboardService
             'capa' => ['open' => $capaOpen, 'in_progress' => $capaInProgress],
             'risk_heatmap' => $this->riskService->buildHeatmap($riskItems),
             'accreditation_readiness' => collect($accreditation['chapter_progress'] ?? [])->map(fn ($ch) => [
-                'name' => \Illuminate\Support\Str::limit($ch['title'], 42),
+                'name' => Str::limit($ch['title'], 42),
                 'pct' => $ch['pct'],
             ])->all(),
             'accreditation_score' => $accreditation['readiness'] ?? 0,

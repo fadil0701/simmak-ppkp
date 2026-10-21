@@ -27,20 +27,20 @@
                         @endif
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+                        <table class="sim-table">
+                            <thead>
                                 <tr>
-                                    <th class="px-5 py-3">Kode</th>
-                                    <th class="px-5 py-3">Standar</th>
-                                    <th class="px-5 py-3">Deskripsi</th>
+                                    <th>Kode</th>
+                                    <th>Standar</th>
+                                    <th>Deskripsi</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100">
+                            <tbody>
                                 @forelse ($chapter->standards as $standard)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="px-5 py-3 font-mono text-xs font-medium text-teal-700">{{ $standard->standard_code }}</td>
-                                        <td class="px-5 py-3 font-medium text-slate-800">{{ $standard->title }}</td>
-                                        <td class="px-5 py-3 text-slate-600">{{ \Illuminate\Support\Str::limit($standard->description, 120) }}</td>
+                                    <tr>
+                                        <td class="font-mono text-xs font-medium text-teal-700">{{ $standard->standard_code }}</td>
+                                        <td class="font-medium text-slate-800">{{ $standard->title }}</td>
+                                        <td class="text-slate-600">{{ \Illuminate\Support\Str::limit($standard->description, 120) }}</td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="3" class="px-5 py-4 text-center text-slate-500">Tidak ada standar dalam bab ini.</td></tr>

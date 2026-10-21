@@ -6,50 +6,629 @@
 @source "../**/*.js";
 
 @theme {
-    --font-sans: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
-    --color-navy-800: #1e3a5f;
-    --color-navy-900: #0f2744;
-    --color-navy-950: #0a1a2e;
-    --color-teal-500: #14b8a6;
-    --color-teal-600: #0d9488;
-    --color-teal-700: #0f766e;
-    --color-primary-500: #14919b;
-    --color-primary-700: #0d7377;
-    --color-primary-800: #0a5c5f;
+    --font-sans: 'Segoe UI', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Palet Institusional SIMMAK — PPKP DKI Jakarta */
+    --color-sim-navy-950: #0b1a2b;
+    --color-sim-navy-900: #12263f;
+    --color-sim-navy-800: #1e3a5f;
+    --color-sim-navy-700: #2c5282;
+    --color-sim-blue-600: #2563eb;
+    --color-sim-blue-500: #3b82f6;
+    --color-sim-teal-700: #0f766e;
+    --color-sim-teal-600: #0d9488;
+    --color-sim-teal-500: #14b8a6;
+    --color-sim-teal-50: #f0fdfa;
+    --color-sim-teal-100: #ccfbf1;
+
+    --color-sim-surface: #f3f4f8;
+    --color-sim-surface-alt: #eef2f6;
+    --color-sim-white: #ffffff;
+    --color-sim-ink: #0f172a;
+    --color-sim-muted: #64748b;
+    --color-sim-border: #cbd5e1;
+    --color-sim-border-light: #e2e8f0;
+    --color-sim-hover: #f1f5f9;
+    --color-sim-active: #dbe7f3;
+
+    /* Status colors — konsisten dan bermakna */
+    --color-sim-success: #059669;
+    --color-sim-success-bg: #ecfdf5;
+    --color-sim-warning: #b45309;
+    --color-sim-warning-bg: #fffbeb;
+    --color-sim-danger: #dc2626;
+    --color-sim-danger-bg: #fef2f2;
+    --color-sim-info: #0891b2;
+    --color-sim-info-bg: #eff6ff;
+    --color-sim-neutral: #475569;
+    --color-sim-neutral-bg: #f8fafc;
+
+    /* Risk colors */
+    --color-sim-risk-critical: #dc2626;
+    --color-sim-risk-critical-bg: #fef2f2;
+    --color-sim-risk-high: #ea580c;
+    --color-sim-risk-high-bg: #fff7ed;
+    --color-sim-risk-medium: #d97706;
+    --color-sim-risk-medium-bg: #fffbeb;
+    --color-sim-risk-low: #059669;
+    --color-sim-risk-low-bg: #ecfdf5;
+
+    /* Spacing & radius */
+    --radius-sim-md: 6px;
+    --radius-sim-lg: 8px;
+    --shadow-sim-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-sim-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.03);
+    --shadow-sim-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+    --shadow-sim-inset: inset 0 2px 4px 0 rgb(0 0 0 / 0.03);
+
+    --z-sim-dropdown: 50;
+    --z-sim-overlay: 60;
+    --z-sim-modal: 70;
+    --z-sim-toast: 80;
+
+    --font-sim-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Custom utilities that can be @apply'ed by other utilities in Tailwind v4 */
+@utility sim-btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+@utility sim-badge {
+    @apply inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium;
+}
+
+@utility sim-card {
+    @apply rounded-lg border border-sim-border bg-sim-white shadow-sim-sm;
+}
+
+@utility sim-table {
+    @apply w-full text-left text-sm border-collapse;
+}
+
+@utility sim-form-input {
+    @apply block w-full rounded-md border border-sim-border bg-sim-white px-3 py-2 text-sm text-sim-ink placeholder-sim-muted focus:border-sim-navy-800 focus:ring-1 focus:ring-sim-navy-800 transition-colors;
+}
+
+@utility sim-form-select {
+    @apply block w-full rounded-md border border-sim-border bg-sim-white px-3 py-2 text-sm text-sim-ink focus:border-sim-navy-800 focus:ring-1 focus:ring-sim-navy-800 transition-colors;
+}
+
+@utility sim-form-textarea {
+    @apply block w-full rounded-md border border-sim-border bg-sim-white px-3 py-2 text-sm text-sim-ink focus:border-sim-navy-800 focus:ring-1 focus:ring-sim-navy-800 transition-colors;
 }
 
 @layer components {
+    /* Layout shells */
+    .sim-app {
+        @apply flex min-h-screen flex-col lg:flex-row;
+    }
+
+    .sim-main {
+        @apply flex min-h-screen min-w-0 flex-1 flex-col;
+    }
+
+    .sim-header {
+        @apply sticky top-0 z-50 border-b border-sim-border bg-sim-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80 px-4 py-3 shadow-sim-sm;
+    }
+
+    .sim-header-inner {
+        @apply flex items-center justify-between gap-4;
+    }
+
+    .sim-header-start {
+        @apply flex items-center gap-3 flex-1 min-w-0;
+    }
+
+    .sim-header-end {
+        @apply flex flex-shrink-0 items-center gap-2 sm:gap-3;
+    }
+
+    .sim-header-center {
+        @apply flex flex-shrink-0 items-center gap-3 px-4;
+        border-left: 1px solid var(--color-sim-border-light);
+        border-right: 1px solid var(--color-sim-border-light);
+    }
+
+    .sim-header-page {
+        @apply min-w-0 flex-1;
+    }
+
+    .sim-header-title {
+        @apply text-lg font-semibold text-sim-ink leading-tight;
+    }
+
+    .sim-header-subtitle {
+        @apply text-sm text-sim-muted;
+    }
+
+    .sim-header-date {
+        @apply flex items-center gap-2 text-sm text-sim-muted;
+    }
+
+    .sim-header-date-icon {
+        @apply h-4 w-4 text-sim-muted;
+    }
+
+    .sim-header-button {
+        @apply rounded-md p-2 text-sim-muted hover:bg-sim-hover hover:text-sim-ink transition-colors;
+    }
+
+    .sim-header-icon {
+        @apply h-5 w-5;
+    }
+
+    .sim-header-clinic-picker {
+        @apply relative flex-shrink-0;
+    }
+
+    .sim-header-clinic-picker-trigger {
+        @apply min-h-12 max-w-52 cursor-pointer;
+    }
+
+    .sim-header-clinic-icon {
+        @apply h-5 w-5 flex-shrink-0;
+    }
+
+    .sim-header-clinic-label {
+        @apply max-w-32 truncate text-sm font-medium leading-tight text-sim-ink;
+    }
+
+    .sim-header-clinic-code {
+        @apply leading-tight text-sim-muted;
+    }
+
+    .sim-header-clinic-caret {
+        @apply h-4 w-4 flex-shrink-0;
+    }
+
+    .sim-header-user {
+        @apply relative flex-shrink-0 cursor-pointer;
+    }
+
+    @media (max-width: 79.999rem) {
+        .sim-header {
+            @apply px-3 py-2;
+        }
+
+        .sim-header-inner {
+            @apply flex-wrap gap-x-3 gap-y-2;
+        }
+
+        .sim-header-start {
+            @apply min-w-0 flex-1;
+        }
+
+        .sim-header-title {
+            @apply text-base;
+        }
+
+        .sim-header-end {
+            @apply ml-auto;
+        }
+
+        .sim-header-center {
+            @apply border-0 px-0;
+        }
+    }
+
+    @media (max-width: 69.999rem) {
+        .sim-header-start {
+            @apply basis-full;
+        }
+
+        .sim-header-center {
+            order: 2;
+        }
+
+        .sim-header-end {
+            order: 3;
+        }
+    }
+
+    @media (max-width: 39.999rem) {
+        .sim-header-inner {
+            @apply items-center;
+        }
+
+        .sim-header-start {
+            @apply basis-full;
+        }
+
+        .sim-header-end {
+            @apply w-full justify-end;
+        }
+
+        .sim-header-clinic-picker-trigger {
+            @apply max-w-44 px-2;
+        }
+
+        .sim-header-clinic-label {
+            @apply max-w-24;
+        }
+    }
+
+    .sim-notification-badge {
+        @apply absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-sim-danger text-[10px] font-bold text-white;
+    }
+
+    /* Sidebar */
+    .sim-sidebar {
+        @apply fixed inset-y-0 left-0 flex h-screen w-64 flex-shrink-0 flex-col overflow-hidden bg-sim-navy-900 text-sim-white transition-transform duration-200 ease-out;
+        transform: translateX(-100%);
+        z-index: 70;
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .sim-sidebar-open {
+        transform: translateX(0);
+    }
+
+    @media (min-width: 64rem) {
+        .sim-sidebar {
+            position: sticky;
+            top: 0;
+            transform: none;
+        }
+    }
+
+    .sim-sidebar-brand {
+        @apply border-b border-white/10 px-5 py-5;
+    }
+
+    .sim-wordmark {
+        @apply flex items-center gap-2;
+    }
+
+    .sim-wordmark-line1 {
+        @apply text-sm font-bold tracking-wide text-sim-white leading-none;
+    }
+
+    .sim-wordmark-line2 {
+        @apply text-[10px] text-sim-muted leading-none uppercase tracking-tighter;
+    }
+
+    .sim-wordmark-line3 {
+        @apply text-[10px] text-sim-teal-500 leading-none uppercase tracking-tighter;
+    }
+
+    .sim-sidebar-nav {
+        @apply flex-1 space-y-0.5 overflow-y-auto p-3 text-sm;
+    }
+
+    .sim-sidebar-link {
+        @apply flex items-center gap-3 rounded-md px-3 py-2.5 text-sim-muted transition-colors hover:bg-white/10 hover:text-white;
+    }
+
+    .sim-sidebar-link svg {
+        @apply h-4 w-4 flex-shrink-0;
+    }
+
+    .sim-sidebar-link-active {
+        @apply bg-sim-teal-600 text-white shadow-sim-sm;
+    }
+
+    .sim-sidebar-footer {
+        @apply border-t border-white/10 p-4 flex-shrink-0;
+    }
+
+    .sim-sidebar-clinic {
+        @apply rounded-lg bg-white/5 px-3 py-2.5;
+    }
+
+    .sim-sidebar-clinic-label {
+        @apply text-[10px] uppercase tracking-wide text-sim-muted;
+    }
+
+    .sim-sidebar-clinic-name {
+        @apply mt-0.5 truncate text-sm font-medium text-white;
+    }
+
+    .sim-sidebar-clinic-role {
+        @apply mt-2 truncate text-xs text-sim-muted;
+    }
+
+    .sim-sidebar-institution {
+        @apply border-t border-white/10 p-4 text-[10px] text-sim-muted;
+    }
+
+    .sim-sidebar-institution-line {
+        @apply mb-2 font-medium text-sim-muted;
+    }
+
+    .sim-sidebar-institution-name {
+        @apply text-white;
+    }
+
+    /* Mobile overlay */
+    .sim-sidebar-overlay {
+        @apply fixed inset-0 bg-black/40 lg:hidden;
+        display: none;
+    }
+
+    .sim-sidebar-overlay-open {
+        display: block;
+    }
+
+    .sim-menu-button {
+        @apply rounded-md p-2 text-sim-muted hover:bg-sim-hover transition-colors;
+    }
+
+    .sim-menu-icon {
+        @apply h-5 w-5;
+    }
+
+    /* Breadcrumb */
+    .sim-breadcrumb {
+        @apply mb-4 flex items-center gap-1 text-xs text-sim-muted;
+    }
+
+    .sim-breadcrumb-list {
+        @apply flex items-center gap-1;
+    }
+
+    /* Content */
+    .sim-content {
+        @apply flex-1 p-4 lg:p-6;
+    }
+
+    /* Alias lama → sistem desain sim-* (dipertahankan agar view lama tetap konsisten) */
     .simmak-card {
-        @apply rounded-xl border border-slate-200/80 bg-white shadow-sm;
+        @apply sim-card;
     }
+
     .simmak-card-header {
-        @apply border-b border-slate-100 px-5 py-4;
+        @apply sim-card-header;
     }
+
     .simmak-card-body {
+        @apply sim-card-body;
+    }
+
+    .simmak-badge {
+        @apply sim-badge border-transparent;
+    }
+
+    /* Page header */
+    .sim-page-header {
+        @apply mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3;
+    }
+
+    .sim-page-title {
+        @apply text-lg font-semibold text-sim-ink;
+    }
+
+    .sim-page-subtitle {
+        @apply text-sm text-sim-muted;
+    }
+
+    /* Cards */
+    .sim-card-header {
+        @apply border-b border-sim-border-light px-5 py-4;
+    }
+
+    .sim-card-body {
         @apply p-5;
     }
-    .simmak-sidebar-link {
-        @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white;
+
+    .sim-card-footer {
+        @apply border-t border-sim-border-light px-5 py-3 bg-sim-surface-alt;
     }
-    .simmak-sidebar-link-active {
-        @apply bg-teal-600 text-white shadow-sm;
+
+    .sim-card-title {
+        @apply font-semibold text-sim-ink;
     }
-    .simmak-badge {
-        @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+
+    /* Badges */
+    .sim-badge-status {
+        @apply rounded-md px-2.5 py-0.5 text-xs font-medium border-transparent;
     }
-    .simmak-kpi-card {
-        @apply flex h-full flex-col;
+
+    /* Alerts */
+    .sim-alert {
+        @apply rounded-lg border px-4 py-3 text-sm;
     }
-    .simmak-kpi-body {
-        @apply flex flex-1 flex-col p-5 pt-2;
+
+    .sim-alert-success {
+        @apply border-sim-success/20 bg-sim-success/5 text-sim-success;
     }
-    .simmak-kpi-footer {
-        @apply mt-auto flex w-full min-h-[2.25rem] items-center justify-center rounded-lg bg-blue-50 px-3 py-2 text-center text-xs text-slate-600;
+
+    .sim-alert-error {
+        @apply border-sim-danger/20 bg-sim-danger/5 text-sim-danger;
     }
-    .simmak-status-outline {
-        @apply inline-flex items-center rounded-full border bg-white px-2.5 py-0.5 text-xs font-medium;
+
+    .sim-alert-info {
+        @apply border-sim-info/20 bg-sim-info/5 text-sim-info;
     }
-    .simmak-dashboard {
-        @apply flex min-h-[calc(100vh-10.5rem)] flex-col gap-4;
+
+    .sim-alert-icon {
+        @apply mr-2 font-mono font-bold;
+    }
+
+    /* Tables */
+    .sim-table th {
+        @apply px-4 py-3 border-b border-sim-border-light text-xs uppercase font-semibold text-sim-muted bg-sim-surface-alt;
+    }
+
+    .sim-table td {
+        @apply px-4 py-3 border-b border-sim-border-light text-sim-ink;
+    }
+
+    .sim-table tbody tr {
+        @apply hover:bg-sim-hover transition-colors;
+    }
+
+    .sim-table-empty {
+        @apply px-4 py-8 text-center text-sim-muted;
+    }
+
+    /* Buttons — aksen utama teal, konsisten di seluruh modul */
+    .sim-btn-primary {
+        @apply sim-btn bg-sim-teal-600 text-white hover:bg-sim-teal-700 focus:ring-sim-teal-600;
+    }
+
+    .sim-btn-secondary {
+        @apply sim-btn bg-sim-surface-alt text-sim-ink border border-sim-border hover:bg-sim-hover focus:ring-sim-border;
+    }
+
+    .sim-btn-outline {
+        @apply sim-btn border border-sim-border text-sim-ink hover:bg-sim-hover focus:ring-sim-border;
+    }
+
+    .sim-btn-danger {
+        @apply sim-btn bg-sim-danger text-white hover:bg-sim-danger/90 focus:ring-sim-danger;
+    }
+
+    .sim-btn-sm {
+        @apply px-3 py-1.5 text-xs;
+    }
+
+    .sim-btn-icon {
+        @apply sim-btn p-2;
+    }
+
+    /* Forms */
+    .sim-form-group {
+        @apply mb-4;
+    }
+
+    .sim-form-label {
+        @apply block text-sm font-medium text-sim-ink mb-1.5;
+    }
+
+    .sim-form-label-required::after {
+        @apply ml-0.5 text-sim-danger content-['*'];
+    }
+
+    .sim-form-hint {
+        @apply mt-1 text-xs text-sim-muted;
+    }
+
+    .sim-form-error {
+        @apply mt-1 text-xs text-sim-danger;
+    }
+
+    .sim-form-fieldset {
+        @apply border border-sim-border rounded-lg p-4 mb-6;
+    }
+
+    .sim-form-legend {
+        @apply text-sm font-semibold text-sim-ink mb-3 flex items-center gap-2;
+    }
+
+    .sim-form-grid {
+        @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+    }
+
+    /* Skip link */
+    .sim-skip-link {
+        @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-sim-navy-800 text-white rounded-md;
+    }
+
+    /* Empty state */
+    .sim-empty-state {
+        @apply flex flex-col items-center justify-center py-12 text-center;
+    }
+
+    .sim-empty-icon {
+        @apply h-16 w-16 rounded-full bg-sim-surface-alt flex items-center justify-center mb-4 text-sim-muted;
+    }
+
+    .sim-empty-title {
+        @apply text-base font-semibold text-sim-ink mb-1;
+    }
+
+    .sim-empty-description {
+        @apply text-sm text-sim-muted max-w-xs mx-auto;
+    }
+
+    /* Utility text colors */
+    .text-sim-primary {
+        color: var(--color-sim-navy-800);
+    }
+
+    .text-sim-success {
+        color: var(--color-sim-success);
+    }
+
+    .text-sim-danger {
+        color: var(--color-sim-danger);
+    }
+
+    .text-sim-warning {
+        color: var(--color-sim-warning);
+    }
+
+    .text-sim-info {
+        color: var(--color-sim-info);
+    }
+
+    .text-sim-muted {
+        color: var(--color-sim-muted);
+    }
+
+    .text-sim-ink {
+        color: var(--color-sim-ink);
+    }
+
+    .bg-sim-primary {
+        background-color: var(--color-sim-navy-800);
+    }
+
+    .bg-sim-success-bg {
+        background-color: var(--color-sim-success-bg);
+    }
+
+    .bg-sim-danger-bg {
+        background-color: var(--color-sim-danger-bg);
+    }
+
+    .bg-sim-warning-bg {
+        background-color: var(--color-sim-warning-bg);
+    }
+
+    .bg-sim-info-bg {
+        background-color: var(--color-sim-info-bg);
+    }
+
+    .bg-sim-neutral-bg {
+        background-color: var(--color-sim-neutral-bg);
+    }
+
+    .bg-sim-surface {
+        background-color: var(--color-sim-surface);
+    }
+
+    .bg-sim-surface-alt {
+        background-color: var(--color-sim-surface-alt);
+    }
+
+    .bg-sim-hover {
+        background-color: var(--color-sim-hover);
+    }
+
+    .bg-sim-active {
+        background-color: var(--color-sim-active);
+    }
+
+    .border-sim-border {
+        border-color: var(--color-sim-border);
+    }
+
+    .border-sim-border-light {
+        border-color: var(--color-sim-border-light);
+    }
+
+    /* Typography helpers */
+    .text-sim-mono {
+        font-family: var(--font-sim-mono);
+    }
+
+    .h-sim-screen {
+        height: 100vh;
+    }
+
+    .min-h-sim-screen {
+        min-height: 100vh;
     }
 }

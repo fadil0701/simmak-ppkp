@@ -6,7 +6,7 @@
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('audit.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Audit Internal</a>
-        <a href="{{ route('audit.reports') }}" class="text-sm font-medium text-teal-700 hover:underline">Lihat Laporan Audit →</a>
+        <a href="{{ route('audit.reports.index') }}" class="text-sm font-medium text-teal-700 hover:underline">Lihat Laporan Audit →</a>
     </div>
 
     <div class="mb-6 simmak-card p-5">

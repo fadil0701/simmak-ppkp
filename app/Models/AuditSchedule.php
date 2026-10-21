@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Models\Concerns\BaseModel;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Concerns\ClinicScope;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AuditSchedule extends BaseModel
 {
     use BelongsToOrganization;
+    use ClinicScope;
 
     protected $fillable = [
         'organization_id', 'audit_program_id', 'clinic_id', 'schedule_code', 'title',

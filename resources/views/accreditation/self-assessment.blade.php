@@ -33,22 +33,22 @@
                     <h3 class="font-semibold text-slate-800">Bab {{ $chapterNo }}</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+                    <table class="sim-table">
+                        <thead>
                             <tr>
-                                <th class="px-5 py-3">Standar</th>
-                                <th class="px-5 py-3">Judul</th>
-                                <th class="px-5 py-3">Skor</th>
-                                <th class="px-5 py-3">Kepatuhan</th>
+                                <th>Standar</th>
+                                <th>Judul</th>
+                                <th>Skor</th>
+                                <th>Kepatuhan</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100">
+                        <tbody>
                             @foreach ($items as $item)
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-5 py-3 font-mono text-xs">{{ $item->standard?->standard_code }}</td>
-                                    <td class="px-5 py-3">{{ $item->standard?->title }}</td>
-                                    <td class="px-5 py-3 font-semibold">{{ (int) $item->score }}%</td>
-                                    <td class="px-5 py-3">
+                                <tr>
+                                    <td class="font-mono text-xs">{{ $item->standard?->standard_code }}</td>
+                                    <td>{{ $item->standard?->title }}</td>
+                                    <td class="font-semibold">{{ (int) $item->score }}%</td>
+                                    <td>
                                         @php $cc = match($item->compliance_status) { 'compliant' => 'bg-emerald-100 text-emerald-800', 'partial' => 'bg-amber-100 text-amber-800', default => 'bg-red-100 text-red-800' }; @endphp
                                         <span class="simmak-badge {{ $cc }}">{{ str_replace('_', ' ', ucfirst($item->compliance_status)) }}</span>
                                     </td>

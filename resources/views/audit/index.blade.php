@@ -41,7 +41,7 @@
             <div class="simmak-card-header flex items-center justify-between">
                 <h3 class="font-semibold text-slate-800">Jadwal Audit</h3>
                 <div class="flex gap-3">
-                    <a href="{{ route('audit.reports') }}" class="text-sm font-medium text-teal-700 hover:underline">Laporan Audit</a>
+                    <a href="{{ route('audit.reports.index') }}" class="text-sm font-medium text-teal-700 hover:underline">Laporan Audit</a>
                     <a href="{{ route('findings.index') }}" class="text-sm font-medium text-teal-700 hover:underline">Lihat Temuan →</a>
                 </div>
             </div>

@@ -4879,6 +4879,9 @@ Tabel ini menjadi bagian dari domain Audit Internal. Data dipakai oleh proses ap
 **Kebijakan scope:**
 - `organization_id` wajib menjadi filter tenant pada query aplikasi dan indeks utama.
 
+**Catatan skema aplikasi:**
+Tabel lama tetap dipertahankan dan diperluas secara aditif oleh migrasi `2026_10_19_160001_extend_audit_reports_for_reporting`. Kolom laporan yang dibutuhkan aplikasi saat ini mencakup `title`, `report_type`, `audit_execution_id`, `clinic_id`, `generated_by`, `generated_at`, metadata ringkasan, dan metadata file. Untuk laporan lama, judul diisi dari `report_number`, tipe diisi `summary`, dan `generated_at` diisi dari `created_at`. Kolom `audit_schedule_id` dan `report_date` lama tetap dipertahankan dan dibuat nullable agar pembuatan laporan baru tidak bergantung pada skema lama.
+
 **Data dictionary kolom:**
 - Kolom 1: `id`
   - Tipe: `UUID`
@@ -13212,6 +13215,7 @@ Desain database ini menyediakan fondasi enterprise untuk SIMMAK PPKP dengan caku
 - Indeks minimum: tenant/scope, foreign key, status bila ada, dan business key unique bila ada.
 - Retensi: mengikuti domain System dan kebijakan arsip PPKP.
 
+
 ### Governance `job_batches`
 - Domain: System.
 - Tenant filter: `organization_id` wajib.
@@ -13256,4 +13260,3 @@ Desain database ini menyediakan fondasi enterprise untuk SIMMAK PPKP dengan caku
 - Audit: perubahan penting dicatat pada `audit_trails` dan aktivitas bisnis dicatat pada `activity_logs`.
 - Indeks minimum: tenant/scope, foreign key, status bila ada, dan business key unique bila ada.
 - Retensi: mengikuti domain System dan kebijakan arsip PPKP.
-

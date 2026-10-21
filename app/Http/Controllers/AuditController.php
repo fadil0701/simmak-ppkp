@@ -12,14 +12,15 @@ class AuditController extends Controller
 {
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
+        $user = $request->user();
+        $orgId = $user->organization_id;
 
         $programs = AuditProgram::forOrganization($orgId)
             ->withCount('schedules')
             ->orderByDesc('created_at')
             ->get();
 
-        $schedules = AuditSchedule::forOrganization($orgId)
+        $schedules = AuditSchedule::forUserClinics($user)
             ->with(['program', 'clinic', 'leadAuditor'])
             ->withCount('findings')
             ->orderBy('scheduled_start')
@@ -27,9 +28,9 @@ class AuditController extends Controller
 
         $stats = [
             'programs' => $programs->count(),
-            'scheduled' => AuditSchedule::forOrganization($orgId)->where('status', 'scheduled')->count(),
-            'ongoing' => AuditSchedule::forOrganization($orgId)->where('status', 'ongoing')->count(),
-            'completed' => AuditSchedule::forOrganization($orgId)->where('status', 'completed')->count(),
+            'scheduled' => AuditSchedule::forUserClinics($user)->where('status', 'scheduled')->count(),
+            'ongoing' => AuditSchedule::forUserClinics($user)->where('status', 'ongoing')->count(),
+            'completed' => AuditSchedule::forUserClinics($user)->where('status', 'completed')->count(),
         ];
 
         return view('audit.index', compact('programs', 'schedules', 'stats'));
@@ -37,7 +38,7 @@ class AuditController extends Controller
 
     public function checklist(Request $request, AuditSchedule $schedule): View
     {
-        abort_unless($schedule->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($schedule->organization_id), 403);
 
         $schedule->load(['program', 'clinic', 'leadAuditor', 'checklists.items']);
 

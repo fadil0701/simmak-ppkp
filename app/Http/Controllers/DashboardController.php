@@ -45,10 +45,14 @@ class DashboardController extends Controller
 
         return response()->streamDownload(function () use ($ranking) {
             $handle = fopen('php://output', 'w');
+
+            // UTF-8 BOM untuk kompatibilitas Excel
+            fwrite($handle, "\xEF\xBB\xBF");
+
             fputcsv($handle, ['Rank', 'Kode', 'Klinik', 'Wilayah', 'Skor Akreditasi', 'Temuan', 'CAPA Selesai %', 'Risk Score', 'Status']);
 
             foreach ($ranking as $row) {
-                fputcsv($handle, [
+                fputcsv($handle, array_map(fn ($value) => $this->sanitizeCsvValue($value), [
                     $row['rank'],
                     $row['code'],
                     $row['name'],
@@ -58,10 +62,26 @@ class DashboardController extends Controller
                     $row['capa_done'],
                     $row['risk_score'],
                     $row['status_label'],
-                ]);
+                ]));
             }
 
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv; charset=utf-8']);
+    }
+
+    /**
+     * Sanitasi nilai CSV untuk mencegah formula injection.
+     * Nilai yang diawali dengan =, +, -, @, tab, atau carriage return
+     * diawali dengan apostrof agar tidak dieksekusi sebagai formula di Excel.
+     */
+    private function sanitizeCsvValue(mixed $value): string
+    {
+        $text = (string) $value;
+
+        if (preg_match('/^[=+\-@\t\r]/', $text)) {
+            return "'".$text;
+        }
+
+        return $text;
     }
 }

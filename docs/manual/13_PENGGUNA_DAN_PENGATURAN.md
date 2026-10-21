@@ -32,4 +32,6 @@
 ```bash
 php artisan db:seed --class=RoleUsersSeeder --force
 ```
-Password semua akun demo: `password`.
+Password akun demo: dari environment `DEMO_ACCOUNT_PASSWORD` atau hasil acak
+seeder (dicetak sekali di console) — tidak ada di codebase.
+```

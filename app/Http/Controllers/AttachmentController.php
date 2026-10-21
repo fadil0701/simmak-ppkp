@@ -11,7 +11,7 @@ class AttachmentController extends Controller
 {
     public function download(Request $request, Attachment $attachment): StreamedResponse
     {
-        abort_unless($attachment->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($attachment->organization_id), 403);
 
         return Storage::disk($attachment->disk)->download(
             $attachment->path,

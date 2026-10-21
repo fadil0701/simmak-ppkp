@@ -38,7 +38,11 @@ python scripts/generate_manual_pdfs.py
 | 6 | Dashboard Enterprise + Export | ✅ Selesai |
 | 7 | Optimasi, Redis prod, DR drill | ⬜ Belum dimulai |
 
-## Akun Demo (password: `password`)
+## Akun Demo
+
+Akun demo dibuat oleh seeder. Password **tidak tertulis di codebase** — diambil dari
+environment `DEMO_ACCOUNT_PASSWORD`. Jika tidak di-set, seeder membuat password acak
+dan mencetaknya sekali ke console saat `php artisan db:seed` dijalankan.
 
 | Email | Role | Halaman utama |
 |-------|------|---------------|
@@ -54,15 +58,21 @@ python scripts/generate_manual_pdfs.py
 php artisan db:seed --class=RoleUsersSeeder --force
 ```
 
-## Setup Development (MySQL Laragon)
+## Setup Development
+
+**Satu berkas `.env` untuk semua lingkungan** — Docker Compose memakai `.env` yang
+sama dan hanya menimpa nilai khusus container lewat `docker-compose.yml`.
 
 ```bash
-# 1. Buat database MySQL
-php scripts/create_mysql_db.php
-
-# 2. Environment
+# 1. Environment
 cp .env.example .env
 php artisan key:generate
+
+# 2. Database
+#    Default .env = PostgreSQL 17 Docker (127.0.0.1:5432).
+#    Untuk MySQL Laragon: jalankan `php scripts/create_mysql_db.php`
+#    lalu ubah DB_CONNECTION=mysql, DB_HOST=127.0.0.1, DB_PORT=3306,
+#    DB_USERNAME=root, DB_PASSWORD= di .env.
 
 # 3. Migration & seed
 php artisan migrate:fresh --seed
@@ -73,7 +83,7 @@ php artisan serve
 # Buka http://127.0.0.1:8000/login
 ```
 
-**Login default:** `admin@simmak.ppkp.local` / `password`
+**Login default:** `admin@simmak.ppkp.local` / password dari `DEMO_ACCOUNT_PASSWORD` (lihat output seeder)
 
 ### API Endpoints
 
@@ -90,14 +100,26 @@ php artisan serve
 
 UI Blade + Tailwind mengacu mockup di `mockups/`. Lihat `docs/FRONTEND_INTEGRATION.md`.
 
+## Docker Lokal (PostgreSQL 17)
+
+Stack lengkap: Nginx + PHP-FPM 8.4 + PostgreSQL 17 + Redis + queue worker + scheduler.
+Memakai berkas `.env` yang sama; nilai khusus container (`DB_HOST=postgres`,
+`REDIS_HOST=redis`, `CLAMAV_HOST=clamav`, `APP_URL`) ditimpa otomatis oleh
+`docker-compose.yml`.
+
+```bash
+docker compose build app
+docker compose up -d
+docker compose --profile tools run --rm assets        # build asset Vite
+docker compose exec app gosu www-data php artisan db:seed --force
+# Buka http://localhost:8080
+```
+
+Rincian service, akun demo, dan troubleshooting: **[DEPLOY_DOCKER.md](docs/DEPLOY_DOCKER.md)**
+
 ## Production (VM Linux + PostgreSQL)
 
 Lihat `docs/ENVIRONMENT.md` dan `docs/ARCHITECTURE.md`.
-
-```bash
-# Set DB_CONNECTION=pgsql di .env
-docker compose up -d --build
-```
 
 ## Struktur Proyek
 

@@ -48,7 +48,15 @@ class AccreditationController extends Controller
         ];
         $stats['total'] = $stats['critical'] + $stats['major'] + $stats['minor'];
 
-        $query = (clone $baseQuery)->with(['standard.chapter'])->orderByRaw("FIELD(severity, 'critical', 'major', 'minor')");
+        $query = (clone $baseQuery)->with(['standard.chapter'])
+            ->orderByRaw(<<<'SQL'
+                CASE severity
+                    WHEN 'critical' THEN 1
+                    WHEN 'major' THEN 2
+                    WHEN 'minor' THEN 3
+                    ELSE 4
+                END
+                SQL);
 
         if ($request->filled('severity')) {
             $query->where('severity', $request->string('severity'));
@@ -141,7 +149,7 @@ class AccreditationController extends Controller
 
     public function linkEvidence(Request $request, AccreditationEvidence $evidence): RedirectResponse
     {
-        abort_unless($evidence->organization_id === $request->user()->organization_id, 403);
+        abort_unless($request->user()->belongsToOrganization($evidence->organization_id), 403);
 
         $validated = $request->validate([
             'document_id' => [

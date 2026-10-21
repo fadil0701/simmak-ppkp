@@ -1,77 +1,164 @@
 @extends('layouts.simmak')
 
 @section('title', 'Temuan Audit — SIMMAK PPKP')
-@section('page-title', 'Temuan Audit Internal')
+@section('page-title', 'Temuan Audit')
+@section('page-subtitle', 'Kelola temuan ketidaksesuaian, observasi, dan peluang perbaikan dari hasil audit internal')
+
+@section('breadcrumb')
+    <li class="flex items-center gap-1 text-sim-muted">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        <span>Temuan Audit</span>
+    </li>
+@endsection
 
 @section('content')
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ route('audit.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Program & Jadwal Audit</a>
+    <div class="sim-page-header">
+        <div>
+            <h2 class="sim-page-title">Temuan Audit</h2>
+            <p class="sim-page-subtitle">Temuan dikategorikan berdasarkan tingkat risiko dan status tindak lanjut. Temuan risiko tinggi memerlukan perhatian segera.</p>
+        </div>
+
+        @can('audit.finding.create')
+            <a href="{{ route('findings.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                Tambah Temuan
+            </a>
+        @endcan
     </div>
 
-    <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div class="simmak-card p-5"><div class="text-sm text-slate-500">Total</div><div class="text-3xl font-bold">{{ $stats['total'] }}</div></div>
-        <div class="simmak-card p-5"><div class="text-sm text-slate-500">Terbuka</div><div class="text-3xl font-bold text-red-600">{{ $stats['open'] }}</div></div>
-        <div class="simmak-card p-5"><div class="text-sm text-slate-500">Dalam CAPA</div><div class="text-3xl font-bold text-amber-600">{{ $stats['in_capa'] }}</div></div>
-        <div class="simmak-card p-5"><div class="text-sm text-slate-500">Ditutup</div><div class="text-3xl font-bold text-emerald-600">{{ $stats['closed'] }}</div></div>
-        <div class="simmak-card p-5"><div class="text-sm text-slate-500">Kritis Aktif</div><div class="text-3xl font-bold text-red-700">{{ $stats['critical'] }}</div></div>
-    </div>
+    <div class="sim-card">
+        <div class="sim-card-header flex items-center justify-between">
+            <div>
+                <h3 class="sim-card-title">Daftar Temuan</h3>
+            </div>
 
-    <div class="simmak-card">
-        <form method="GET" class="flex flex-wrap gap-3 border-b border-slate-100 px-5 py-4">
-            <select name="status" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <option value="">Semua Status</option>
-                @foreach (['open' => 'Terbuka', 'in_capa' => 'Dalam CAPA', 'closed' => 'Ditutup', 'verified' => 'Terverifikasi'] as $val => $label)
-                    <option value="{{ $val }}" @selected(request('status') === $val)>{{ $label }}</option>
-                @endforeach
-            </select>
-            <select name="severity" class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <option value="">Semua Tingkat</option>
-                @foreach (['observation' => 'Observasi', 'minor' => 'Ringan', 'major' => 'Mayor', 'critical' => 'Kritikal'] as $val => $label)
-                    <option value="{{ $val }}" @selected(request('severity') === $val)>{{ $label }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white">Filter</button>
-        </form>
+            <div class="flex gap-2 flex-wrap">
+                <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="severity" value="{{ request('severity') }}">
+                    <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
+                    <select name="status" class="sim-form-select" onchange="this.form.submit()">
+                        <option value="">Semua Status</option>
+                        @foreach (['draft', 'under_review', 'confirmed', 'action_required', 'pending_verification', 'closed'] as $s)
+                            <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>
+                                {{ \App\Support\UiLabel::findingStatus($s) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                    <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
+                    <select name="severity" class="sim-form-select" onchange="this.form.submit()">
+                        <option value="">Semua Tingkat Risiko</option>
+                        @foreach (['critical', 'major', 'minor', 'observation'] as $s)
+                            <option value="{{ $s }}" {{ request('severity') === $s ? 'selected' : '' }}>
+                                {{ \App\Support\UiLabel::findingSeverity($s) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                    <input type="hidden" name="severity" value="{{ request('severity') }}">
+                    <select name="clinic_id" class="sim-form-select" onchange="this.form.submit()">
+                        <option value="">Semua Klinik</option>
+                        @foreach ($clinics as $c)
+                            <option value="{{ $c->id }}" {{ request('clinic_id') === $c->id ? 'selected' : '' }}>
+                                {{ $c->code }} — {{ $c->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                @if ($stats['escalated'] > 0)
+                    <form method="GET" class="flex items-center">
+                        <input type="hidden" name="status" value="{{ request('status') }}">
+                        <input type="hidden" name="severity" value="{{ request('severity') }}">
+                        <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
+                        <label class="inline-flex items-center gap-2 text-sm text-sim-muted cursor-pointer select-none">
+                            <input type="checkbox" name="escalated" value="1" class="rounded border-sim-border" {{ request('escalated') ? 'checked' : '' }} onchange="this.form.submit()">
+                            <span class="inline-flex items-center gap-1">
+                                <svg class="h-3.5 w-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Eskalasi ({{ $stats['escalated'] }})
+                            </span>
+                        </label>
+                    </form>
+                @endif
+            </div>
+        </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
+        <div class="sim-card-body overflow-x-auto">
+            <table class="sim-table w-full">
+                <thead>
                     <tr>
-                        <th class="px-5 py-3">Kode</th>
-                        <th class="px-5 py-3">Judul</th>
-                        <th class="px-5 py-3">Klinik</th>
-                        <th class="px-5 py-3">Tingkat</th>
-                        <th class="px-5 py-3">Status</th>
-                        <th class="px-5 py-3">Aksi</th>
+                        <th class="w-24">Kode Temuan</th>
+                        <th>Judul</th>
+                        <th class="w-32">Klinik</th>
+                        <th class="w-16 text-center">Tipe</th>
+                        <th class="w-20 text-center">Risiko</th>
+                        <th class="w-20 text-center">Status</th>
+                        <th class="w-24">PIC</th>
+                        <th class="w-20 text-center">Tenggat</th>
+                        <th class="w-32 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-sim-border-light">
                     @forelse ($findings as $finding)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-5 py-3 font-mono text-xs">
-                                <a href="{{ route('findings.show', $finding) }}" class="text-teal-700 hover:underline">{{ $finding->finding_code }}</a>
+                        <tr>
+                            <td class="text-sim-mono text-xs text-sim-muted">{{ $finding->finding_code }}</td>
+                            <td class="text-sm font-medium text-sim-ink">{{ $finding->title }}</td>
+                            <td class="text-sm text-sim-muted">{{ $finding->clinic?->code }} — {{ $finding->clinic?->name }}</td>
+                            <td class="text-center text-xs text-sim-muted text-sim-mono">{{ ucfirst(str_replace('_', ' ', $finding->finding_type ?? '-')) }}</td>
+                            <td class="text-center">
+                                <span class="sim-badge sim-badge-status
+                                    @switch($finding->severity)
+                                        @case('critical') border-sim-danger bg-sim-danger-bg text-sim-danger
+                                        @case('major') border-sim-warning bg-sim-warning-bg text-sim-warning
+                                        @case('minor') border-sim-info bg-sim-info-bg text-sim-info
+                                        @default border-sim-success bg-sim-success-bg text-sim-success
+                                    @endswitch
+                                ">
+                                    {{ \App\Support\UiLabel::findingSeverity($finding->severity) }}
+                                </span>
+                                @if ($finding->is_escalated)
+                                    <span class="sim-badge border-red-300 bg-red-100 text-red-700 mt-1 inline-flex items-center gap-1">
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        Eskalasi
+                                    </span>
+                                @endif
                             </td>
-                            <td class="px-5 py-3 font-medium text-slate-800">{{ $finding->title }}</td>
-                            <td class="px-5 py-3 text-slate-600">{{ $finding->clinic?->name ?? '—' }}</td>
-                            <td class="px-5 py-3">
-                                @php $sev = match($finding->severity) { 'critical' => 'bg-red-100 text-red-800', 'major' => 'bg-orange-100 text-orange-800', default => 'bg-yellow-100 text-yellow-800' }; @endphp
-                                <span class="simmak-badge {{ $sev }}">{{ \App\Support\UiLabel::findingSeverity($finding->severity) }}</span>
+                            <td class="text-center">
+                                <span class="sim-badge sim-badge-status
+                                    @switch($finding->status)
+                                        @case('closed') border-sim-success bg-sim-success-bg text-sim-success
+                                        @case('draft') border-sim-neutral bg-sim-neutral-bg text-sim-neutral
+                                        @default border-sim-info bg-sim-info-bg text-sim-info
+                                    @endswitch
+                                ">
+                                    {{ \App\Support\UiLabel::findingStatus($finding->status) }}
+                                </span>
                             </td>
-                            <td class="px-5 py-3">
-                                <span class="simmak-badge bg-slate-100 text-slate-700">{{ \App\Support\UiLabel::findingStatus($finding->status) }}</span>
-                            </td>
-                            <td class="px-5 py-3">
-                                <a href="{{ route('findings.show', $finding) }}" class="text-sm font-medium text-teal-700 hover:underline">Detail</a>
+                            <td class="text-sm text-sim-muted">{{ $finding->owner?->name ?? $finding->assignee?->name ?? '—' }}</td>
+                            <td class="text-center text-sim-mono text-xs">{{ $finding->due_at?->format('d M Y') ?? '—' }}</td>
+                            <td class="text-right">
+                                <a href="{{ route('findings.show', $finding) }}" class="text-sm text-sim-primary hover:underline">Detail</a>
+                                @can('audit.finding.update', $finding)
+                                    <a href="{{ route('findings.edit', $finding) }}" class="ml-4 text-sm text-sim-primary hover:underline">Sunting</a>
+                                @endcan
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">Belum ada temuan audit.</td></tr>
+                        <tr>
+                            <td colspan="9" class="sim-table-empty">Belum ada temuan audit.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
         @if ($findings->hasPages())
-            <div class="border-t border-slate-100 px-5 py-3">{{ $findings->links() }}</div>
+            <div class="sim-card-footer">
+                {{ $findings->links() }}
+            </div>
         @endif
     </div>
 @endsection

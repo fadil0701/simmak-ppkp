@@ -11,8 +11,8 @@
         </div>
         <div class="simmak-card-body">
             @if ($errors->any())
-                <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {{ $errors->first() }}
+                <div class="sim-alert sim-alert-error mb-4">
+                    <span class="sim-alert-icon">!</span>{{ $errors->first() }}
                 </div>
             @endif
 
@@ -20,18 +20,18 @@
                 @csrf
                 @method('PUT')
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Nama Aplikasi</label>
+                    <label class="sim-form-label">Nama Aplikasi<span class="sim-form-label-required"></span></label>
                     <input type="text" name="app_name" value="{{ old('app_name', $app_name) }}" required
-                           class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100">
+                           class="sim-form-input">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-700">Target Akreditasi</label>
+                    <label class="sim-form-label">Target Akreditasi<span class="sim-form-label-required"></span></label>
                     <input type="date" name="accreditation_target" value="{{ old('accreditation_target', $accreditation_target) }}" required
-                           class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100">
-                    <p class="mt-1 text-xs text-slate-500">Tanggal target survei akreditasi organisasi.</p>
+                           class="sim-form-input">
+                    <p class="sim-form-hint">Tanggal target survei akreditasi organisasi.</p>
                 </div>
                 <div class="pt-2">
-                    <button type="submit" class="rounded-lg bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Simpan Pengaturan</button>
+                    <button type="submit" class="sim-btn sim-btn-primary">Simpan Pengaturan</button>
                 </div>
             </form>
         </div>
