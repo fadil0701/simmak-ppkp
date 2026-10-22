@@ -139,7 +139,7 @@ class UiLabel
         return match ($type) {
             'pratama' => 'Klinik Pratama',
             'utama' => 'Klinik Utama',
-            'pusat' => 'Manajemen Pusat',
+            'pusat' => 'Manajemen',
             default => $type ?? '—',
         };
     }

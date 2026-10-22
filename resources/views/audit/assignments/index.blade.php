@@ -11,10 +11,7 @@
         </div>
 
         @can('audit.assignment.manage')
-            <a href="{{ route('audit.assignments.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                Buat Penugasan
-            </a>
+            <x-action href="{{ route('audit.assignments.create') }}" icon="plus" label="Buat Penugasan" />
         @endcan
     </div>
 
@@ -56,10 +53,12 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <a href="{{ route('audit.assignments.show', $assignment) }}" class="text-sm font-medium text-teal-700 hover:underline">Detail</a>
-                                @can('audit.assignment.manage', $assignment)
-                                    <a href="{{ route('audit.assignments.edit', $assignment) }}" class="text-sm font-medium text-teal-700 hover:underline ml-3">Sunting</a>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    @can('audit.assignment.manage', $assignment)
+                                        <x-action href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

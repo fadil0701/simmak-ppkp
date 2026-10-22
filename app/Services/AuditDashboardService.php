@@ -14,6 +14,17 @@ use Illuminate\Support\Collection;
 
 class AuditDashboardService
 {
+    /** @var list<string> */
+    public const OPEN_FINDING_STATUSES = [
+        'draft',
+        'under_review',
+        'confirmed',
+        'action_required',
+        'pending_verification',
+        'in_capa',
+        'open',
+    ];
+
     public function auditDashboardData(User $user): array
     {
         $orgId = $user->organization_id;
@@ -23,6 +34,7 @@ class AuditDashboardService
             'overdueActions' => $this->overdueActions($orgId),
             'reviewQueue' => $this->reviewQueue($orgId),
             'highRiskFindings' => $this->highRiskFindings($orgId),
+            'upcomingAssignments' => $this->upcomingAssignments($orgId),
             'recentActivities' => $this->recentActivities($orgId),
             'findingsByClinic' => $this->findingsByClinic($orgId),
         ];
@@ -36,10 +48,14 @@ class AuditDashboardService
             'assignments_active' => AuditAssignment::forOrganization($orgId)->where('status', 'active')->count(),
             'executions_in_progress' => AuditExecution::forOrganization($orgId)->where('status', 'in_progress')->count(),
             'executions_submitted' => AuditExecution::forOrganization($orgId)->where('status', 'submitted_for_review')->count(),
-            'findings_open' => AuditFinding::forOrganization($orgId)->whereIn('status', ['draft', 'under_review', 'confirmed', 'action_required', 'pending_verification'])->count(),
+            'findings_open' => AuditFinding::forOrganization($orgId)->whereIn('status', self::OPEN_FINDING_STATUSES)->count(),
             'findings_closed' => AuditFinding::forOrganization($orgId)->where('status', 'closed')->count(),
             'capa_open' => CapaCase::forOrganization($orgId)->whereNotIn('status', ['closed'])->count(),
             'capa_closed' => CapaCase::forOrganization($orgId)->where('status', 'closed')->count(),
+            'capa_overdue' => CapaCase::forOrganization($orgId)
+                ->whereNotIn('status', ['closed'])
+                ->where('target_close_date', '<', now()->toDateString())
+                ->count(),
         ];
     }
 
@@ -68,10 +84,20 @@ class AuditDashboardService
     {
         return AuditFinding::forOrganization($orgId)
             ->where('severity', 'critical')
-            ->whereIn('status', ['draft', 'under_review', 'confirmed', 'action_required', 'pending_verification'])
+            ->whereIn('status', self::OPEN_FINDING_STATUSES)
             ->with('clinic', 'owner')
             ->orderByDesc('identified_at')
             ->limit(10)
+            ->get();
+    }
+
+    private function upcomingAssignments(string $orgId): Collection
+    {
+        return AuditAssignment::forOrganization($orgId)
+            ->whereIn('status', ['active', 'proposed'])
+            ->with(['clinic', 'program', 'leadAuditor'])
+            ->orderBy('scheduled_start')
+            ->limit(8)
             ->get();
     }
 
@@ -81,6 +107,7 @@ class AuditDashboardService
 
         $trails = AuditTrail::query()
             ->where('organization_id', $orgId)
+            ->with(['user', 'clinic'])
             ->orderByDesc('created_at')
             ->limit(10)
             ->get();
@@ -99,20 +126,41 @@ class AuditDashboardService
 
     private function findingsByClinic(string $orgId): Collection
     {
-        $clinics = Clinic::forOrganization($orgId)->where('is_active', true)->orderBy('code')->get();
+        $clinics = Clinic::forOrganization($orgId)
+            ->auditable()
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name', 'city']);
 
         $findingsByClinic = AuditFinding::forOrganization($orgId)
-            ->whereIn('status', ['draft', 'under_review', 'confirmed', 'action_required', 'pending_verification'])
+            ->whereIn('status', self::OPEN_FINDING_STATUSES)
             ->selectRaw('clinic_id, COUNT(*) as total')
             ->groupBy('clinic_id')
             ->pluck('total', 'clinic_id');
 
-        return $clinics->map(function (Clinic $clinic) use ($findingsByClinic) {
+        $criticalByClinic = AuditFinding::forOrganization($orgId)
+            ->whereIn('status', self::OPEN_FINDING_STATUSES)
+            ->where('severity', 'critical')
+            ->selectRaw('clinic_id, COUNT(*) as total')
+            ->groupBy('clinic_id')
+            ->pluck('total', 'clinic_id');
+
+        $capaOverdueByClinic = CapaCase::forOrganization($orgId)
+            ->whereNotIn('status', ['closed'])
+            ->where('target_close_date', '<', now()->toDateString())
+            ->selectRaw('clinic_id, COUNT(*) as total')
+            ->groupBy('clinic_id')
+            ->pluck('total', 'clinic_id');
+
+        return $clinics->map(function (Clinic $clinic) use ($findingsByClinic, $criticalByClinic, $capaOverdueByClinic) {
             return [
                 'clinic_id' => $clinic->id,
                 'code' => $clinic->code,
                 'name' => $clinic->name,
+                'region' => $clinic->city ?? '—',
                 'open_findings' => (int) ($findingsByClinic[$clinic->id] ?? 0),
+                'critical_findings' => (int) ($criticalByClinic[$clinic->id] ?? 0),
+                'capa_overdue' => (int) ($capaOverdueByClinic[$clinic->id] ?? 0),
             ];
         });
     }

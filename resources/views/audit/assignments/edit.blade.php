@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.assignments.show', $assignment) }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Detail Penugasan</a>
+        <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
     </div>
 
     <div class="simmak-card max-w-3xl">
@@ -105,10 +105,8 @@
                     @endif
                 </div>
 
-                <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Perbarui Penugasan
-                    </button>
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <x-action icon="check-circle" label="Simpan Perubahan" />
                 </div>
             </form>
         </div>

@@ -3,15 +3,16 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths
+class ReportExport implements FromCollection, WithColumnWidths, WithHeadings, WithMapping, WithStyles
 {
     protected array $data;
+
     protected string $reportType;
 
     public function __construct(array $data, string $reportType)
@@ -62,7 +63,7 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
     {
         switch ($this->reportType) {
             case 'findings':
-                return [
+                $result = [
                     $row->finding_code ?? '-',
                     $row->title ?? '-',
                     $row->clinic?->name ?? '-',
@@ -74,8 +75,9 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
                     $row->due_at?->format('d M Y') ?? '-',
                     $row->created_at?->format('d M Y H:i') ?? '-',
                 ];
+                break;
             case 'capa':
-                return [
+                $result = [
                     $row->case_number ?? '-',
                     $row->problem_statement ?? '-',
                     $row->clinic?->name ?? '-',
@@ -85,8 +87,9 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
                     $row->target_close_date?->format('d M Y') ?? '-',
                     $row->created_at?->format('d M Y H:i') ?? '-',
                 ];
+                break;
             case 'execution':
-                return [
+                $result = [
                     $row->execution_code ?? '-',
                     $row->title ?? '-',
                     $row->clinic?->name ?? '-',
@@ -98,9 +101,26 @@ class ReportExport implements FromCollection, WithHeadings, WithMapping, WithSty
                     $row->finalized_at?->format('d M Y H:i') ?? '-',
                     $row->created_at?->format('d M Y H:i') ?? '-',
                 ];
+                break;
             default:
-                return ['-', '-'];
+                $result = ['-', '-'];
+                break;
         }
+
+        return array_map([$this, 'sanitizeCell'], $result);
+    }
+
+    protected function sanitizeCell($value): mixed
+    {
+        if (! is_string($value)) {
+            return $value;
+        }
+        $trimmed = ltrim($value);
+        if ($trimmed !== '' && in_array($trimmed[0], ['=', '+', '-', '@'], true)) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 
     public function styles(Worksheet $sheet)

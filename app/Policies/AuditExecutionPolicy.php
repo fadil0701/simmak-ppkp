@@ -9,9 +9,30 @@ class AuditExecutionPolicy
 {
     public function view(?User $user, AuditExecution $execution): bool
     {
-        return $user && $user->is_active
-            && $user->belongsToOrganization($execution->organization_id)
-            && $user->hasClinicAccess($execution->clinic_id);
+        if (! $user || ! $user->is_active || ! $user->belongsToOrganization($execution->organization_id)) {
+            return false;
+        }
+
+        // Anggota tim yang ditugaskan boleh melihat.
+        if ($execution->assignment) {
+            $isTeamMember = $execution->assignment->teamMembers()
+                ->where('user_id', $user->id)
+                ->where('active', true)
+                ->exists();
+            if ($isTeamMember) {
+                return true;
+            }
+        }
+
+        // Pengawas (role/permission tinjauan) dengan akses klinik boleh melihat.
+        $supervisory = $user->can('audit.finding.review')
+            || $user->can('audit.program.approve')
+            || $user->can('audit.report.manage');
+        if ($supervisory && $user->hasClinicAccess($execution->clinic_id)) {
+            return true;
+        }
+
+        return false;
     }
 
     public function viewAny(?User $user): bool

@@ -81,15 +81,24 @@
                     <label class="sim-form-label">Tahun Anggaran</label>
                     <select name="fiscal_year_id" class="sim-form-select">
                         <option value="">— Pilih tahun anggaran —</option>
-                        @foreach (\App\Models\FiscalYear::where('organization_id', auth()->user()->organization_id)->where('is_active', true)->get() as $fy)
+                        @foreach ($fiscalYears as $fy)
                             <option value="{{ $fy->id }}" {{ old('fiscal_year_id') === $fy->id ? 'selected' : '' }}>{{ $fy->name }}</option>
                         @endforeach
                     </select>
+                    @if ($errors->has('fiscal_year_id'))
+                        <p class="sim-form-error">{{ $errors->first('fiscal_year_id') }}</p>
+                    @endif
+                    @can('settings.manage')
+                        <p class="text-xs text-sim-muted mt-1">
+                            Belum ada pilihan? Kelola di
+                            <a href="{{ route('fiscal-years.index') }}" class="text-sim-primary hover:underline">Master Tahun Anggaran</a>.
+                        </p>
+                    @endcan
                 </div>
 
-                <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <a href="{{ route('audit.programs.index') }}" class="sim-btn sim-btn-outline mr-2">Kembali</a>
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan Program</button>
+                <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
+                    <x-action href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
+                    <x-action icon="check-circle" label="Simpan Program" />
                 </div>
             </form>
         </div>

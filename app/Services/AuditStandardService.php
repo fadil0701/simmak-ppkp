@@ -143,6 +143,7 @@ class AuditStandardService
             'evidence_guidance' => $data['evidence_guidance'] ?? null,
             'assessment_type' => $data['assessment_type'] ?? null,
             'scoring_rule' => $data['scoring_rule'] ?? null,
+            'max_score' => $data['max_score'] ?? 10,
             'source_reference' => $data['source_reference'] ?? null,
             'sort_order' => $data['sort_order'] ?? 0,
             'active' => $data['active'] ?? true,

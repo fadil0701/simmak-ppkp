@@ -6,7 +6,9 @@ use App\Models\AuditStandard;
 use App\Models\InstrumentVersion;
 use App\Models\RegulatorySource;
 use App\Models\StandardSection;
+use App\Services\AuditInstrumentImportService;
 use App\Services\AuditStandardService;
+use App\Services\AuditTrailService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,7 +16,10 @@ use Illuminate\View\View;
 
 class AuditStandardController extends Controller
 {
-    public function __construct(private AuditStandardService $standardService) {}
+    public function __construct(
+        private AuditStandardService $standardService,
+        private AuditInstrumentImportService $importService
+    ) {}
 
     public function index(Request $request): View
     {
@@ -120,6 +125,108 @@ class AuditStandardController extends Controller
     }
 
     /**
+     * Halaman formulir impor EP dari Excel/CSV.
+     */
+    public function importForm(Request $request, AuditStandard $standard): View
+    {
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
+
+        return view('audit.standards.import', [
+            'standard' => $standard,
+            'rows' => [],
+            'errors' => [],
+            'invalid' => [],
+            'duplicates' => [],
+            'fileName' => null,
+        ]);
+    }
+
+    /**
+     * Preview impor EP dari Excel/CSV.
+     */
+    public function previewImport(Request $request, AuditStandard $standard): View
+    {
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240'],
+        ]);
+
+        $fileName = $request->file('file')->getClientOriginalName();
+        $parsed = $this->importService->parse($request->file('file'));
+        $errors = $parsed['errors'];
+
+        $version = InstrumentVersion::where('audit_standard_id', $standard->id)
+            ->whereIn('status', ['active', 'approved', 'draft'])
+            ->orderByDesc('created_at')
+            ->first();
+
+        $result = $this->importService->validate($parsed['rows'], $standard, $version);
+        $invalid = $result['invalid'];
+        $duplicates = $result['duplicates'];
+        $rows = $result['valid'];
+
+        // Baris valid disimpan di session agar tidak perlu unggah ulang berkas.
+        // Jika ada duplikat, impor diblokir sampai duplikat dibersihkan.
+        if (empty($duplicates)) {
+            $request->session()->put('instrument_import_rows', [
+                'standard_id' => $standard->id,
+                'rows' => $rows,
+            ]);
+        } else {
+            $request->session()->forget('instrument_import_rows');
+        }
+
+        return view('audit.standards.import', compact('standard', 'rows', 'errors', 'invalid', 'duplicates', 'fileName'));
+    }
+
+    /**
+     * Menyimpan EP hasil impor ke master instrumen.
+     */
+    public function storeImport(Request $request, AuditStandard $standard): RedirectResponse
+    {
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
+
+        $payload = $request->session()->get('instrument_import_rows');
+        $request->session()->forget('instrument_import_rows');
+
+        if (! $payload || $payload['standard_id'] !== $standard->id || empty($payload['rows'])) {
+            return back()->with('error', 'Pratinjau impor tidak ditemukan atau mengandung duplikat. Silakan unggah berkas kembali.');
+        }
+
+        $rows = $payload['rows'];
+
+        $version = InstrumentVersion::where('audit_standard_id', $standard->id)
+            ->whereIn('status', ['active', 'approved', 'draft'])
+            ->orderByDesc('created_at')
+            ->first();
+
+        $result = $this->importService->validate($rows, $standard, $version);
+
+        if ($result['duplicates']) {
+            return back()
+                ->with('error', 'Impor dibatalkan karena ada duplikat: '.implode(' ', array_slice($result['duplicates'], 0, 5)));
+        }
+
+        if (! $result['valid']) {
+            return back()->with('error', 'Tidak ada baris valid untuk disimpan.');
+        }
+
+        $stored = $this->importService->store($result['valid'], $standard, $version, $request->user());
+
+        (new AuditTrailService)->log(
+            'audit.standard.imported',
+            $standard,
+            null,
+            ['sections' => $stored['seksi'], 'criteria' => $stored['ep']],
+            ['actor' => $request->user()->name]
+        );
+
+        return redirect()->route('audit.standards.show', $standard)
+            ->with('status', "Impor berhasil: {$stored['seksi']} seksi dan {$stored['ep']} EP ditambahkan.");
+    }
+
+    /**
      * Menambah kriteria pada seksi. Mewarisi penguncian dari versi instrumen.
      */
     public function storeCriterion(Request $request, StandardSection $section): RedirectResponse
@@ -134,6 +241,7 @@ class AuditStandardController extends Controller
             'requirement_text' => ['nullable', 'string'],
             'assessment_guidance' => ['nullable', 'string'],
             'evidence_guidance' => ['nullable', 'string'],
+            'max_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 

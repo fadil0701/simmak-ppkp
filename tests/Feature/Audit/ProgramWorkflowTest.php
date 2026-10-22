@@ -7,13 +7,14 @@ use App\Models\Clinic;
 use App\Models\FiscalYear;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProgramWorkflowTest extends TestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -68,8 +69,8 @@ class ProgramWorkflowTest extends TestCase
     {
         $user = User::create([
             'organization_id' => $this->org->id,
-            'name' => 'Test User ' . $role,
-            'email' => strtolower($role) . '@test.local',
+            'name' => 'Test User '.$role,
+            'email' => strtolower($role).'@test.local',
             'password' => bcrypt('password'),
             'auth_provider' => 'local',
             'is_active' => true,
@@ -155,7 +156,7 @@ class ProgramWorkflowTest extends TestCase
             'is_active' => true,
         ]);
 
-        $user = $this->createUser('super-admin', ['KP01']);
+        $user = $this->createUser('pj-mutu', ['KP01']);
 
         $program = AuditProgram::create([
             'organization_id' => $otherOrg->id,
@@ -167,7 +168,7 @@ class ProgramWorkflowTest extends TestCase
             'updated_by' => $user->id,
         ]);
 
-        $response = $this->actingAs($user)->get('/audit/programs/' . $program->id);
+        $response = $this->actingAs($user)->get('/audit/programs/'.$program->id);
         $response->assertStatus(403);
     }
 
@@ -188,7 +189,7 @@ class ProgramWorkflowTest extends TestCase
         ]);
 
         // Submit
-        $response = $this->actingAs($submitter)->post('/audit/programs/' . $program->id . '/submit');
+        $response = $this->actingAs($submitter)->post('/audit/programs/'.$program->id.'/submit');
         $response->assertStatus(302);
         $this->assertDatabaseHas('audit_programs', [
             'id' => $program->id,
@@ -196,7 +197,7 @@ class ProgramWorkflowTest extends TestCase
         ]);
 
         // Approver (different user) approves
-        $response = $this->actingAs($approver)->post('/audit/programs/' . $program->id . '/approve');
+        $response = $this->actingAs($approver)->post('/audit/programs/'.$program->id.'/approve');
         $response->assertStatus(302);
         $this->assertDatabaseHas('audit_programs', [
             'id' => $program->id,
@@ -219,7 +220,7 @@ class ProgramWorkflowTest extends TestCase
             'updated_by' => $user->id,
         ]);
 
-        $response = $this->actingAs($user)->post('/audit/programs/' . $program->id . '/approve');
+        $response = $this->actingAs($user)->post('/audit/programs/'.$program->id.'/approve');
         $response->assertStatus(403);
     }
 }

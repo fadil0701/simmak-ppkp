@@ -33,7 +33,7 @@ class AuditEvidenceController extends Controller
             ->with('clinic')
             ->get();
 
-        $clinics = Clinic::where('organization_id', $request->user()->organization_id)
+        $clinics = Clinic::forUserClinics($request->user())
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')

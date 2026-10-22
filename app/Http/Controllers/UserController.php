@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clinic;
+use App\Models\Employee;
 use App\Models\User;
+use App\Support\SimmakRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -51,13 +53,18 @@ class UserController extends Controller
 
         return view('users.index', [
             'users' => $users,
-            'roles' => Role::where('guard_name', 'web')->orderBy('name')->get(),
+            'roles' => Role::where('guard_name', 'web')
+                ->whereIn('name', SimmakRoles::assignableNames())
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
     public function create(Request $request): View
     {
-        return view('users.create', $this->formData($request->user()));
+        return view('users.create', array_merge($this->formData($request->user()), [
+            'prefilledEmployeeId' => $request->string('employee_id')->toString() ?: null,
+        ]));
     }
 
     public function store(Request $request): RedirectResponse
@@ -66,12 +73,13 @@ class UserController extends Controller
         $orgId = $actor->organization_id;
 
         $validated = $request->validate([
+            'employee_id' => ['nullable', 'uuid', Rule::exists('employees', 'id')->where('organization_id', $orgId)],
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:80', Rule::unique('users', 'username')],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::defaults()],
             'default_clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
-            'role' => ['required', 'string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
+            'role' => ['required', 'string', Rule::in(SimmakRoles::assignableNames())],
             'clinic_ids' => ['nullable', 'array'],
             'clinic_ids.*' => ['uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
             'is_active' => ['nullable', 'boolean'],
@@ -81,6 +89,7 @@ class UserController extends Controller
 
         $newUser = User::create([
             'organization_id' => $orgId,
+            'employee_id' => $validated['employee_id'] ?? null,
             'default_clinic_id' => $validated['default_clinic_id'] ?? null,
             'name' => $validated['name'],
             'username' => $validated['username'],
@@ -114,7 +123,7 @@ class UserController extends Controller
         abort_unless($request->user()->belongsToOrganization($user->organization_id), 403);
 
         return view('users.edit', array_merge(
-            $this->formData($request->user()),
+            $this->formData($request->user(), $user),
             [
                 'user' => $user,
                 'currentRole' => $user->getRoleNames()->first(),
@@ -131,12 +140,13 @@ class UserController extends Controller
         $orgId = $actor->isSuperAdmin() ? $user->organization_id : $actor->organization_id;
 
         $validated = $request->validate([
+            'employee_id' => ['nullable', 'uuid', Rule::exists('employees', 'id')->where('organization_id', $orgId)],
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:80', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'default_clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
-            'role' => ['required', 'string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
+            'role' => ['required', 'string', Rule::in(SimmakRoles::assignableNames())],
             'clinic_ids' => ['nullable', 'array'],
             'clinic_ids.*' => ['uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
             'is_active' => ['nullable', 'boolean'],
@@ -145,6 +155,7 @@ class UserController extends Controller
         $clinicIds = $this->resolveClinicIds($validated);
 
         $data = [
+            'employee_id' => $validated['employee_id'] ?? null,
             'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
@@ -204,22 +215,40 @@ class UserController extends Controller
     }
 
     /**
-     * @return array{clinics: Collection, roles: Collection}
+     * @return array{clinics: Collection, roles: Collection, employees: Collection}
      */
-    private function formData(User $actor): array
+    private function formData(User $actor, ?User $target = null): array
     {
+        $roleNames = SimmakRoles::assignableNames();
+        $currentRole = $target?->getRoleNames()->first();
+        if ($currentRole && ! in_array($currentRole, $roleNames, true)) {
+            $roleNames[] = $currentRole;
+        }
+
         return [
             'clinics' => Clinic::forOrganization($actor->organization_id)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(),
-            'roles' => Role::where('guard_name', 'web')->orderBy('name')->get(),
+            'roles' => Role::where('guard_name', 'web')
+                ->whereIn('name', $roleNames)
+                ->get()
+                ->sortBy(function (Role $role) use ($roleNames) {
+                    $index = array_search($role->name, $roleNames, true);
+
+                    return $index === false ? 99 : $index;
+                }),
+            'employees' => Employee::where('organization_id', $actor->organization_id)
+                ->where('is_active', true)
+                ->orderBy('full_name')
+                ->get(),
         ];
     }
 
     private function attributeNames(): array
     {
         return [
+            'employee_id' => 'data pegawai',
             'name' => 'nama',
             'username' => 'username',
             'email' => 'surel',

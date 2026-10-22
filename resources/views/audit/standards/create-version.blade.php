@@ -61,9 +61,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Simpan Versi
-                    </button>
+                    <x-action icon="check-circle" label="Simpan Versi" />
                 </div>
             </form>
         </div>

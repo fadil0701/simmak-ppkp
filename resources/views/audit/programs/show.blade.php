@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', '{{ $program->program_code }} — SIMMAK PPKP')
-@section('page-title', 'Detail Program: {{ $program->program_code }}')
+@section('title', $program->program_code . ' — SIMMAK PPKP')
+@section('page-title', 'Detail Program: ' . $program->program_code)
 
 @section('content')
     <div class="sim-page-header">
@@ -12,42 +12,25 @@
             @endif
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
             @can('audit.program.update', $program)
-                <a href="{{ route('audit.programs.edit', $program) }}" class="sim-btn sim-btn-primary sim-btn-sm">
-                    Sunting
-                </a>
+                <x-action href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Ubah" size="sm" />
             @endcan
             @can('audit.program.submit', $program)
                 @if ($program->status === 'draft')
-                    <form method="POST" action="{{ route('audit.programs.submit', $program) }}" class="inline" onsubmit="return confirm('Yakin ingin mengajukan program ini untuk tinjauan?');">
-                        @csrf
-                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">
-                            Ajukan Tinjauan
-                        </button>
-                    </form>
+                    <x-action href="{{ route('audit.programs.submit', $program) }}" icon="upload" label="Ajukan Tinjauan" size="sm"
+                              method="POST" confirm="Ajukan program ini untuk tinjauan?" />
                 @endif
             @endcan
             @can('audit.program.approve', $program)
                 @if ($program->status === 'submitted_for_review')
-                    <form method="POST" action="{{ route('audit.programs.approve', $program) }}" class="inline" onsubmit="return confirm('Yakin ingin menyetujui program ini?');">
-                        @csrf
-                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">
-                            Setujui
-                        </button>
-                    </form>
-                    <form method="POST" action="{{ route('audit.programs.return', $program) }}" class="inline" onsubmit="return confirm('Kembalikan untuk revisi?');">
-                        @csrf
-                        <input type="hidden" name="reason" value="Perlu revisi">
-                        <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm">
-                            Kembalikan
-                        </button>
-                    </form>
+                    <x-action href="{{ route('audit.programs.approve', $program) }}" icon="check-circle" label="Setujui" size="sm"
+                              method="POST" confirm="Setujui program ini?" />
+                    <x-action href="{{ route('audit.programs.return', $program) }}" icon="x-mark" label="Kembalikan" variant="secondary" size="sm"
+                              method="POST" confirm="Kembalikan program ini untuk revisi?" :fields="['reason' => 'Perlu revisi']" />
                 @endif
             @endcan
-            <a href="{{ route('audit.programs.index') }}" class="sim-btn sim-btn-outline">
-                Kembali
-            </a>
+            <x-action href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
         </div>
     </div>
 

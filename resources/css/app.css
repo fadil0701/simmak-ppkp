@@ -151,7 +151,7 @@
     }
 
     .sim-header-button {
-        @apply rounded-md p-2 text-sim-muted hover:bg-sim-hover hover:text-sim-ink transition-colors;
+        @apply relative inline-flex items-center justify-center rounded-md p-2 text-sim-muted hover:bg-sim-hover hover:text-sim-ink transition-colors;
     }
 
     .sim-header-icon {
@@ -184,6 +184,14 @@
 
     .sim-header-user {
         @apply relative flex-shrink-0 cursor-pointer;
+    }
+
+    .sim-header-user-trigger {
+        @apply flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-sim-hover;
+    }
+
+    .sim-header-user-menu {
+        @apply min-w-56;
     }
 
     @media (max-width: 79.999rem) {
@@ -249,7 +257,7 @@
     }
 
     .sim-notification-badge {
-        @apply absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-sim-danger text-[10px] font-bold text-white;
+        @apply pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sim-danger px-1 text-[10px] font-bold leading-none text-white;
     }
 
     /* Sidebar */
@@ -309,7 +317,7 @@
     }
 
     .sim-sidebar-footer {
-        @apply border-t border-white/10 p-4 flex-shrink-0;
+        @apply flex-shrink-0 border-t border-white/10;
     }
 
     .sim-sidebar-clinic {
@@ -329,7 +337,28 @@
     }
 
     .sim-sidebar-institution {
-        @apply border-t border-white/10 p-4 text-[10px] text-sim-muted;
+        @apply p-4 text-[10px] text-sim-muted;
+    }
+
+    /* Akun pengguna + tombol keluar di footer sidebar */
+    .sim-sidebar-account {
+        @apply mt-3 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2.5;
+    }
+
+    .sim-sidebar-account-avatar {
+        @apply flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-teal-600 text-xs font-semibold text-white;
+    }
+
+    .sim-sidebar-account-name {
+        @apply truncate text-sm font-medium text-white;
+    }
+
+    .sim-sidebar-account-role {
+        @apply truncate text-[10px] uppercase tracking-wide text-sim-muted;
+    }
+
+    .sim-sidebar-logout {
+        @apply flex h-8 w-8 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-white/10 hover:text-white;
     }
 
     .sim-sidebar-institution-line {
@@ -374,15 +403,15 @@
 
     /* Alias lama → sistem desain sim-* (dipertahankan agar view lama tetap konsisten) */
     .simmak-card {
-        @apply sim-card;
+        @apply rounded-lg border border-sim-border bg-sim-white shadow-sim-sm;
     }
 
     .simmak-card-header {
-        @apply sim-card-header;
+        @apply border-b border-sim-border-light px-5 py-4;
     }
 
     .simmak-card-body {
-        @apply sim-card-body;
+        @apply p-5;
     }
 
     .simmak-badge {
@@ -479,12 +508,30 @@
         @apply sim-btn bg-sim-danger text-white hover:bg-sim-danger/90 focus:ring-sim-danger;
     }
 
+    .sim-btn-ghost {
+        @apply sim-btn bg-transparent text-sim-navy-800 hover:bg-sim-hover focus:ring-sim-border;
+    }
+
     .sim-btn-sm {
         @apply px-3 py-1.5 text-xs;
     }
 
     .sim-btn-icon {
         @apply sim-btn p-2;
+    }
+
+    /* Grup aksi pada baris tabel: tombol kecil dengan ikon */
+    .sim-action-group {
+        @apply flex items-center justify-end gap-1.5 flex-wrap;
+    }
+
+    .sim-action-group .sim-btn {
+        @apply inline-flex items-center justify-center;
+    }
+
+    /* Tombol aksi ringkas di dalam tabel */
+    .sim-table .sim-btn {
+        @apply inline-flex items-center justify-center;
     }
 
     /* Forms */

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApprovalEvent;
 use App\Models\AuditProgram;
+use App\Models\FiscalYear;
 use App\Services\AuditProgramService;
 use App\Services\AuditTrailService;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,12 @@ class AuditProgramController extends Controller
 
     public function create(Request $request): View
     {
-        return view('audit.programs.create');
+        $fiscalYears = FiscalYear::where('organization_id', $request->user()->organization_id)
+            ->where('is_active', true)
+            ->orderByDesc('code')
+            ->get();
+
+        return view('audit.programs.create', compact('fiscalYears'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -39,7 +45,7 @@ class AuditProgramController extends Controller
             'scope_notes' => ['nullable', 'string'],
             'name' => ['required', 'string', 'max:255'],
             'objective' => ['nullable', 'string'],
-            'fiscal_year_id' => ['nullable', 'uuid'],
+            'fiscal_year_id' => ['nullable', 'uuid', Rule::exists('fiscal_years', 'id')->where('organization_id', $orgId)],
         ]);
 
         $program = $this->programService->createProgram($validated, $request->user());
@@ -68,7 +74,12 @@ class AuditProgramController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($program->organization_id), 403);
 
-        return view('audit.programs.edit', compact('program'));
+        $fiscalYears = FiscalYear::where('organization_id', $request->user()->organization_id)
+            ->where('is_active', true)
+            ->orderByDesc('code')
+            ->get();
+
+        return view('audit.programs.edit', compact('program', 'fiscalYears'));
     }
 
     public function update(Request $request, AuditProgram $program): RedirectResponse
@@ -82,6 +93,7 @@ class AuditProgramController extends Controller
             'scope_notes' => ['nullable', 'string'],
             'name' => ['required', 'string', 'max:255'],
             'objective' => ['nullable', 'string'],
+            'fiscal_year_id' => ['nullable', 'uuid', Rule::exists('fiscal_years', 'id')->where('organization_id', $orgId)],
         ]);
 
         $program->update(array_merge($validated, ['updated_by' => $request->user()->id]));

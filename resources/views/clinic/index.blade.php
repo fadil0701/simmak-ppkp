@@ -1,34 +1,42 @@
 @extends('layouts.simmak')
 
-@section('title', 'Master Klinik — SIMMAK PPKP')
-@section('page-title', 'Master Klinik')
+@section('title', 'Master Unit/Klinik — SIMMAK PPKP')
+@section('page-title', 'Master Unit/Klinik')
 
 @section('content')
+    @if (session('error'))
+        <div class="sim-alert sim-alert-error mb-4">{{ session('error') }}</div>
+    @endif
+    @if (session('status'))
+        <div class="sim-alert sim-alert-success mb-4">{{ session('status') }}</div>
+    @endif
+
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h2 class="text-lg font-semibold text-slate-900">Master Klinik</h2>
-            <p class="text-sm text-slate-500">Kelola data klinik dan satuan pelayanan kesehatan PPKP DKI Jakarta.</p>
+            <h2 class="text-lg font-semibold text-slate-900">Master Unit/Klinik</h2>
+            <p class="text-sm text-slate-500">
+                Satu unit Kantor Pusat (Manajemen) memantau seluruh kegiatan audit.
+                Klinik/unit lain adalah sasaran audit dan dapat ditambah atau dinonaktifkan sesuai kebutuhan.
+            </p>
         </div>
 
         @can('clinics.manage')
-            <a href="{{ route('clinics.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                Tambah Klinik
-            </a>
+            <x-action href="{{ route('clinics.create') }}" icon="plus" label="Tambah Unit/Klinik" />
         @endcan
     </div>
 
     <div class="simmak-card">
         <div class="simmak-card-header flex items-center justify-between">
-            <h3 class="font-semibold text-slate-800">Daftar Klinik</h3>
+            <h3 class="font-semibold text-slate-800">Daftar Unit/Klinik</h3>
         </div>
         <div class="simmak-card-body overflow-x-auto">
             <table class="sim-table">
                 <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Kode</th>
-                        <th class="px-4 py-3">Nama Klinik</th>
+                        <th class="px-4 py-3">Nama Unit/Klinik</th>
                         <th class="px-4 py-3">Tipe</th>
+                        <th class="px-4 py-3">Sasaran Audit</th>
                         <th class="px-4 py-3">Kota</th>
                         <th class="px-4 py-3 text-center">Status</th>
                         <th class="px-4 py-3 text-center">Aksi</th>
@@ -45,6 +53,13 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-slate-600">{{ \App\Support\UiLabel::clinicType($clinic->clinic_type) }}</td>
+                            <td class="px-4 py-3">
+                                @if ($clinic->is_auditable)
+                                    <span class="simmak-badge bg-emerald-100 text-emerald-800">Ya</span>
+                                @else
+                                    <span class="simmak-badge bg-slate-100 text-slate-700">Pemantauan</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-slate-600">{{ $clinic->city ?? '—' }}</td>
                             <td class="px-4 py-3 text-center">
                                 <span class="simmak-badge {{ $clinic->is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">
@@ -52,21 +67,21 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-center">
-                                @can('clinics.manage')
-                                    <a href="{{ route('clinics.edit', $clinic) }}" class="text-sm font-medium text-teal-700 hover:underline mr-3">Sunting</a>
-                                    <form method="POST" action="{{ route('clinics.destroy', $clinic) }}" class="inline" onsubmit="return confirm('Yakin ingin menghapus klinik ini? Data terkait dapat terpengaruh.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="sim-btn sim-btn-danger sim-btn-sm">Hapus</button>
-                                    </form>
-                                @else
-                                    <span class="text-sm text-slate-400">—</span>
-                                @endcan
+                                <div class="sim-action-group">
+                                    @can('clinics.manage')
+                                        <x-action href="{{ route('clinics.edit', $clinic) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        @unless ($clinic->isManagementUnit())
+                                            <x-action href="{{ route('clinics.destroy', $clinic) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus unit/klinik ini? Data terkait dapat terpengaruh." />
+                                        @endunless
+                                    @else
+                                        <span class="text-sm text-slate-400">—</span>
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="sim-table-empty">Belum ada data klinik.</td>
+                            <td colspan="7" class="sim-table-empty">Belum ada data unit/klinik.</td>
                         </tr>
                     @endforelse
                 </tbody>

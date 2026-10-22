@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('findings.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Daftar Temuan</a>
+        <x-action href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
     </div>
 
     <div class="simmak-card max-w-3xl">
@@ -160,9 +160,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Simpan Temuan
-                    </button>
+                    <x-action icon="check-circle" label="Simpan Temuan" />
                 </div>
             </form>
         </div>

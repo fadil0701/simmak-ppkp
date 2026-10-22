@@ -160,16 +160,19 @@ class ExtendedModuleSeeder extends Seeder
             );
         }
 
-        $fiscalYear = FiscalYear::firstOrCreate(
-            ['organization_id' => $organization->id, 'code' => 'FY2025'],
-            [
-                'name' => 'Tahun Anggaran 2025',
-                'start_date' => '2025-01-01',
-                'end_date' => '2025-12-31',
-                'is_current' => true,
-                'is_active' => true,
-            ]
-        );
+        foreach ([2024, 2025, 2026, 2027] as $yr) {
+            FiscalYear::firstOrCreate(
+                ['organization_id' => $organization->id, 'code' => 'FY'.$yr],
+                [
+                    'name' => 'Tahun Anggaran '.$yr,
+                    'start_date' => $yr.'-01-01',
+                    'end_date' => $yr.'-12-31',
+                    'is_current' => $yr === (int) date('Y'),
+                    'is_active' => true,
+                ]
+            );
+        }
+        $fiscalYear = FiscalYear::where('organization_id', $organization->id)->where('code', 'FY2025')->first();
 
         $program = QualityProgram::firstOrCreate(
             ['organization_id' => $organization->id, 'program_code' => 'QP-2025-01'],

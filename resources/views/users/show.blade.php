@@ -22,9 +22,9 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('users.index') }}" class="sim-btn sim-btn-outline">Kembali</a>
+            <x-action href="{{ route('users.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
             @can('users.manage')
-                <a href="{{ route('users.edit', $user) }}" class="sim-btn sim-btn-primary">Ubah</a>
+                <x-action href="{{ route('users.edit', $user) }}" icon="pencil" label="Ubah" />
             @endcan
         </div>
     </div>
@@ -100,12 +100,9 @@
                         Dibuat {{ $user->created_at?->translatedFormat('d F Y') }}
                     </p>
                     @can('users.manage')
-                        <form method="POST" action="{{ route('users.toggle-active', $user) }}">
-                            @csrf
-                            <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm w-full">
-                                {{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
-                            </button>
-                        </form>
+                        <x-action href="{{ route('users.toggle-active', $user) }}" icon="check-circle"
+                                  :label="$user->is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                                  variant="secondary" size="sm" class="w-full" method="POST" />
                     @endcan
                 </div>
             </div>
@@ -130,7 +127,7 @@
                                 <label class="sim-form-label" for="reset_password_confirmation">Konfirmasi</label>
                                 <input type="password" id="reset_password_confirmation" name="password_confirmation" required autocomplete="new-password" class="sim-form-input">
                             </div>
-                            <button type="submit" class="sim-btn sim-btn-secondary w-full">Reset Kata Sandi</button>
+                            <x-action icon="check-circle" label="Reset Kata Sandi" variant="secondary" class="w-full" />
                         </form>
                     </div>
                 </div>
@@ -140,12 +137,9 @@
                 <div class="sim-card border-sim-danger/30">
                     <div class="sim-card-header"><h3 class="sim-card-title text-sim-danger">Zona Berbahaya</h3></div>
                     <div class="sim-card-body">
-                        <form method="POST" action="{{ route('users.destroy', $user) }}"
-                              onsubmit="return confirm('Hapus pengguna {{ $user->name }}? Tindakan ini tidak dapat dibatalkan.');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="sim-btn sim-btn-danger w-full">Hapus Pengguna</button>
-                        </form>
+                        <x-action href="{{ route('users.destroy', $user) }}" icon="trash" label="Hapus Pengguna" variant="danger"
+                                  class="w-full" method="DELETE"
+                                  confirm="Hapus pengguna {{ $user->name }}? Tindakan ini tidak dapat dibatalkan." />
                     </div>
                 </div>
             @endcan

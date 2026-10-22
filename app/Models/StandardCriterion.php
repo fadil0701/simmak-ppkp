@@ -16,6 +16,7 @@ class StandardCriterion extends BaseModel
         'evidence_guidance',
         'assessment_type',
         'scoring_rule',
+        'max_score',
         'source_reference',
         'sort_order',
         'active',
@@ -25,6 +26,7 @@ class StandardCriterion extends BaseModel
     {
         return array_merge(parent::casts(), [
             'active' => 'boolean',
+            'max_score' => 'integer',
         ]);
     }
 

@@ -2,17 +2,23 @@
 
 namespace Tests\Feature\Audit;
 
-use App\Models\Clinic;
-use App\Models\User;
-use App\Models\AuditProgram;
+use App\Models\AuditAssignment;
+use App\Models\AuditExecution;
 use App\Models\AuditFinding;
-use Spatie\Permission\Models\Role;
+use App\Models\AuditProgram;
+use App\Models\AuditTeamMember;
+use App\Models\Clinic;
+use App\Models\Organization;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class AuthorizationTest extends TestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -74,15 +80,15 @@ class AuthorizationTest extends TestCase
 
         Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
      * Organisasi tunggal per tes (RefreshDatabase), dibuat sekali.
      */
-    protected function testOrganization(): \App\Models\Organization
+    protected function test_organization(): Organization
     {
-        return \App\Models\Organization::firstOrCreate(
+        return Organization::firstOrCreate(
             ['code' => 'TEST-ORG'],
             [
                 'name' => 'Test Organization',
@@ -94,7 +100,7 @@ class AuthorizationTest extends TestCase
 
     protected function createUser(string $role, array $clinicCodes = []): User
     {
-        $org = $this->testOrganization();
+        $org = $this->test_organization();
 
         $clinics = collect($clinicCodes)->map(function (string $code) use ($org) {
             return Clinic::firstOrCreate(
@@ -110,8 +116,8 @@ class AuthorizationTest extends TestCase
 
         $user = User::create([
             'organization_id' => $org->id,
-            'name' => 'Test User ' . $role,
-            'email' => strtolower($role) . '@test.local',
+            'name' => 'Test User '.$role,
+            'email' => strtolower($role).'@test.local',
             'password' => bcrypt('password'),
             'auth_provider' => 'local',
             'is_active' => true,
@@ -174,7 +180,7 @@ class AuthorizationTest extends TestCase
         ]);
 
         // Kepala klinik KP01 should not access finding in KP02
-        $response = $this->actingAs($user)->get('/findings/' . $finding->id);
+        $response = $this->actingAs($user)->get('/findings/'.$finding->id);
 
         $response->assertStatus(403);
     }
@@ -197,9 +203,32 @@ class AuthorizationTest extends TestCase
 
         $clinic = Clinic::where('organization_id', $orgId)->where('code', 'KP01')->first();
 
-        $execution = \App\Models\AuditExecution::create([
+        $assignment = AuditAssignment::create([
             'organization_id' => $orgId,
             'audit_program_id' => $program->id,
+            'clinic_id' => $clinic->id,
+            'assignment_code' => 'ASG-001',
+            'title' => 'Test Assignment',
+            'scheduled_start' => now()->toDateString(),
+            'scheduled_end' => now()->addDays(7)->toDateString(),
+            'status' => 'active',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+        AuditTeamMember::create([
+            'organization_id' => $orgId,
+            'audit_assignment_id' => $assignment->id,
+            'user_id' => $user->id,
+            'team_role' => 'auditor',
+            'active' => true,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+
+        $execution = AuditExecution::create([
+            'organization_id' => $orgId,
+            'audit_program_id' => $program->id,
+            'audit_assignment_id' => $assignment->id,
             'clinic_id' => $clinic->id,
             'execution_code' => 'EXEC-001',
             'title' => 'Test Execution',
@@ -209,7 +238,7 @@ class AuthorizationTest extends TestCase
         ]);
 
         // Auditor assigned to this execution should be able to access
-        $response = $this->actingAs($user)->get('/audit/executions/' . $execution->id . '/checklist');
+        $response = $this->actingAs($user)->get('/audit/executions/'.$execution->id.'/checklist');
 
         // Should be 200 (assigned) or 403 (not assigned - either is acceptable for this test)
         $response->assertStatus(200);
@@ -233,7 +262,7 @@ class AuthorizationTest extends TestCase
         ]);
 
         // User who submitted should not be able to approve (separation of duties)
-        $response = $this->actingAs($user)->post('/audit/programs/' . $program->id . '/approve');
+        $response = $this->actingAs($user)->post('/audit/programs/'.$program->id.'/approve');
 
         $response->assertStatus(403);
     }
@@ -318,7 +347,7 @@ class AuthorizationTest extends TestCase
             'updated_by' => $user->id,
         ]);
 
-        $response = $this->actingAs($user)->get('/findings/' . $finding->id);
+        $response = $this->actingAs($user)->get('/findings/'.$finding->id);
 
         $response->assertStatus(403);
     }

@@ -26,10 +26,16 @@
                     ->get();
             @endphp
             @if ($assignments->isNotEmpty())
+                @php
+                    $instrumentVersions = \App\Models\InstrumentVersion::whereHas('standard', fn ($q) => $q->where('organization_id', auth()->user()->organization_id))
+                        ->whereIn('status', ['active', 'approved'])
+                        ->orderBy('version_label')
+                        ->get();
+                @endphp
                 <div class="sim-card p-4 mt-4 border-l-4 border-sim-primary">
                     <h3 class="sim-card-title text-sm">Buat Eksekusi Baru</h3>
-                    <p class="text-xs text-sim-muted mb-3">Pilih penugasan audit yang aktif untuk membuat eksekusi baru.</p>
-                    <form method="POST" action="{{ route('audit.executions.store') }}" class="space-y-3">
+                    <p class="text-xs text-sim-muted mb-3">Pilih penugasan aktif dan versi instrumen untuk memulai pelaksanaan audit.</p>
+                    <form method="POST" action="{{ route('audit.executions.store-selection') }}" class="space-y-3">
                         @csrf
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             <div>
@@ -40,18 +46,39 @@
                                         <option value="{{ $assignment->id }}">{{ $assignment->assignment_code }} — {{ $assignment->clinic?->name }}</option>
                                     @endforeach
                                 </select>
+                                @error('audit_assignment_id')<p class="sim-form-error">{{ $message }}</p>@enderror
                             </div>
-                            <div class="flex items-end">
-                                <button type="submit" class="sim-btn sim-btn-primary">Buat Eksekusi</button>
+                            <div>
+                                <label class="sim-form-label">Versi Instrumen</label>
+                                <select name="instrument_version_id" class="sim-form-input" required>
+                                    <option value="">— Pilih instrumen —</option>
+                                    @foreach ($instrumentVersions as $version)
+                                        <option value="{{ $version->id }}">{{ $version->version_label }} ({{ $version->standard?->code }})</option>
+                                    @endforeach
+                                </select>
+                                @error('instrument_version_id')<p class="sim-form-error">{{ $message }}</p>@enderror
                             </div>
+                            <div>
+                                <label class="sim-form-label">Kode Eksekusi</label>
+                                <input type="text" name="execution_code" value="{{ old('execution_code', 'EXEC-'.date('Ymd')) }}" class="sim-form-input" required>
+                                @error('execution_code')<p class="sim-form-error">{{ $message }}</p>@enderror
+                            </div>
+                            <div class="sm:col-span-2 lg:col-span-3">
+                                <label class="sim-form-label">Judul Eksekusi</label>
+                                <input type="text" name="title" value="{{ old('title') }}" class="sim-form-input" required>
+                                @error('title')<p class="sim-form-error">{{ $message }}</p>@enderror
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-action icon="plus" label="Buat Eksekusi" />
                         </div>
                     </form>
                 </div>
             @else
                 <div class="sim-card p-4 mt-4 border-l-4 border-sim-warning bg-sim-warning/5">
                     <div class="sim-card-title text-sm">Tidak ada penugasan aktif</div>
-                    <p class="text-xs text-sim-muted">Buat dan aktifkan penugasan audit terlebih dahulu sebelum membuat eksekusi.</p>
-                    <a href="{{ route('audit.assignments.index') }}" class="text-sm text-sim-primary hover:underline">Kelola Penugasan →</a>
+                    <p class="text-xs text-sim-muted mb-2">Buat dan aktifkan penugasan audit terlebih dahulu sebelum membuat eksekusi.</p>
+                    <x-action href="{{ route('audit.assignments.index') }}" icon="user-group" label="Kelola Penugasan" variant="outline" size="sm" />
                 </div>
             @endif
         @else
@@ -101,7 +128,9 @@
                             </td>
                             <td class="text-center text-sim-mono text-xs">{{ $execution->instrumentVersion?->version_label ?? '—' }}</td>
                             <td class="text-right">
-                                <a href="{{ route('audit.executions.checklist', $execution) }}" class="text-sm text-sim-primary hover:underline">Checklist</a>
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.executions.checklist', $execution) }}" icon="clipboard-check" label="Isi Tabel" variant="outline" size="sm" />
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -28,20 +28,23 @@
                 Bantuan
             </a>
 
-            <div class="flex items-center gap-2 border-l border-slate-200 pl-3 sm:pl-5">
-                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-teal-700 text-sm font-semibold text-white">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+            <div class="relative flex items-center gap-2 border-l border-slate-200 pl-3 sm:pl-5" x-data="{ open: false }" @click.outside="open = false">
+                <button type="button" class="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-slate-100" @click="open = !open" aria-haspopup="true" :aria-expanded="open.toString()">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-teal-700 text-sm font-semibold text-white">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                    </div>
+                    <div class="hidden text-left sm:block">
+                        <div class="text-sm font-medium text-slate-900">{{ auth()->user()->name }}</div>
+                        <div class="text-xs text-slate-500">{{ \App\Support\RoleLabel::for(auth()->user()->getRoleNames()->first()) }}</div>
+                    </div>
+                </button>
+                <div x-show="open" x-cloak class="absolute right-0 top-full z-30 mt-2 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Ubah profil</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Keluar</button>
+                    </form>
                 </div>
-                <div class="hidden sm:block">
-                    <div class="text-sm font-medium text-slate-900">{{ auth()->user()->name }}</div>
-                    <div class="text-xs text-slate-500">{{ \App\Support\RoleLabel::for(auth()->user()->getRoleNames()->first()) }}</div>
-                </div>
-                <form method="POST" action="{{ route('logout') }}" class="ml-1">
-                    @csrf
-                    <button type="submit" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600" title="Keluar">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    </button>
-                </form>
             </div>
         </div>
     </div>

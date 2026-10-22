@@ -18,7 +18,8 @@ class AuditExecutionService
      * Fields yang dijejak perubahan-nya sebagai revisi jawaban checklist (B-13).
      */
     private const REVISIONED_FIELDS = [
-        'response_value', 'assessment_notes', 'method_used', 'sample_description',
+        'response_value', 'score', 'max_score', 'facts_analysis', 'recommendation',
+        'assessment_notes', 'method_used', 'sample_description',
         'not_applicable_reason', 'not_assessable_reason',
     ];
 
@@ -93,6 +94,10 @@ class AuditExecutionService
                 [
                     'organization_id' => $user->organization_id,
                     'response_value' => $data['response_value'] ?? null,
+                    'score' => $data['score'] ?? null,
+                    'max_score' => $data['max_score'] ?? null,
+                    'facts_analysis' => $data['facts_analysis'] ?? null,
+                    'recommendation' => $data['recommendation'] ?? null,
                     'assessment_notes' => $data['assessment_notes'] ?? null,
                     'method_used' => $data['method_used'] ?? null,
                     'sample_description' => $data['sample_description'] ?? null,
@@ -106,6 +111,97 @@ class AuditExecutionService
 
             return $response;
         });
+    }
+
+    /**
+     * Menyimpan seluruh baris tabel pemeriksaan sekaligus (form tabel).
+     *
+     * Setiap baris berisi: skor, fakta & analisis, dan rekomendasi sesuai
+     * tata letak instrumen (kolom SKOR, FAKTA DAN ANALISIS, REKOMENDASI).
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return int jumlah baris yang tersimpan
+     */
+    public function saveTableRows(AuditExecution $execution, array $rows, User $user): int
+    {
+        abort_unless($user->belongsToOrganization($execution->organization_id), 403);
+        abort_unless($execution->status === 'in_progress', 403);
+
+        $criterionIds = $this->getInstrumentCriteriaIds($execution)->all();
+
+        $saved = 0;
+
+        foreach ($rows as $row) {
+            $criterionId = $row['standard_criterion_id'] ?? null;
+            if (! $criterionId || ! in_array($criterionId, $criterionIds, true)) {
+                continue;
+            }
+
+            $score = $row['score'] ?? null;
+            $score = ($score === null || $score === '') ? null : (int) $score;
+            $facts = $this->trimOrNull($row['facts_analysis'] ?? null);
+            $recommendation = $this->trimOrNull($row['recommendation'] ?? null);
+
+            // Baris kosong diabaikan agar tidak menimpa nilai yang sudah tersimpan.
+            if ($score === null && $facts === null && $recommendation === null) {
+                continue;
+            }
+
+            $criterion = StandardCriterion::find($criterionId);
+            $maxScore = $criterion?->max_score ?: 10;
+
+            $this->saveResponse([
+                'audit_execution_id' => $execution->id,
+                'standard_criterion_id' => $criterionId,
+                'response_value' => $row['response_value'] ?? $this->deriveResponseValue($score, $maxScore),
+                'score' => $score,
+                'max_score' => $maxScore,
+                'facts_analysis' => $facts,
+                'recommendation' => $recommendation,
+                'not_applicable_reason' => $this->trimOrNull($row['not_applicable_reason'] ?? null),
+                'not_assessable_reason' => $this->trimOrNull($row['not_assessable_reason'] ?? null),
+            ], $user);
+
+            $saved++;
+        }
+
+        return $saved;
+    }
+
+    /**
+     * Menurunkan status JH/EP dari skor yang diinput petugas.
+     *
+     * - Skor = skor maksimal  → Terpenuhi
+     * - Skor > 0 (< maksimal)  → Terpenuhi Sebagian
+     * - Skor = 0              → Tidak Terpenuhi
+     * - Skor kosong           → Tidak Dapat Dinilai (bukan otomatis "tidak terpenuhi")
+     */
+    private function deriveResponseValue(?int $score, int $maxScore): ?string
+    {
+        if ($score === null) {
+            return 'not_assessable';
+        }
+
+        if ($score >= $maxScore) {
+            return 'compliant';
+        }
+
+        if ($score > 0) {
+            return 'partial';
+        }
+
+        return 'non_compliant';
+    }
+
+    private function trimOrNull($value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 
     /**
@@ -227,6 +323,9 @@ class AuditExecutionService
             'audit_execution_id' => $response->audit_execution_id,
             'standard_criterion_id' => $response->standard_criterion_id,
             'response_value' => $response->response_value,
+            'score' => $response->score,
+            'facts_analysis' => $response->facts_analysis,
+            'recommendation' => $response->recommendation,
             'assessment_notes' => $response->assessment_notes,
             'method_used' => $response->method_used,
             'sample_description' => $response->sample_description,

@@ -16,7 +16,7 @@ class Evidence extends BaseModel
     protected $fillable = [
         'organization_id', 'clinic_id', 'audit_execution_id', 'uploaded_by', 'storage_disk',
         'storage_path', 'original_filename', 'mime_type', 'size_bytes', 'checksum',
-        'evidence_type', 'access_classification', 'description', 'uploaded_at',
+        'evidence_type', 'access_classification', 'description', 'uploaded_at', 'metadata',
     ];
 
     protected function casts(): array

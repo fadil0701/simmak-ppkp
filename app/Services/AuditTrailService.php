@@ -19,7 +19,7 @@ class AuditTrailService
 
         return AuditTrail::create([
             'id' => (string) Str::uuid(),
-            'organization_id' => $user?->organization_id ?? $auditable?->organization_id,
+            'organization_id' => $user?->organization_id ?? $auditable?->organization_id ?? ($metadata['organization_id'] ?? null),
             'clinic_id' => $user?->default_clinic_id,
             'user_id' => $user?->id,
             'event' => $event,

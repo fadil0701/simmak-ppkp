@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('capa.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Daftar CAPA</a>
+        <x-action href="{{ route('capa.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
@@ -133,7 +133,7 @@
                         <label class="sim-form-label">Akar Masalah</label>
                         <textarea name="root_cause" rows="2" required class="sim-form-textarea"></textarea>
                     </div>
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan RCA</button>
+                    <x-action icon="check-circle" label="Simpan RCA" />
                 </form>
             </div>
         </div>
@@ -173,7 +173,7 @@
                         <label class="sim-form-label">Catatan</label>
                         <textarea name="notes" rows="2" class="sim-form-textarea"></textarea>
                     </div>
-                    <button type="submit" class="sim-btn sim-btn-primary">Catat Verifikasi</button>
+                    <x-action icon="check-circle" label="Catat Verifikasi" />
                 </form>
             </div>
         </div>

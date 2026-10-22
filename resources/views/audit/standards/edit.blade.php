@@ -54,10 +54,8 @@
                     @endif
                 </div>
 
-                <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Perbarui Standar
-                    </button>
+                <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
+                    <x-action icon="check-circle" label="Simpan Perubahan" />
                 </div>
             </form>
         </div>

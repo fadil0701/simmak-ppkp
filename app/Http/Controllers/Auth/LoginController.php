@@ -21,7 +21,9 @@ class LoginController extends Controller
             return redirect(SimmakMenu::homeRouteFor(Auth::user()));
         }
 
-        return view('auth.login');
+        return view('auth.login', [
+            'redirectTo' => session()->get('url.intended'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -63,9 +65,18 @@ class LoginController extends Controller
         ]);
 
         if (! $successful) {
-            throw ValidationException::withMessages([
-                'email' => __('Email/username atau password tidak valid.'),
-            ]);
+            // Pesan yang lebih membantu: Bedakan "akun tidak ada" dari "sandi salah"
+            // agar pengguna tidak terus mencoba dan terkena rate limit.
+            $knownUser = User::query()
+                ->where('email', $identifier)
+                ->orWhere('username', $identifier)
+                ->exists();
+
+            $message = $knownUser
+                ? __('Sandi salah. Silakan coba lagi.')
+                : __('Akun tidak ditemukan. Pastikan email/username benar atau hubungi administrator.');
+
+            throw ValidationException::withMessages(['email' => $message]);
         }
 
         $request->session()->regenerate();

@@ -50,14 +50,12 @@
                             <td class="px-4 py-3 text-center text-slate-600">{{ $evidence->uploader?->name ?? '—' }}</td>
                             <td class="px-4 py-3 text-center text-slate-600">{{ $evidence->uploaded_at?->format('d M Y H:i') ?? '—' }}</td>
                             <td class="px-4 py-3 text-center">
-                                <a href="{{ route('audit.evidence.download', $evidence) }}" class="text-sm font-medium text-teal-700 hover:underline">Unduh</a>
-                                @can('audit.evidence.upload', $evidence)
-                                    <form method="POST" action="{{ route('audit.evidence.destroy', $evidence) }}" class="inline" onsubmit="return confirm('Yakin ingin menghapus bukti ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-sm font-medium text-red-600 hover:underline ml-3">Hapus</button>
-                                    </form>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" variant="outline" size="sm" />
+                                    @can('delete', $evidence)
+                                        <x-action href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus bukti ini?" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', '{{ $assignment->assignment_code }} — SIMMAK PPKP')
-@section('page-title', 'Detail Penugasan: {{ $assignment->assignment_code }}')
+@section('title', $assignment->assignment_code . ' — SIMMAK PPKP')
+@section('page-title', 'Detail Penugasan: ' . $assignment->assignment_code)
 
 @section('content')
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -12,32 +12,20 @@
             @endif
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
             @can('audit.assignment.manage', $assignment)
-                <a href="{{ route('audit.assignments.edit', $assignment) }}" class="sim-btn sim-btn-primary sim-btn-sm">
-                    Sunting
-                </a>
+                <x-action href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Ubah" size="sm" />
             @endcan
             @can('audit.assignment.manage', $assignment)
                 @if ($assignment->status === 'draft')
-                    <form method="POST" action="{{ route('audit.assignments.submit', $assignment) }}" class="inline" onsubmit="return confirm('Yakin ingin mengajukan penugasan ini untuk aktivasi?');">
-                        @csrf
-                        <button type="submit" class="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-800">
-                            Ajukan Aktivasi
-                        </button>
-                    </form>
+                    <x-action href="{{ route('audit.assignments.submit', $assignment) }}" icon="upload" label="Ajukan Aktivasi" size="sm"
+                              method="POST" confirm="Ajukan penugasan ini untuk aktivasi?" />
                 @elseif ($assignment->status === 'proposed' && $assignment->conflict_check_status === 'resolved')
-                    <form method="POST" action="{{ route('audit.assignments.activate', $assignment) }}" class="inline" onsubmit="return confirm('Yakin ingin mengaktifkan penugasan ini?');">
-                        @csrf
-                        <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-800">
-                            Aktifkan
-                        </button>
-                    </form>
+                    <x-action href="{{ route('audit.assignments.activate', $assignment) }}" icon="check-circle" label="Aktifkan" size="sm"
+                              method="POST" confirm="Aktifkan penugasan ini?" />
                 @endif
             @endcan
-            <a href="{{ route('audit.assignments.index') }}" class="sim-btn sim-btn-secondary sim-btn-sm">
-                Kembali
-            </a>
+            <x-action href="{{ route('audit.assignments.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
         </div>
     </div>
 
@@ -89,9 +77,7 @@
                                     <label class="sim-form-label">Catatan Konflik</label>
                                     <textarea name="conflict_notes" rows="2" class="sim-form-textarea">{{ old('conflict_notes', $member->conflict_notes) }}</textarea>
                                 </div>
-                                <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm mt-2">
-                                    Simpan Deklarasi
-                                </button>
+                                <x-action icon="check-circle" label="Simpan Deklarasi" size="sm" class="mt-2" />
                             </form>
                         @endcan
                     </div>
@@ -119,9 +105,7 @@
                                     <input type="text" name="team_role" value="auditor" class="sim-form-input" required>
                                 </div>
                                 <div class="flex items-end">
-                                    <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">
-                                        Tambah
-                                    </button>
+                                    <x-action icon="plus" label="Tambah" size="sm" />
                                 </div>
                             </div>
                         </form>
@@ -190,9 +174,7 @@
                                 <label class="sim-form-label">Judul Eksekusi<span class="sim-form-label-required"></span></label>
                                 <input type="text" name="title" maxlength="255" value="{{ old('title', $assignment->title) }}" class="sim-form-input">
                             </div>
-                            <button type="submit" class="sim-btn sim-btn-primary">
-                                Buat Eksekusi
-                            </button>
+                            <x-action icon="plus" label="Buat Eksekusi" />
                         </form>
                     </div>
                 </div>

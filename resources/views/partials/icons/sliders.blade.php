@@ -1,0 +1,1 @@
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.6 9H2m2 6H2m1.6 6H2m14 0h-1.6M22 9h-1.6M22 15h-1.6M11.4 22H10M12 2v1.4M12 20.6V22"></path></svg>

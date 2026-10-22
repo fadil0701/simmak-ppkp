@@ -19,10 +19,7 @@
         </div>
 
         @can('audit.finding.create')
-            <a href="{{ route('findings.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                Tambah Temuan
-            </a>
+            <x-action href="{{ route('findings.create') }}" icon="plus" label="Tambah Temuan" />
         @endcan
     </div>
 
@@ -140,10 +137,12 @@
                             <td class="text-sm text-sim-muted">{{ $finding->owner?->name ?? $finding->assignee?->name ?? '—' }}</td>
                             <td class="text-center text-sim-mono text-xs">{{ $finding->due_at?->format('d M Y') ?? '—' }}</td>
                             <td class="text-right">
-                                <a href="{{ route('findings.show', $finding) }}" class="text-sm text-sim-primary hover:underline">Detail</a>
-                                @can('audit.finding.update', $finding)
-                                    <a href="{{ route('findings.edit', $finding) }}" class="ml-4 text-sm text-sim-primary hover:underline">Sunting</a>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('findings.show', $finding) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    @can('audit.finding.update', $finding)
+                                        <x-action href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

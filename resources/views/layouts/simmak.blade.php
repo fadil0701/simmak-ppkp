@@ -12,8 +12,7 @@
     </style>
 </head>
 <body class="min-h-sim-screen bg-sim-surface text-sim-ink antialiased"
-      x-data="{ sidebarOpen: false, userMenuOpen: false, clinicMenuOpen: false }"
-      @click.outside="userMenuOpen = false; clinicMenuOpen = false">
+      x-data="{ sidebarOpen: false, userMenuOpen: false, clinicMenuOpen: false }">
 
     <!-- Skip link for accessibility -->
     <a href="#main-content" class="sim-skip-link">Langsung ke konten utama</a>
@@ -46,22 +45,6 @@
             </nav>
 
             <div class="sim-sidebar-footer">
-                @php
-                    $sidebarUser = auth()->user();
-                    $sidebarClinic = request()->attributes->get('active_clinic');
-                    $sidebarRole = \App\Support\RoleLabel::for($sidebarUser?->getRoleNames()->first());
-                    $sidebarAllClinics = $sidebarUser?->viewsAllClinics() && ! $sidebarClinic;
-                @endphp
-                @if ($sidebarClinic || $sidebarAllClinics)
-                    <div class="sim-sidebar-clinic">
-                        <div class="sim-sidebar-clinic-label">Klinik Aktif</div>
-                        <div class="sim-sidebar-clinic-name">
-                            {{ $sidebarClinic?->name ?? 'Semua Klinik' }}
-                        </div>
-                        <div class="sim-sidebar-clinic-role">{{ $sidebarRole }}</div>
-                    </div>
-                @endif
-
                 <div class="sim-sidebar-institution">
                     <div class="sim-sidebar-institution-name">PPKP Provinsi DKI Jakarta</div>
                 </div>
@@ -119,58 +102,67 @@
                                 ->orderBy('name')
                                 ->get();
                         @endphp
-                        @if ($clinics && $clinics->count() > 1)
-                            <div class="sim-header-clinic-picker" @click="clinicMenuOpen = !clinicMenuOpen">
-                                <div class="sim-header-clinic-picker-trigger flex items-center gap-2 px-3 py-2 rounded-md border border-sim-border hover:bg-sim-hover transition-colors">
-                                    <svg class="sim-header-clinic-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12.258c1.625-1.775 4.025-2.8 6.438-2.8 2.42 0 4.84.995 6.488 2.766M3 12.258a60.014 60.014 0 000-3.758M7.5 19.758a22.5 22.5 0 015.253-2.358M7.5 19.758C8.53 22.826 12 24 12 24s3.47-1.174 4.5-4.242M12 24c3.094 0 5.969-.781 8.25-2.172m-8.25 0a52.6 52.6 0 01-3.758-3.273M12 15.75a3 3 0 11-6 0 3 3 0 016 0zm0 0a60.6 60.6 0 003.758 3.273M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        @if ($clinics->isNotEmpty() || $contextUser?->viewsAllClinics())
+                            @php
+                                $canSwitchClinic = $clinics->count() > 1 || $contextUser?->viewsAllClinics();
+                                $clinicLabel = $activeClinic?->name ?? ($contextUser?->viewsAllClinics() ? 'Semua Klinik' : 'Pilih Klinik');
+                                $clinicCode = $activeClinic?->code ?? ($contextUser?->viewsAllClinics() ? 'Lintas' : '—');
+                            @endphp
+                            <div class="sim-header-clinic-picker" @click.outside="clinicMenuOpen = false">
+                                <button type="button"
+                                        class="sim-header-clinic-picker-trigger flex items-center gap-2 rounded-md border border-sim-border px-3 py-2 hover:bg-sim-hover"
+                                        @if ($canSwitchClinic) @click.stop="clinicMenuOpen = !clinicMenuOpen" @endif
+                                        @if ($canSwitchClinic) aria-haspopup="true" :aria-expanded="clinicMenuOpen.toString()" @endif
+                                        @unless ($canSwitchClinic) disabled @endunless>
+                                    <svg class="sim-header-clinic-icon text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                                     </svg>
-                                    <div>
-                                        <div class="sim-header-clinic-label">
-                                            {{ $activeClinic?->name ?? ($contextUser?->viewsAllClinics() ? 'Semua Klinik' : 'Pilih Klinik') }}
-                                        </div>
-                                        <div class="sim-header-clinic-code text-[10px]">
-                                            {{ $activeClinic?->code ?? ($contextUser?->viewsAllClinics() ? 'LINTAS' : '—') }}
-                                        </div>
+                                    <div class="min-w-0 text-left">
+                                        <div class="sim-header-clinic-label">{{ $clinicLabel }}</div>
+                                        <div class="sim-header-clinic-code text-[10px]">{{ $clinicCode }}</div>
                                     </div>
-                                    <svg class="sim-header-clinic-caret" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <div class="sim-header-clinic-menu absolute z-sim-dropdown mt-1 w-56 bg-white border border-sim-border rounded-md shadow-sim-lg py-2 hidden lg:hidden"
-                                     x-show="clinicMenuOpen"
-                                     x-transition:enter="transition ease-out duration-100"
-                                     x-transition:enter-start="transform opacity-0 scale-95"
-                                     x-transition:enter-end="transform opacity-100 scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="transform opacity-100 scale-100"
-                                     x-transition:leave-end="transform opacity-0 scale-95">
-                                    @if ($contextUser?->viewsAllClinics())
-                                        <a href="{{ route('clinics.switch-all') }}"
-                                           class="flex items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover {{ $activeClinic ? '' : 'bg-sim-active text-sim-primary' }} block">
-                                            {{ $activeClinic ? '○' : '●' }}
-                                            <span>Semua Klinik</span>
-                                            <span class="ml-auto text-[10px] text-sim-muted uppercase">LINTAS</span>
-                                        </a>
+                                    @if ($canSwitchClinic)
+                                        <svg class="sim-header-clinic-caret transition-transform" :class="{ 'rotate-180': clinicMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
                                     @endif
-                                    @foreach ($clinics as $clinic)
-                                        <a href="{{ route('clinics.switch', $clinic) }}"
-                                           class="flex items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover {{ $activeClinic?->id === $clinic->id ? 'bg-sim-active text-sim-primary' : '' }} block">
-                                            {{ $activeClinic?->id === $clinic->id ? '●' : '○' }}
-                                            <span>{{ $clinic->name }}</span>
-                                            <span class="ml-auto text-[10px] text-sim-muted uppercase">{{ $clinic->code }}</span>
-                                        </a>
-                                    @endforeach
-                                </div>
+                                </button>
+                                @if ($canSwitchClinic)
+                                    <div class="absolute right-0 z-50 mt-1 max-h-80 w-72 overflow-y-auto rounded-md border border-sim-border bg-white py-1 shadow-sim-lg"
+                                         x-show="clinicMenuOpen"
+                                         x-cloak
+                                         role="menu">
+                                        @if ($contextUser?->viewsAllClinics())
+                                            <form method="POST" action="{{ route('clinics.switch-all') }}">
+                                                @csrf
+                                                <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-sim-hover {{ $activeClinic ? 'text-sim-ink' : 'bg-sim-active text-sim-primary' }}">
+                                                    <span class="min-w-0 flex-1 truncate">Semua Klinik</span>
+                                                    <span class="text-[10px] uppercase text-sim-muted">Lintas</span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @foreach ($clinics as $clinic)
+                                            <form method="POST" action="{{ route('clinics.switch', $clinic) }}">
+                                                @csrf
+                                                <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm hover:bg-sim-hover {{ $activeClinic?->id === $clinic->id ? 'bg-sim-active text-sim-primary' : 'text-sim-ink' }}">
+                                                    <span class="min-w-0 flex-1 truncate">{{ $clinic->name }}</span>
+                                                    <span class="text-[10px] uppercase text-sim-muted">{{ $clinic->code }}</span>
+                                                </button>
+                                            </form>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         @endif
 
                         <!-- Notifications -->
                         <button type="button" class="sim-header-button" aria-label="Notifikasi">
-                            <svg class="sim-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                            </svg>
-                            <span class="sim-notification-badge">3</span>
+                            <span class="relative inline-flex">
+                                <svg class="sim-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                </svg>
+                                <span class="sim-notification-badge">3</span>
+                            </span>
                         </button>
 
                         <!-- Help -->
@@ -182,28 +174,46 @@
                         </a>
 
                         <!-- User Profile -->
-                        <div class="sim-header-user" @click="userMenuOpen = !userMenuOpen">
-                            <div class="sim-header-user-avatar flex h-9 w-9 items-center justify-center rounded-md bg-sim-primary text-white text-sm font-semibold">
-                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                            </div>
-                            <div class="sim-header-user-menu absolute right-0 z-sim-dropdown mt-2 w-48 bg-white border border-sim-border rounded-md shadow-sim-lg py-2 hidden"
+                        <div class="sim-header-user" @click.outside="userMenuOpen = false">
+                            <button type="button"
+                                    class="sim-header-user-trigger"
+                                    @click.stop="userMenuOpen = !userMenuOpen"
+                                    :aria-expanded="userMenuOpen.toString()"
+                                    aria-haspopup="true"
+                                    aria-label="Menu akun">
+                                <div class="sim-header-user-avatar flex h-9 w-9 items-center justify-center rounded-md bg-sim-primary text-white text-sm font-semibold">
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                                </div>
+                                <div class="hidden md:block text-left">
+                                    <div class="text-sm font-medium text-sim-ink leading-tight">{{ auth()->user()->name }}</div>
+                                    <div class="text-[10px] uppercase tracking-wide text-sim-muted">{{ \App\Support\RoleLabel::for(auth()->user()->getRoleNames()->first()) }}</div>
+                                </div>
+                                <svg class="h-4 w-4 text-sim-muted transition-transform" :class="{ 'rotate-180': userMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div class="sim-header-user-menu absolute right-0 z-50 mt-2 w-60 origin-top-right rounded-md border border-sim-border bg-white py-1 shadow-sim-lg"
                                  x-show="userMenuOpen"
+                                 x-cloak
                                  x-transition:enter="transition ease-out duration-100"
                                  x-transition:enter-start="transform opacity-0 scale-95"
                                  x-transition:enter-end="transform opacity-100 scale-100"
                                  x-transition:leave="transition ease-in duration-75"
                                  x-transition:leave-start="transform opacity-100 scale-100"
-                                 x-transition:leave-end="transform opacity-0 scale-95">
-                                <div class="px-4 py-2 border-b border-sim-border">
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 role="menu">
+                                <div class="border-b border-sim-border px-4 py-2.5">
                                     <div class="text-sm font-medium text-sim-ink">{{ auth()->user()->name }}</div>
-                                    <div class="text-xs text-sim-muted">{{ \App\Support\RoleLabel::for(auth()->user()->getRoleNames()->first()) }}</div>
+                                    <div class="truncate text-xs text-sim-muted">{{ auth()->user()->email }}</div>
                                 </div>
+                                <a href="{{ route('profile.edit') }}" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover" role="menuitem">
+                                    <span class="inline-flex text-sim-muted">@include('partials.icons.pencil')</span>
+                                    Ubah profil
+                                </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover rounded-none text-left">
-                                        <svg class="sim-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                        </svg>
+                                    <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-sim-danger hover:bg-sim-hover" role="menuitem">
+                                        <span class="inline-flex">@include('partials.icons.log-out')</span>
                                         Keluar
                                     </button>
                                 </form>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
@@ -50,7 +51,7 @@ class AuditTrail extends Model
     public function update(array $attributes = [], array $options = []): bool
     {
         if ($this->exists) {
-            throw new \Illuminate\Database\Eloquent\MassAssignmentException(
+            throw new MassAssignmentException(
                 'Audit trail records are append-only and cannot be updated.'
             );
         }
@@ -63,7 +64,7 @@ class AuditTrail extends Model
      */
     public function delete(): bool
     {
-        throw new \Illuminate\Database\Eloquent\MassAssignmentException(
+        throw new MassAssignmentException(
             'Audit trail records are append-only and cannot be deleted.'
         );
     }
@@ -71,6 +72,11 @@ class AuditTrail extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
     }
 
     /**
@@ -82,6 +88,10 @@ class AuditTrail extends Model
             $attributes['id'] = (string) Str::uuid();
         }
 
-        return parent::create($attributes);
+        $instance = new static;
+        $instance->forceFill($attributes);
+        $instance->save();
+
+        return $instance;
     }
 }

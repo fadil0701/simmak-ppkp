@@ -4,7 +4,6 @@ use App\Http\Controllers\AccreditationController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditAssignmentController;
 use App\Http\Controllers\AuditController;
-use App\Http\Controllers\AuditDashboardController;
 use App\Http\Controllers\AuditEvidenceController;
 use App\Http\Controllers\AuditExecutionController;
 use App\Http\Controllers\AuditFindingController;
@@ -17,7 +16,11 @@ use App\Http\Controllers\ClinicController;
 use App\Http\Controllers\ClinicDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DmsController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\InstrumentVersionController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QualityController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RiskController;
@@ -31,15 +34,20 @@ Route::get('/verify/document/{token}', [DmsController::class, 'verify'])->name('
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
-    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:5,1');
+    // 10 percobaan/menit: cukup untuk salah ketik, tetap membatasi brute force.
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');
 });
 
 Route::middleware(['auth', 'clinic.context'])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard/export-ranking', [DashboardController::class, 'exportRanking'])->name('dashboard.export-ranking');
+    Route::get('/audit/dashboard', [DashboardController::class, 'redirectAuditDashboard'])->name('audit.dashboard');
 
     Route::middleware('permission:dashboard.executive')->group(function () {
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
-        Route::get('/dashboard/export-ranking', [DashboardController::class, 'exportRanking'])->name('dashboard.export-ranking');
         Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
     });
 
@@ -67,8 +75,35 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::put('/settings', [SettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
     });
 
+    Route::middleware('permission:settings.manage')->group(function () {
+        Route::get('/settings/fiscal-years', [FiscalYearController::class, 'index'])->name('fiscal-years.index');
+        Route::post('/settings/fiscal-years', [FiscalYearController::class, 'store'])->name('fiscal-years.store');
+        Route::delete('/settings/fiscal-years/{fiscalYear}', [FiscalYearController::class, 'destroy'])->name('fiscal-years.destroy');
+    });
+
     Route::middleware('permission:clinics.view')->group(function () {
         Route::get('/clinics', [ClinicController::class, 'index'])->name('clinics.index');
+    });
+
+    Route::middleware('permission:employees.view')->group(function () {
+        Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
+    });
+    Route::middleware('permission:positions.view')->group(function () {
+        Route::get('/positions', [PositionController::class, 'index'])->name('positions.index');
+    });
+    Route::middleware('permission:positions.manage')->group(function () {
+        Route::get('/positions/create', [PositionController::class, 'create'])->name('positions.create');
+        Route::post('/positions', [PositionController::class, 'store'])->name('positions.store');
+        Route::get('/positions/{position}/edit', [PositionController::class, 'edit'])->name('positions.edit');
+        Route::put('/positions/{position}', [PositionController::class, 'update'])->name('positions.update');
+        Route::delete('/positions/{position}', [PositionController::class, 'destroy'])->name('positions.destroy');
+    });
+    Route::middleware('permission:employees.manage')->group(function () {
+        Route::get('/employees/create', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
+        Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])->name('employees.edit');
+        Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
     });
     Route::middleware('permission:clinics.manage')->group(function () {
         Route::get('/clinics/create', [ClinicController::class, 'create'])->name('clinics.create');
@@ -127,10 +162,6 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/findings/{finding}/escalate', [AuditFindingController::class, 'escalate'])->name('findings.escalate');
     });
 
-    Route::middleware('permission:audit.dashboard.view')->group(function () {
-        Route::get('/audit/dashboard', [AuditDashboardController::class, '__invoke'])->name('audit.dashboard');
-    });
-
     Route::middleware('permission:audit.report.view')->group(function () {
         Route::get('/audit/reports', [AuditReportController::class, 'index'])->name('audit.reports.index');
         Route::get('/audit/reports/create', [AuditReportController::class, 'create'])->name('audit.reports.create');
@@ -168,6 +199,9 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/audit/versions/{version}/activate', [InstrumentVersionController::class, 'activate'])->name('audit.versions.activate');
         Route::post('/audit/versions/{version}/sections', [AuditStandardController::class, 'storeSection'])->name('audit.versions.sections.store');
         Route::post('/audit/sections/{section}/criteria', [AuditStandardController::class, 'storeCriterion'])->name('audit.sections.criteria.store');
+        Route::get('/audit/standards/{standard}/import', [AuditStandardController::class, 'importForm'])->name('audit.standards.import');
+        Route::post('/audit/standards/{standard}/import/preview', [AuditStandardController::class, 'previewImport'])->name('audit.standards.import.preview');
+        Route::post('/audit/standards/{standard}/import/store', [AuditStandardController::class, 'storeImport'])->name('audit.standards.import.store');
     });
 
     Route::middleware('permission:audit.program.view')->group(function () {
@@ -213,10 +247,12 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
 
     Route::middleware('permission:audit.execution.execute')->group(function () {
         Route::post('/audit/assignments/{assignment}/executions', [AuditExecutionController::class, 'store'])->name('audit.executions.store');
+        Route::post('/audit/executions', [AuditExecutionController::class, 'storeFromSelection'])->name('audit.executions.store-selection');
         Route::post('/audit/executions/{execution}/start', [AuditExecutionController::class, 'start'])->name('audit.executions.start');
         Route::post('/audit/executions/{execution}/submit', [AuditExecutionController::class, 'submit'])->name('audit.executions.submit');
         Route::post('/audit/executions/{execution}/finalize', [AuditExecutionController::class, 'finalize'])->name('audit.executions.finalize');
         Route::post('/audit/executions/{execution}/response', [AuditExecutionController::class, 'saveResponse'])->name('audit.executions.response');
+        Route::post('/audit/executions/{execution}/table', [AuditExecutionController::class, 'saveTable'])->name('audit.executions.table');
     });
 
     Route::middleware('permission:audit.evidence.view')->group(function () {

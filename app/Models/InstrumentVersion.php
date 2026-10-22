@@ -25,6 +25,7 @@ class InstrumentVersion extends BaseModel
             'effective_from' => 'date',
             'effective_until' => 'date',
             'approved_at' => 'datetime',
+            'source_snapshot' => 'array',
         ]);
     }
 

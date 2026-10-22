@@ -71,7 +71,7 @@ class AuditFindingController extends Controller
             ->with('clinic')
             ->get();
 
-        $clinics = Clinic::where('organization_id', $orgId)
+        $clinics = Clinic::forUserClinics($request->user())
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')
@@ -140,7 +140,7 @@ class AuditFindingController extends Controller
         }
 
         $orgId = $request->user()->organization_id;
-        $clinics = Clinic::where('organization_id', $orgId)->auditable()->where('is_active', true)->orderBy('name')->get();
+        $clinics = Clinic::forUserClinics($request->user())->auditable()->where('is_active', true)->orderBy('name')->get();
         $users = User::where('organization_id', $orgId)->where('is_active', true)->orderBy('name')->get();
         $criteria = StandardCriterion::where('active', true)->get();
 

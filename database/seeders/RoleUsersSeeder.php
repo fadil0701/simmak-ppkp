@@ -5,10 +5,10 @@ namespace Database\Seeders;
 use App\Models\Clinic;
 use App\Models\Organization;
 use App\Models\User;
+use App\Support\SimmakRoles;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleUsersSeeder extends Seeder
@@ -47,47 +47,67 @@ class RoleUsersSeeder extends Seeder
             return;
         }
 
-        $this->ensureRoles();
+        SimmakRoles::sync();
+        $this->migrateLegacyRoles();
 
         $userPassword = $userPassword ?: Str::random(16);
 
         $clinics = Clinic::where('organization_id', $organization->id)->get()->keyBy('code');
 
+        $allClinicCodes = $clinics->keys()->all();
+        $managementCodes = ['MP'];
+
         $accounts = [
             [
-                'role' => 'admin-mutu',
-                'name' => 'Admin Mutu PPKP',
-                'username' => 'adminmutu',
+                'role' => SimmakRoles::ADMIN_SISTEM,
+                'name' => 'Admin Sistem PPKP',
+                'username' => 'adminsistem',
+                'email' => 'sistem@simmak.ppkp.local',
+                'clinic_codes' => $managementCodes,
+                'default_clinic' => 'MP',
+            ],
+            [
+                'role' => SimmakRoles::KEPALA_PUSAT,
+                'name' => 'Kepala Pusat PPKP',
+                'username' => 'kepalapusat',
+                'email' => 'kepalapusat@simmak.ppkp.local',
+                'clinic_codes' => $managementCodes,
+                'default_clinic' => 'MP',
+            ],
+            [
+                'role' => SimmakRoles::KASUBBAG_TU,
+                'name' => 'Kasubbag Tata Usaha',
+                'username' => 'kasubbagtu',
+                'email' => 'tu@simmak.ppkp.local',
+                'clinic_codes' => $managementCodes,
+                'default_clinic' => 'MP',
+            ],
+            [
+                'role' => SimmakRoles::KETUA_TIM_MUTU,
+                'name' => 'Ketua Tim Mutu PPKP',
+                'username' => 'ketuamutu',
                 'email' => 'mutu@simmak.ppkp.local',
-                'clinic_codes' => $clinics->keys()->all(),
-                'default_clinic' => 'KU',
+                'clinic_codes' => $managementCodes,
+                'default_clinic' => 'MP',
             ],
             [
-                'role' => 'kepala-klinik',
-                'name' => 'Dr. Kepala Klinik Tebet',
-                'username' => 'kepala',
-                'email' => 'kepala@simmak.ppkp.local',
-                'clinic_codes' => ['KP06'],
-                'default_clinic' => 'KP06',
+                'role' => SimmakRoles::KETUA_TIM_AUDIT,
+                'name' => 'Ketua Tim Audit Internal',
+                'username' => 'ketuaaudit',
+                'email' => 'ketuaaudit@simmak.ppkp.local',
+                'clinic_codes' => $allClinicCodes,
+                'default_clinic' => 'MP',
             ],
             [
-                'role' => 'pj-mutu',
-                'name' => 'PJ Mutu Klinik Tebet',
-                'username' => 'pjmutu',
-                'email' => 'pjmutu@simmak.ppkp.local',
-                'clinic_codes' => ['KP06'],
-                'default_clinic' => 'KP06',
-            ],
-            [
-                'role' => 'tim-akreditasi',
-                'name' => 'Tim Akreditasi FKTP Tebet',
+                'role' => SimmakRoles::KETUA_TIM_AKREDITASI,
+                'name' => 'Ketua Tim Akreditasi',
                 'username' => 'akreditasi',
                 'email' => 'akreditasi@simmak.ppkp.local',
-                'clinic_codes' => ['KP06'],
-                'default_clinic' => 'KP06',
+                'clinic_codes' => $managementCodes,
+                'default_clinic' => 'MP',
             ],
             [
-                'role' => 'auditor',
+                'role' => SimmakRoles::AUDITOR,
                 'name' => 'Auditor Internal PPKP',
                 'username' => 'auditor',
                 'email' => 'auditor@simmak.ppkp.local',
@@ -95,9 +115,17 @@ class RoleUsersSeeder extends Seeder
                 'default_clinic' => 'KU',
             ],
             [
-                'role' => 'staff',
-                'name' => 'Staff Klinik Tebet',
-                'username' => 'staff',
+                'role' => SimmakRoles::KEPALA_KLINIK,
+                'name' => 'Kepala Klinik Pratama',
+                'username' => 'kepala',
+                'email' => 'kepala@simmak.ppkp.local',
+                'clinic_codes' => ['KP06'],
+                'default_clinic' => 'KP06',
+            ],
+            [
+                'role' => SimmakRoles::AUDITI,
+                'name' => 'Auditi Klinik Pratama',
+                'username' => 'auditi',
                 'email' => 'staff@simmak.ppkp.local',
                 'clinic_codes' => ['KP06'],
                 'default_clinic' => 'KP06',
@@ -161,42 +189,17 @@ class RoleUsersSeeder extends Seeder
         Role::where('guard_name', 'web')->get()->each(fn (Role $role) => $role->forgetCachedPermissions());
     }
 
-    private function ensureRoles(): void
+    private function migrateLegacyRoles(): void
     {
-        $roles = [
-            'super-admin' => Permission::where('guard_name', 'web')->pluck('name')->all(),
-            'admin-mutu' => Permission::where('guard_name', 'web')
-                ->where('name', 'not like', 'users.%')
-                ->pluck('name')
-                ->all(),
-            'kepala-klinik' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view', 'audit.view', 'capa.view', 'capa.manage',
-                'risk.view', 'accreditation.view', 'quality.view',
-            ],
-            'pj-mutu' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view', 'dms.manage', 'audit.view', 'audit.manage',
-                'capa.view', 'capa.manage', 'risk.view', 'risk.manage',
-                'accreditation.view', 'accreditation.manage', 'quality.view', 'quality.manage',
-            ],
-            'tim-akreditasi' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view',
-                'accreditation.view', 'accreditation.manage',
-                'capa.view', 'quality.view',
-            ],
-            'auditor' => [
-                'dashboard.view', 'audit.view', 'audit.manage', 'capa.view',
-            ],
-            'staff' => [
-                'dashboard.view', 'dms.view', 'capa.view', 'accreditation.view',
-            ],
-        ];
+        $map = SimmakRoles::legacyMap();
 
-        foreach ($roles as $roleName => $rolePermissions) {
-            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-            $role->syncPermissions($rolePermissions);
-        }
+        User::query()->with('roles')->each(function (User $user) use ($map) {
+            $current = $user->getRoleNames();
+            $next = $current->map(fn (string $role) => $map[$role] ?? $role)->unique()->values();
+
+            if ($next->all() !== $current->all()) {
+                $user->syncRoles($next->all());
+            }
+        });
     }
 }

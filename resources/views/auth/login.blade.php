@@ -93,6 +93,12 @@
                 <h1 class="text-2xl font-bold tracking-tight text-sim-navy-900">Masuk ke akun Anda</h1>
                 <p class="mt-1.5 text-sm text-sim-muted">Gunakan kredensial yang diberikan administrator.</p>
 
+                @if (! empty($redirectTo))
+                    <p class="mt-3 rounded-lg border border-sim-teal-500/25 bg-sim-teal-50 px-3 py-2 text-xs text-sim-navy-800">
+                        Silakan masuk untuk melanjutkan ke halaman yang diminta.
+                    </p>
+                @endif
+
                 @if ($errors->any())
                     <div role="alert" class="mt-6 flex items-start gap-3 rounded-xl border border-sim-danger/25 bg-sim-danger-bg px-4 py-3">
                         <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-sim-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
@@ -103,7 +109,7 @@
                 @endif
 
                 <form id="login-form" method="POST" action="{{ route('login') }}" class="mt-6 space-y-4"
-                      x-data="{ submitting: false }" @submit="submitting = true">
+                      x-data="{ submitting: false, showPassword: false }" @submit="submitting = true">
                     @csrf
                     <div>
                         <label for="email" class="mb-1.5 block text-sm font-medium text-sim-ink">Email / Username</label>
@@ -114,9 +120,29 @@
                     </div>
                     <div>
                         <label for="password" class="mb-1.5 block text-sm font-medium text-sim-ink">Password</label>
-                        <input id="password" type="password" name="password" required
-                               autocomplete="current-password"
-                               class="w-full rounded-lg border border-sim-border bg-sim-white px-3.5 py-2.5 text-sm text-sim-ink shadow-sim-inset transition-colors focus:border-sim-navy-800 focus:outline-none focus:ring-2 focus:ring-sim-navy-800/15">
+                        <div class="relative">
+                            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sim-muted" aria-hidden="true">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 10-9 0v3m-1.5 0h12A1.5 1.5 0 0119.5 12v7.5a1.5 1.5 0 01-1.5 1.5h-12a1.5 1.5 0 01-1.5-1.5V12a1.5 1.5 0 011.5-1.5z"/>
+                                </svg>
+                            </span>
+                            <input id="password" :type="showPassword ? 'text' : 'password'" name="password" required
+                                   autocomplete="current-password"
+                                   class="w-full rounded-lg border border-sim-border bg-sim-white py-2.5 pl-10 pr-11 text-sm text-sim-ink shadow-sim-inset transition-colors focus:border-sim-navy-800 focus:outline-none focus:ring-2 focus:ring-sim-navy-800/15">
+                            <button type="button"
+                                    class="absolute inset-y-0 right-0 flex items-center px-3 text-sim-muted transition-colors hover:text-sim-navy-800 focus:outline-none focus:text-sim-navy-800"
+                                    @click="showPassword = !showPassword"
+                                    :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                                    :aria-pressed="showPassword.toString()">
+                                <svg x-show="!showPassword" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4 12 4c4.638 0 8.573 3.508 9.963 8.687a1.013 1.013 0 010 .639C20.577 16.49 16.64 20 12 20c-4.638 0-8.573-3.508-9.964-8.678z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <svg x-show="showPassword" x-cloak class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <label class="flex cursor-pointer items-center gap-2.5 text-sm text-sim-muted">
@@ -137,31 +163,6 @@
                         <span x-text="submitting ? 'Memproses…' : 'Masuk'">Masuk</span>
                     </button>
                 </form>
-
-                @if (app()->environment('local') && config('simmak.demo_account_password'))
-                    <div class="mt-8 rounded-xl border border-sim-border-light bg-sim-white/70 p-4 backdrop-blur-sm">
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-sim-muted">Akun demo</p>
-                        <p class="mt-1.5 text-xs leading-relaxed text-sim-muted">
-                            Password mengikuti <code class="rounded bg-sim-surface-alt px-1 py-0.5 font-mono text-[11px] text-sim-navy-800">DEMO_ACCOUNT_PASSWORD</code> pada berkas <code class="rounded bg-sim-surface-alt px-1 py-0.5 font-mono text-[11px] text-sim-navy-800">.env</code>.
-                        </p>
-                        <ul class="mt-3 space-y-1.5 text-xs text-sim-muted">
-                            @foreach ([
-                                'Admin Utama' => 'admin@simmak.ppkp.local',
-                                'Admin Mutu' => 'mutu@simmak.ppkp.local',
-                                'Kepala Klinik FKTP' => 'kepala@simmak.ppkp.local',
-                                'PJ Mutu' => 'pjmutu@simmak.ppkp.local',
-                                'Tim Akreditasi FKTP' => 'akreditasi@simmak.ppkp.local',
-                                'Auditor' => 'auditor@simmak.ppkp.local',
-                                'Staff' => 'staff@simmak.ppkp.local',
-                            ] as $label => $mail)
-                                <li class="flex items-baseline justify-between gap-3 border-b border-dashed border-sim-border-light pb-1.5 last:border-0 last:pb-0">
-                                    <span>{{ $label }}</span>
-                                    <code class="font-mono text-[11px] text-sim-navy-800">{{ $mail }}</code>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
 
                 <p class="mt-8 text-center text-[11px] text-sim-muted">
                     SIMMAK PPKP · Sistem Manajemen Mutu &amp; Akreditasi Klinik

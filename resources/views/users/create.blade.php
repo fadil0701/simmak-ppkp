@@ -28,6 +28,38 @@
             <form method="POST" action="{{ route('users.store') }}" class="space-y-5">
                 @csrf
 
+                <div class="sim-form-group" x-data="{ applyEmployee() {
+                    const select = document.getElementById('employee_id');
+                    if (!select || !select.value) return;
+                    const option = select.options[select.selectedIndex];
+                    if (option.dataset.name) { document.getElementById('name').value = option.dataset.name; }
+                    if (option.dataset.email) { document.getElementById('email').value = option.dataset.email; }
+                    if (option.dataset.clinic) {
+                        const clinicSelect = document.getElementById('default_clinic_id');
+                        if (clinicSelect && !clinicSelect.value) { clinicSelect.value = option.dataset.clinic; }
+                    }
+                } }" x-init="applyEmployee()">
+                    <label class="sim-form-label" for="employee_id">Pegawai (Master)</label>
+                    <select id="employee_id" name="employee_id" @change="applyEmployee()"
+                            class="sim-form-select {{ $errors->has('employee_id') ? 'border-sim-danger' : '' }}">
+                        <option value="">— Tanpa data pegawai —</option>
+                        @foreach ($employees as $employee)
+                            <option value="{{ $employee->id }}"
+                                    data-name="{{ $employee->full_name }}"
+                                    data-email="{{ $employee->email }}"
+                                    data-clinic="{{ $employee->clinic_id }}"
+                                    @selected(old('employee_id', $prefilledEmployeeId) === $employee->id)>
+                                {{ $employee->employee_number }} — {{ $employee->full_name }} ({{ $employee->position ?? 'Tanpa jabatan' }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('employee_id')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    <p class="sim-form-hint">
+                        Memilih pegawai mengisi nama &amp; surel secara otomatis.
+                        <a href="{{ route('employees.create') }}" class="text-sim-primary hover:underline">Tambah data pegawai baru</a>.
+                    </p>
+                </div>
+
                 <div class="sim-form-group">
                     <label class="sim-form-label" for="name">Nama Lengkap <span class="sim-form-label-required"></span></label>
                     <input type="text" id="name" name="name" value="{{ old('name') }}" required
@@ -76,6 +108,7 @@
                             @endforeach
                         </select>
                         @error('role')<p class="sim-form-error">{{ $message }}</p>@enderror
+                        <p class="sim-form-hint">Peran menentukan hak akses sistem. Jabatan di master pegawai tidak mengubah peran ini.</p>
                     </div>
                     <div class="sim-form-group">
                         <label class="sim-form-label" for="default_clinic_id">Klinik Default</label>
@@ -116,8 +149,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-sim-border-light pt-4">
-                    <a href="{{ route('users.index') }}" class="sim-btn sim-btn-outline">Batal</a>
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan Pengguna</button>
+                    <x-action href="{{ route('users.index') }}" icon="chevron-left" label="Batal" variant="outline" />
+                    <x-action icon="check-circle" label="Simpan Pengguna" />
                 </div>
             </form>
         </div>

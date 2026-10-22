@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', '{{ $standard->code }} — SIMMAK PPKP')
-@section('page-title', 'Detail Standar: {{ $standard->code }}')
+@section('title', $standard->code . ' — SIMMAK PPKP')
+@section('page-title', 'Detail Standar: ' . $standard->code)
 
 @section('content')
     <div class="sim-page-header">
@@ -13,6 +13,11 @@
         </div>
 
         <div class="flex gap-2">
+            @can('audit.standard.manage', $standard)
+                <a href="{{ route('audit.standards.import', $standard) }}" class="sim-btn sim-btn-secondary sim-btn-sm">
+                    Impor EP
+                </a>
+            @endcan
             @can('audit.standard.update', $standard)
                 <a href="{{ route('audit.standards.edit', $standard) }}" class="sim-btn sim-btn-primary sim-btn-sm">
                     Sunting
@@ -73,23 +78,23 @@
                                 @if ($version->status === 'draft')
                                     <form method="POST" action="{{ route('audit.versions.submit-review', $version) }}" class="inline" onsubmit="return confirm('Yakin ingin mengajukan versi ini untuk tinjauan?');">
                                         @csrf
-                                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Ajukan Tinjauan</button>
+                                        <x-action icon="upload" label="Ajukan Tinjauan" size="sm" />
                                     </form>
                                 @elseif ($version->status === 'review')
                                     <form method="POST" action="{{ route('audit.versions.approve', $version) }}" class="inline" onsubmit="return confirm('Yakin ingin menyahkan versi ini?');">
                                         @csrf
-                                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Setujui</button>
+                                        <x-action icon="check-circle" label="Setujui" size="sm" />
                                     </form>
                                     <form method="POST" action="{{ route('audit.versions.submit-review', $version) }}" class="inline" onsubmit="return confirm('Kembalikan ke draft?');">
                                         @csrf
                                         {{ method_field('PATCH') }}
                                         <input type="hidden" name="_method" value="PATCH">
-                                        <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm">Kembalikan</button>
+                                        <x-action icon="x-mark" label="Kembalikan" variant="secondary" size="sm" />
                                     </form>
                                 @elseif ($version->status === 'approved')
                                     <form method="POST" action="{{ route('audit.versions.activate', $version) }}" class="inline" onsubmit="return confirm('Yakin ingin mengaktifkan versi ini? Versi aktif lainnya akan diarsipkan.');">
                                         @csrf
-                                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Aktifkan</button>
+                                        <x-action icon="check-circle" label="Aktifkan" size="sm" />
                                     </form>
                                 @endif
                             @endcan
@@ -110,14 +115,40 @@
                                                 <span class="text-xs text-sim-muted">{{ $section->criteria->count() }} kriteria</span>
                                             </div>
                                             @if ($section->criteria->isNotEmpty())
-                                                <ul class="space-y-1 ml-2">
-                                                    @foreach ($section->criteria->sortBy('sort_order') as $criterion)
-                                                        <li class="text-xs text-sim-muted flex items-start gap-2">
-                                                            <span class="font-mono text-sim-muted flex-shrink-0">{{ $criterion->code }}</span>
-                                                            <span>{{ $criterion->title }}</span>
-                                                        </li>
-                                                    @endforeach
-                                                </ul>
+                                                <div class="mt-2 overflow-x-auto">
+                                                    <table class="sim-table text-xs">
+                                                        <thead class="bg-slate-50">
+                                                            <tr>
+                                                                <th class="px-2 py-1 w-14">EP</th>
+                                                                <th class="px-2 py-1">Elemen Penilaian</th>
+                                                                <th class="px-2 py-1">Kelengkapan Bukti</th>
+                                                                <th class="px-2 py-1 w-16 text-center">SKOR Maks</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($section->criteria->sortBy('sort_order') as $criterion)
+                                                                <tr class="border-t border-sim-border-light align-top">
+                                                                    <td class="px-2 py-1 font-mono text-sim-muted">{{ $criterion->code }}</td>
+                                                                    <td class="px-2 py-1 text-sim-ink">{{ $criterion->title }}</td>
+                                                                    <td class="px-2 py-1 text-sim-muted">
+                                                                        @if ($criterion->evidence_guidance)
+                                                                            <ul class="list-disc pl-4 space-y-0.5">
+                                                                                @foreach (preg_split('/\r\n|\r|\n/', $criterion->evidence_guidance) as $line)
+                                                                                    @if (trim($line) !== '')
+                                                                                        <li>{{ trim($line) }}</li>
+                                                                                    @endif
+                                                                                @endforeach
+                                                                            </ul>
+                                                                        @else
+                                                                            —
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="px-2 py-1 text-center text-sim-muted">{{ $criterion->max_score ?: 10 }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             @endif
                                             @can('audit.standard.manage')
                                                 @if (! $isLocked && $version->status === 'draft')
@@ -128,7 +159,9 @@
                                                             <input type="text" name="code" required placeholder="Kode" class="sim-form-input sim-btn-sm">
                                                             <input type="text" name="title" required placeholder="Judul kriteria" class="sim-form-input sim-btn-sm">
                                                             <textarea name="requirement_text" rows="2" placeholder="Teks persyaratan" class="sim-form-textarea sim-btn-sm"></textarea>
-                                                            <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Simpan Kriteria</button>
+                                                            <textarea name="evidence_guidance" rows="2" placeholder="Kelengkapan bukti (satu per baris)" class="sim-form-textarea sim-btn-sm"></textarea>
+                                                            <input type="number" name="max_score" min="0" max="100" value="10" placeholder="SKOR maksimal" class="sim-form-input sim-btn-sm">
+                                                            <x-action icon="check-circle" label="Simpan Kriteria" size="sm" />
                                                         </form>
                                                     </details>
                                                 @endif
@@ -147,7 +180,7 @@
                                         <input type="text" name="code" required placeholder="Kode seksi" class="sim-form-input sim-btn-sm">
                                         <input type="text" name="title" required placeholder="Judul seksi" class="sim-form-input sim-btn-sm">
                                         <textarea name="description" rows="2" placeholder="Deskripsi (opsional)" class="sim-form-textarea sim-btn-sm"></textarea>
-                                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Simpan Seksi</button>
+                                        <x-action icon="check-circle" label="Simpan Seksi" size="sm" />
                                     </form>
                                 </details>
                             @endif

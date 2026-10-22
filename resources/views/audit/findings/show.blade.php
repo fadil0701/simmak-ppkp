@@ -16,63 +16,38 @@
         <div class="flex gap-2">
             @can('audit.finding.update', $finding)
                 @if (in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true))
-                    <a href="{{ route('findings.edit', $finding) }}" class="sim-btn sim-btn-primary sim-btn-sm">
-                        Sunting
-                    </a>
+                    <x-action href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Ubah" size="sm" />
                 @endif
             @endcan
             @can('audit.finding.review', $finding)
                 @if ($finding->status === 'under_review')
-                    <form method="POST" action="{{ route('findings.review', $finding) }}" class="inline" onsubmit="return confirm('Konfirmasi temuan ini?');">
-                        @csrf
-                        <input type="hidden" name="review_decision" value="confirm">
-                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">
-                            Konfirmasi
-                        </button>
-                    </form>
-                    <form method="POST" action="{{ route('findings.review', $finding) }}" class="inline" onsubmit="return confirm('Kembalikan untuk revisi?');">
-                        @csrf
-                        <input type="hidden" name="review_decision" value="return">
-                        <input type="hidden" name="review_reason" value="Perlu revisi">
-                        <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm">
-                            Kembalikan
-                        </button>
-                    </form>
+                    <x-action href="{{ route('findings.review', $finding) }}" icon="check-circle" label="Konfirmasi" size="sm"
+                              method="POST" confirm="Konfirmasi temuan ini?" :fields="['review_decision' => 'confirm']" />
+                    <x-action href="{{ route('findings.review', $finding) }}" icon="x-mark" label="Kembalikan" variant="secondary" size="sm"
+                              method="POST" confirm="Kembalikan temuan ini untuk revisi?"
+                              :fields="['review_decision' => 'return', 'review_reason' => 'Perlu revisi']" />
                 @endif
             @endcan
             @can('audit.finding.close', $finding)
                 @if ($finding->status !== 'closed')
-                    <form method="POST" action="{{ route('findings.close', $finding) }}" class="inline" onsubmit="return confirm('Tutup temuan ini?');">
-                        @csrf
-                        <input type="hidden" name="close_reason" value="Telah diselesaikan">
-                        <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">
-                            Tutup Temuan
-                        </button>
-                    </form>
+                    <x-action href="{{ route('findings.close', $finding) }}" icon="check-circle" label="Tutup Temuan" size="sm"
+                              method="POST" confirm="Tutup temuan ini?" :fields="['close_reason' => 'Telah diselesaikan']" />
                 @else
-                    <form method="POST" action="{{ route('findings.reopen', $finding) }}" class="inline" onsubmit="return confirm('Buka kembali temuan ini?');">
-                        @csrf
-                        <input type="hidden" name="reopen_reason" value="Perlu peninjauan ulang">
-                        <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm">
-                            Buka Kembali
-                        </button>
-                    </form>
+                    <x-action href="{{ route('findings.reopen', $finding) }}" icon="x-mark" label="Buka Kembali" variant="secondary" size="sm"
+                              method="POST" confirm="Buka kembali temuan ini?" :fields="['reopen_reason' => 'Perlu peninjauan ulang']" />
                 @endif
             @endcan
             @can('escalate', $finding)
                 @if ($finding->severity === 'critical' && ! $finding->is_escalated && $finding->status !== 'closed')
-                    <form method="POST" action="{{ route('findings.escalate', $finding) }}" class="inline-flex items-center gap-2" onsubmit="return confirm('Eskalasi temuan kritis ini untuk prioritas tinggi?');">
+                    <form method="POST" action="{{ route('findings.escalate', $finding) }}" class="inline-flex items-center gap-2">
                         @csrf
                         <input type="text" name="escalation_reason" required maxlength="1000" placeholder="Alasan eskalasi..." class="sim-form-input w-48 border-sim-danger">
-                        <button type="submit" class="sim-btn sim-btn-danger sim-btn-sm">
-                            Eskalasi Kritis
-                        </button>
+                        <x-action icon="alert-triangle" label="Eskalasi" variant="danger" size="sm"
+                                  confirm="Eskalasi temuan kritis ini untuk prioritas tinggi?" />
                     </form>
                 @endif
             @endcan
-            <a href="{{ route('findings.index') }}" class="sim-btn sim-btn-outline sim-btn-sm">
-                Kembali
-            </a>
+            <x-action href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
         </div>
     </div>
 
@@ -184,16 +159,12 @@
                     <div class="border border-slate-100 rounded-lg p-3">
                         <div class="font-medium text-slate-800">{{ $finding->capaCase->case_number }}</div>
                         <div class="text-xs text-slate-600">{{ \App\Support\UiLabel::capaStatus($finding->capaCase->status) }}</div>
-                        <a href="{{ route('capa.show', $finding->capaCase) }}" class="mt-1 text-sm font-medium text-teal-700 hover:underline">Lihat Detail CAPA →</a>
+                        <x-action href="{{ route('capa.show', $finding->capaCase) }}" icon="tool" label="Lihat CAPA" variant="outline" size="sm" class="mt-2" />
                     </div>
                 @else
                     @can('audit.action.update')
-                        <form method="POST" action="{{ route('findings.create-capa', $finding) }}" class="inline" onsubmit="return confirm('Buat CAPA dari temuan ini?');">
-                            @csrf
-                            <button type="submit" class="sim-btn sim-btn-primary w-full">
-                                Buat CAPA
-                            </button>
-                        </form>
+                        <x-action href="{{ route('findings.create-capa', $finding) }}" icon="plus" label="Buat CAPA" class="w-full"
+                                  method="POST" confirm="Buat CAPA dari temuan ini?" />
                     @else
                         <p class="text-xs text-slate-500">Tidak berwenang membuat CAPA.</p>
                     @endcan
@@ -214,10 +185,7 @@
                             <div class="font-medium text-slate-800">{{ $link->evidence->original_filename }}</div>
                             <div class="text-xs text-slate-500">{{ $link->evidence->mime_type }}</div>
                         </div>
-                        <a href="{{ route('audit.evidence.download', $link->evidence) }}" class="text-sm font-medium text-teal-700 hover:underline">
-                            Unduh
-                            <svg class="h-3 w-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        </a>
+                        <x-action href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" variant="outline" size="sm" />
                     </div>
                 @endforeach
             </div>

@@ -60,6 +60,8 @@ Gunakan asumsi ini agar pengerjaan tidak berhenti menunggu seluruh ADR:
 
 Kerjakan **Wave 0 → Wave 6**. Jangan meloncat ke laporan atau percantik UI sebelum Wave 0–4 selesai.
 
+Struktur sidebar dan urutan perbaikan halaman audit: `docs/STRUKTUR_MENU_AUDIT_INTERNAL.md`.
+
 ### Wave 0 — Pulihkan lingkungan PostgreSQL (blocker)
 
 **Tujuan:** migrasi Docker berhasil; seed tidak pecah; izin audit terpasang.

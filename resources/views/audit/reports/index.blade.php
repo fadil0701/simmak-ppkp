@@ -57,16 +57,14 @@
                             <td class="text-center text-sim-muted">{{ $report->generator?->name ?? '—' }}</td>
                             <td class="text-center text-sim-muted">{{ $report->generated_at?->format('d M Y H:i') ?? '—' }}</td>
                             <td class="text-center">
-                                <a href="{{ route('audit.reports.show', $report) }}" class="text-sm font-medium text-sim-primary hover:underline">Detail</a>
-                                <a href="{{ route('audit.reports.download-pdf', $report) }}" class="text-sm font-medium text-sim-primary hover:underline ml-2">PDF</a>
-                                <a href="{{ route('audit.reports.download-excel', $report) }}" class="text-sm font-medium text-sim-primary hover:underline ml-2">Excel</a>
-                                @can('audit.report.manage', $report)
-                                    <form method="POST" action="{{ route('audit.reports.destroy', $report) }}" class="inline" onsubmit="return confirm('Yakin ingin menghapus laporan ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-sm font-medium text-sim-danger hover:underline ml-2">Hapus</button>
-                                    </form>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.reports.show', $report) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    <x-action href="{{ route('audit.reports.download-pdf', $report) }}" icon="download" label="PDF" variant="secondary" size="sm" />
+                                    <x-action href="{{ route('audit.reports.download-excel', $report) }}" icon="download" label="Excel" variant="secondary" size="sm" />
+                                    @can('delete', $report)
+                                        <x-action href="{{ route('audit.reports.destroy', $report) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus laporan ini?" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

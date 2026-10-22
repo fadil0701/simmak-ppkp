@@ -2,22 +2,21 @@
 
 namespace Tests\Feature\Audit;
 
-use App\Models\AuditExecution;
 use App\Models\AuditFinding;
-use App\Models\AuditProgram;
-use App\Models\AuditSchedule;
+use App\Models\CapaCase;
+use App\Models\CapaVerification;
 use App\Models\Clinic;
 use App\Models\Organization;
-use App\Models\StandardCriterion;
 use App\Models\StandardSection;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class FindingAndCAPAWorkflowTest extends TestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -70,6 +69,14 @@ class FindingAndCAPAWorkflowTest extends TestCase
             'audit.finding.view', 'audit.finding.create', 'audit.finding.update',
             'audit.action.view', 'audit.action.update',
         ]);
+
+        $this->kepalaKlinik = Role::firstOrCreate(['name' => 'kepala-klinik', 'guard_name' => 'web']);
+        $this->kepalaKlinik->syncPermissions([
+            'audit.finding.view', 'clinics.view',
+        ]);
+
+        $kepala = Role::firstOrCreate(['name' => 'kepala-klinik', 'guard_name' => 'web']);
+        $kepala->syncPermissions(['audit.finding.view']);
     }
 
     protected function createStandardHierarchy(): array
@@ -167,7 +174,7 @@ class FindingAndCAPAWorkflowTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/findings/' . $finding->id);
+        $response = $this->actingAs($this->user)->get('/findings/'.$finding->id);
         $response->assertStatus(403);
     }
 
@@ -188,7 +195,32 @@ class FindingAndCAPAWorkflowTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->post('/findings/' . $finding->id . '/close');
+        $capa = CapaCase::create([
+            'organization_id' => $this->org->id,
+            'clinic_id' => $this->clinic->id,
+            'case_number' => 'CAPA-2026-0001',
+            'source_type' => 'audit_finding',
+            'source_id' => $finding->id,
+            'priority' => 'medium',
+            'problem_statement' => 'Test',
+            'status' => 'open',
+            'owner_id' => $this->user->id,
+            'target_close_date' => now()->addDays(30)->toDateString(),
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
+        ]);
+
+        CapaVerification::create([
+            'organization_id' => $this->org->id,
+            'capa_case_id' => $capa->id,
+            'verification_date' => now()->toDateString(),
+            'result' => 'effective',
+            'notes' => 'Efektif',
+            'is_effective' => true,
+            'verified_by' => $this->user->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->post('/findings/'.$finding->id.'/close', ['close_reason' => 'Selesai']);
         $response->assertStatus(302);
         $this->assertDatabaseHas('audit_findings', [
             'id' => $finding->id,

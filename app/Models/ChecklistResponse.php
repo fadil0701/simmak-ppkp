@@ -13,6 +13,7 @@ class ChecklistResponse extends BaseModel
 
     protected $fillable = [
         'organization_id', 'audit_execution_id', 'standard_criterion_id', 'response_value',
+        'score', 'max_score', 'facts_analysis', 'recommendation',
         'assessment_notes', 'method_used', 'sample_description', 'not_applicable_reason',
         'not_assessable_reason', 'assessed_by', 'assessed_at', 'metadata', 'created_by', 'updated_by',
     ];
@@ -21,6 +22,8 @@ class ChecklistResponse extends BaseModel
     {
         return array_merge(parent::casts(), [
             'assessed_at' => 'datetime',
+            'score' => 'integer',
+            'max_score' => 'integer',
             'metadata' => 'array',
         ]);
     }

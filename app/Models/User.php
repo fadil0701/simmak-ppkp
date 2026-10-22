@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SimmakRoles;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -78,6 +79,14 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /**
+     * Data pegawai yang menjadi dasar pembuatan akun pengguna.
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
     public function isLocalAuth(): bool
     {
         return $this->auth_provider === 'local';
@@ -105,7 +114,7 @@ class User extends Authenticatable
      */
     public function hasHeadOfficeScope(): bool
     {
-        if ($this->isSuperAdmin()) {
+        if ($this->isSuperAdmin() || $this->hasAnyRole(SimmakRoles::headOfficeRoles())) {
             return true;
         }
 

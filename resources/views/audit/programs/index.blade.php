@@ -19,10 +19,7 @@
         </div>
 
         @can('audit.program.create')
-            <a href="{{ route('audit.programs.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                Tambah Program
-            </a>
+            <x-action href="{{ route('audit.programs.create') }}" icon="plus" label="Tambah Program" />
         @endcan
     </div>
 
@@ -98,10 +95,12 @@
                             </td>
                             <td class="text-center text-sim-mono text-xs">{{ $program->schedules_count }}</td>
                             <td class="text-right">
-                                <a href="{{ route('audit.programs.show', $program) }}" class="text-sm text-sim-primary hover:underline">Detail</a>
-                                @can('audit.program.update', $program)
-                                    <a href="{{ route('audit.programs.edit', $program) }}" class="ml-4 text-sm text-sim-primary hover:underline">Sunting</a>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.programs.show', $program) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    @can('audit.program.update', $program)
+                                        <x-action href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

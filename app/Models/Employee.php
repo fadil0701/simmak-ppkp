@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BaseModel;
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends BaseModel
 {
@@ -14,6 +15,7 @@ class Employee extends BaseModel
         'organization_id',
         'clinic_id',
         'unit_id',
+        'position_id',
         'employee_number',
         'full_name',
         'email',
@@ -38,5 +40,21 @@ class Employee extends BaseModel
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    /**
+     * Master jabatan pegawai.
+     */
+    public function positionMaster(): BelongsTo
+    {
+        return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    /**
+     * Akun pengguna yang dibuat dari data pegawai ini.
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'employee_id');
     }
 }

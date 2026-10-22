@@ -12,7 +12,8 @@ class ChecklistResponseRevision extends BaseModel
 
     protected $fillable = [
         'organization_id', 'checklist_response_id', 'audit_execution_id', 'standard_criterion_id',
-        'response_value', 'assessment_notes', 'method_used', 'sample_description',
+        'response_value', 'score', 'facts_analysis', 'recommendation',
+        'assessment_notes', 'method_used', 'sample_description',
         'not_applicable_reason', 'not_assessable_reason', 'assessed_by', 'assessed_at',
         'revision_reason', 'metadata', 'created_by', 'updated_by',
     ];

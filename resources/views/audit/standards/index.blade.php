@@ -53,10 +53,12 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <a href="{{ route('audit.standards.show', $standard) }}" class="text-sm font-medium text-sim-primary hover:underline">Detail</a>
-                                @can('audit.standard.update', $standard)
-                                    <a href="{{ route('audit.standards.edit', $standard) }}" class="text-sm font-medium text-sim-primary hover:underline ml-3">Sunting</a>
-                                @endcan
+                                <div class="sim-action-group">
+                                    <x-action href="{{ route('audit.standards.show', $standard) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    @can('audit.standard.update', $standard)
+                                        <x-action href="{{ route('audit.standards.edit', $standard) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @empty

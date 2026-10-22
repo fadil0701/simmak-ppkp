@@ -103,10 +103,8 @@
                     @endif
                 </div>
 
-                <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Generate Laporan
-                    </button>
+                <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
+                    <x-action icon="wand" label="Buat Laporan" />
                 </div>
             </form>
         </div>

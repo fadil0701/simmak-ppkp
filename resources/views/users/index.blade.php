@@ -11,7 +11,7 @@
             <p class="sim-page-subtitle">Kelola akun pengguna lokal, peran, dan akses per klinik.</p>
         </div>
         @can('users.manage')
-            <a href="{{ route('users.create') }}" class="sim-btn sim-btn-primary">+ Tambah Pengguna</a>
+            <x-action href="{{ route('users.create') }}" icon="plus" label="Tambah Pengguna" />
         @endcan
     </div>
 
@@ -27,7 +27,7 @@
                     <select id="role_filter" name="role" class="sim-form-select">
                         <option value="">Semua peran</option>
                         @foreach ($roles as $role)
-                            <option value="{{ $role->name }}" @selected(request('role') === $role->name)>{{ $role->name }}</option>
+                            <option value="{{ $role->name }}" @selected(request('role') === $role->name)>{{ \App\Support\RoleLabel::for($role->name) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -39,7 +39,7 @@
                             <option value="active" @selected(request('status') === 'active')>Aktif</option>
                             <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
                         </select>
-                        <button type="submit" class="sim-btn sim-btn-secondary">Filter</button>
+                        <x-action icon="sliders" label="Terapkan" variant="secondary" />
                     </div>
                 </div>
             </form>
@@ -69,7 +69,7 @@
                             <td class="text-sim-muted">{{ $user->defaultClinic?->name ?? 'Semua Klinik' }}</td>
                             <td>
                                 @forelse ($user->roles as $role)
-                                    <span class="sim-badge sim-badge-status bg-sim-active text-sim-primary">{{ $role->name }}</span>
+                                    <span class="sim-badge sim-badge-status bg-sim-active text-sim-primary">{{ \App\Support\RoleLabel::for($role->name) }}</span>
                                 @empty
                                     <span class="text-sim-muted">—</span>
                                 @endforelse
@@ -81,9 +81,9 @@
                             </td>
                             <td class="text-right">
                                 <div class="flex justify-end gap-2">
-                                    <a href="{{ route('users.show', $user) }}" class="sim-btn sim-btn-outline sim-btn-sm">Lihat</a>
+                                    <x-action href="{{ route('users.show', $user) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
                                     @can('users.manage')
-                                        <a href="{{ route('users.edit', $user) }}" class="sim-btn sim-btn-secondary sim-btn-sm">Ubah</a>
+                                        <x-action href="{{ route('users.edit', $user) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
                                     @endcan
                                 </div>
                             </td>

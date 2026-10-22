@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.evidence.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Daftar Bukti</a>
+        <x-action href="{{ route('audit.evidence.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
     </div>
 
     <div class="simmak-card max-w-2xl">
@@ -90,9 +90,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <button type="submit" class="sim-btn sim-btn-primary">
-                        Unggah Bukti
-                    </button>
+                    <x-action icon="upload" label="Unggah Bukti" />
                 </div>
             </form>
         </div>

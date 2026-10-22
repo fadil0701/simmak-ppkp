@@ -36,7 +36,7 @@ class AuditAssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $clinics = Clinic::where('organization_id', $orgId)
+        $clinics = Clinic::forUserClinics($request->user())
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')
@@ -76,7 +76,10 @@ class AuditAssignmentController extends Controller
 
         $assignment->load(['program', 'clinic', 'leadAuditor', 'teamMembers.user']);
 
-        $instrumentVersions = InstrumentVersion::where('status', 'active')
+        $instrumentVersions = InstrumentVersion::whereHas('standard', function ($query) use ($assignment) {
+            $query->where('organization_id', $assignment->organization_id);
+        })
+            ->whereIn('status', ['active', 'approved'])
             ->orderBy('version_label')
             ->get();
 
@@ -88,7 +91,7 @@ class AuditAssignmentController extends Controller
         abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
 
         $orgId = $request->user()->organization_id;
-        $clinics = Clinic::where('organization_id', $orgId)
+        $clinics = Clinic::forUserClinics($request->user())
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')

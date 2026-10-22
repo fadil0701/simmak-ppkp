@@ -39,7 +39,7 @@
                         <div class="text-xs font-semibold text-sim-danger uppercase mb-2">Temuan Risiko Tinggi</div>
                         <div class="text-2xl font-bold text-sim-ink">{{ $highRiskFindings->count() }}</div>
                         <div class="text-xs text-sim-muted mt-1">Temuan kritis dan tinggi yang membutuhkan perhatian segera.</div>
-                        <a href="{{ route('findings.index') }}?severity=critical" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Lihat semua temuan →</a>
+                        <x-action href="{{ route('findings.index', ['severity' => 'critical']) }}" icon="chevron-right" label="Lihat semua temuan" variant="ghost" size="sm" class="mt-3" />
                     </div>
                 @else
                     <div class="sim-card p-4 border-l-4 border-sim-success bg-sim-success-bg">
@@ -77,7 +77,7 @@
                         <h3 class="sim-card-title">Jadwal Audit Berikutnya</h3>
                         <p class="text-xs text-sim-muted">Program audit yang telah disetujui dan dijadwalkan</p>
                     </div>
-                    <a href="{{ route('audit.programs.index') }}" class="text-sm font-medium text-sim-primary hover:underline">Semua Program →</a>
+                    <x-action href="{{ route('audit.programs.index') }}" icon="clipboard-list" label="Semua Program" variant="ghost" size="sm" class="mt-3" />
                 </div>
                 <div class="sim-card-body p-0">
                     @php
@@ -124,7 +124,7 @@
                         <h3 class="sim-card-title">Temuan Terbuka per Klinik</h3>
                         <p class="text-xs text-sim-muted">Jumlah temuan dengan status terbuka, dalam CAPA, atau menunggu verifikasi</p>
                     </div>
-                    <a href="{{ route('findings.index') }}" class="text-sm font-medium text-sim-primary hover:underline">Lihat Semua →</a>
+                    <x-action href="{{ route('findings.index') }}" icon="chevron-right" label="Lihat Semua" variant="ghost" size="sm" />
                 </div>
                 <div class="sim-card-body p-0">
                     <table class="sim-table w-full">

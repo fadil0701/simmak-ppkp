@@ -37,9 +37,9 @@ class AuditEvidenceService
 
         // 1. Validasi ukuran file
         if ($file->getSize() > $this->maxFileSize * 1024) {
-            throw new ValidationException(
-                __('File terlalu besar. Maksimal 10 MB.')
-            );
+            throw ValidationException::withMessages([
+                'file' => __('File terlalu besar. Maksimal 10 MB.'),
+            ]);
         }
 
         // 2. Validasi extension file
@@ -54,7 +54,7 @@ class AuditEvidenceService
         $tempPath = $file->storeAs($folder, $safeName, 'local');
 
         // 4. Magic bytes validation — verifikasi isi file sebenarnya cocok dengan extension
-        $realMime = $this->detectRealMimeType(storage_path('app/private/'.$tempPath));
+        $realMime = $this->detectRealMimeType(Storage::disk('local')->path($tempPath));
         $realExtension = $this->mimeToExtension($realMime);
 
         if ($realExtension === null || ! in_array($clientExtension, $realExtension, true)) {
@@ -62,26 +62,26 @@ class AuditEvidenceService
             Storage::disk('local')->delete($tempPath);
             $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Mismatched file extension (magic bytes validation failed)');
 
-            throw new ValidationException(
-                __('Jenis file tidak sesuai dengan isi berkas. Berkas telah dikarantinakan.')
-            );
+            throw ValidationException::withMessages([
+                'file' => __('Jenis file tidak sesuai dengan isi berkas. Berkas telah dikarantinakan.'),
+            ]);
         }
 
         // 5. ClamAV scanning (dengan fallback gracefully jika tidak tersedia)
-        $scanResult = $this->scanWithClamav(storage_path('app/private/'.$tempPath));
+        $scanResult = $this->scanWithClamav(Storage::disk('local')->path($tempPath));
 
         if ($scanResult['infected']) {
             // Hapus file terinfeksi dan karantinakan
             Storage::disk('local')->delete($tempPath);
             $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Malware detected: '.$scanResult['threat']);
 
-            throw new ValidationException(
-                __('Berkas terindikasi mengandung malware. Berkas telah dikarantinakan.')
-            );
+            throw ValidationException::withMessages([
+                'file' => __('Berkas terindikasi mengandung malware. Berkas telah dikarantinakan.'),
+            ]);
         }
 
         // 6. Hitung checksum SHA-256
-        $checksum = hash_file('sha256', storage_path('app/private/'.$tempPath));
+        $checksum = hash_file('sha256', Storage::disk('local')->path($tempPath));
 
         // 7. Buat record Evidence
         $evidence = Evidence::create([
@@ -163,6 +163,7 @@ class AuditEvidenceService
             } else {
                 $result['infected'] = false;
                 $result['threat'] = 'ClamAV response unclear: '.trim($response);
+                $result['engine'] = 'clamav-unavailable';
             }
         } else {
             // ClamAV tidak tersedia — log sebagai warning, izinkan upload dengan catatan

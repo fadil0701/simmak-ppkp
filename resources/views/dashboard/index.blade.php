@@ -1,10 +1,21 @@
 @extends('layouts.simmak')
 
-@section('title', 'Dashboard Eksekutif — SIMMAK PPKP')
-@section('page-title', 'Dashboard Eksekutif')
-@section('page-subtitle', 'Ringkasan kesiapan akreditasi, temuan, CAPA, dan risiko seluruh klinik')
+@section('title', $showExecutive ? 'Dashboard Eksekutif — SIMMAK PPKP' : 'Dashboard Audit Internal — SIMMAK PPKP')
+@section('page-title', $showExecutive ? 'Dashboard Eksekutif' : 'Dashboard Audit Internal')
+@section('page-subtitle', $showExecutive
+    ? 'Ringkasan kesiapan akreditasi, temuan, CAPA, dan risiko seluruh klinik'
+    : 'Antrian kerja audit internal dan status audit seluruh klinik')
 
 @section('content')
+    @if ($canViewClinicDashboard)
+        <div class="mb-4 rounded-lg border border-sim-border bg-sim-surface-alt px-4 py-3 text-sm text-sim-ink">
+            Pegawai ini juga memiliki peran pemantauan klinik.
+            <a href="{{ route('clinic.dashboard') }}" class="font-medium text-sim-primary hover:underline">Buka Dashboard Klinik</a>
+            untuk melihat kondisi klinik aktif.
+        </div>
+    @endif
+
+    @if ($showExecutive)
     <div class="flex flex-col gap-4">
         {{-- Baris KPI --}}
         <div class="grid shrink-0 items-stretch gap-4 xl:grid-cols-4">
@@ -175,4 +186,7 @@
             </div>
         </div>
     </div>
+    @endif
+
+    @include('partials.dashboard.audit-section')
 @endsection

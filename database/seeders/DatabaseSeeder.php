@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Clinic;
+use App\Models\FiscalYear;
 use App\Models\Organization;
+use App\Support\SimmakRoles;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $clinics = [
-            ['code' => 'MP', 'name' => 'Manajemen Pusat', 'clinic_type' => 'pusat', 'is_main_clinic' => false, 'is_auditable' => false, 'city' => 'Jakarta Pusat'],
+            ['code' => 'MP', 'name' => 'Manajemen', 'clinic_type' => 'pusat', 'is_main_clinic' => false, 'is_auditable' => false, 'city' => 'Jakarta Pusat'],
             ['code' => 'KU', 'name' => 'Klinik Utama Balaikota', 'clinic_type' => 'utama', 'is_main_clinic' => true, 'is_auditable' => true, 'city' => 'Jakarta Pusat', 'accreditation_type' => 'FKTL'],
             ['code' => 'KP01', 'name' => 'Klinik Pratama Satpelkes Balaikota', 'clinic_type' => 'pratama', 'is_main_clinic' => false, 'is_auditable' => true, 'city' => 'Jakarta Pusat', 'accreditation_type' => 'FKTP'],
             ['code' => 'KP02', 'name' => 'Klinik Pratama Satpelkes DPRD DKI Jakarta', 'clinic_type' => 'pratama', 'is_main_clinic' => false, 'is_auditable' => true, 'city' => 'Jakarta Pusat', 'accreditation_type' => 'FKTP'],
@@ -44,71 +44,31 @@ class DatabaseSeeder extends Seeder
         ];
 
         $clinicModels = collect($clinics)->map(function (array $data) use ($organization) {
-            return Clinic::firstOrCreate(
+            return Clinic::updateOrCreate(
                 ['code' => $data['code'], 'organization_id' => $organization->id],
                 array_merge($data, [
                     'organization_id' => $organization->id,
-                    'accreditation_status' => 'in_progress',
+                    'accreditation_status' => $data['accreditation_status'] ?? 'in_progress',
                     'is_active' => true,
                 ])
             );
         });
 
-        $permissions = [
-            'dashboard.view',
-            'dashboard.executive',
-            'dashboard.clinic',
-            'dms.view', 'dms.manage',
-            'audit.view', 'audit.manage',
-            'audit.dashboard.view',
-            'audit.report.publish',
-            'audit.report.export',
-            'capa.view', 'capa.manage',
-            'risk.view', 'risk.manage',
-            'accreditation.view', 'accreditation.manage',
-            'quality.view', 'quality.manage',
-            'users.view', 'users.manage',
-            'settings.view', 'settings.manage',
-            'clinics.view', 'clinics.manage',
-            'workflow.manage',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        // Tahun anggaran sebagai master (dipakai program audit, mutu, risiko).
+        foreach ([2024, 2025, 2026, 2027] as $year) {
+            FiscalYear::firstOrCreate(
+                ['organization_id' => $organization->id, 'code' => 'FY'.$year],
+                [
+                    'name' => 'Tahun Anggaran '.$year,
+                    'start_date' => $year.'-01-01',
+                    'end_date' => $year.'-12-31',
+                    'is_current' => $year === (int) date('Y'),
+                    'is_active' => true,
+                ]
+            );
         }
 
-        $roles = [
-            'super-admin' => $permissions,
-            'admin-mutu' => array_filter($permissions, fn ($p) => ! str_starts_with($p, 'users.')),
-            'kepala-klinik' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view', 'audit.view', 'capa.view', 'capa.manage',
-                'risk.view', 'accreditation.view', 'quality.view',
-            ],
-            'pj-mutu' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view', 'dms.manage', 'audit.view', 'audit.manage',
-                'capa.view', 'capa.manage', 'risk.view', 'risk.manage',
-                'accreditation.view', 'accreditation.manage', 'quality.view', 'quality.manage',
-            ],
-            'auditor' => [
-                'dashboard.view', 'audit.view', 'audit.manage', 'capa.view',
-            ],
-            'staff' => [
-                'dashboard.view', 'dms.view', 'capa.view', 'accreditation.view',
-            ],
-            'tim-akreditasi' => [
-                'dashboard.view', 'dashboard.clinic',
-                'dms.view',
-                'accreditation.view', 'accreditation.manage',
-                'capa.view', 'quality.view',
-            ],
-        ];
-
-        foreach ($roles as $roleName => $rolePermissions) {
-            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
-            $role->syncPermissions($rolePermissions);
-        }
+        SimmakRoles::sync();
 
         $this->call(RoleUsersSeeder::class);
         $this->call(ClinicPermissionSeeder::class);
@@ -119,5 +79,9 @@ class DatabaseSeeder extends Seeder
         $this->call(RiskSeeder::class);
         $this->call(AccreditationSeeder::class);
         $this->call(ExtendedModuleSeeder::class);
+        $this->call(AuditInstrumentSeeder::class);
+        $this->call(PositionSeeder::class);
+        $this->call(EmployeeSeeder::class);
+        $this->call(AuditDemoSeeder::class);
     }
 }
