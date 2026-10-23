@@ -420,6 +420,17 @@ Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
 - [ ] Redis cache production (driver)
 - [ ] Perbaikan temuan UAT prioritas tinggi
 
+### 19 – 23 Oktober 2026 — Modul Audit Internal lanjutan
+- [x] Master jabatan (`positions`) + navigasi audit internal terstruktur
+- [x] Instrumen audit bertahap: sumber regulasi, standar, versi instrumen, seksi, kriteria
+- [x] Penugasan auditor: tim, deklarasi independensi/konflik, aktivasi
+- [x] Eksekusi audit: checklist respons, bukti, temuan, eskalasi, laporan
+- [x] Super admin full access: bypass status-lock lintas modul + `SuperAdminFullAccessTest`
+- [x] ADR-0013 — unit/klinik sasaran audit dan katalog peran
+- [ ] **Rencana** — master pegawai multi klinik/unit, form pengguna multi peran + scope sistem,
+      dan indeks penugasan (kolom auditor, lokasi, tanggal, standar/instrumen, detail tim).
+      Spesifikasi lengkap: `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md`
+
 ---
 
 ## 6. Metrik Progres Keseluruhan
@@ -492,6 +503,7 @@ Setiap fase dianggap **selesai** jika:
 | Panduan setup | `README.md` | Onboarding developer |
 | Panduan pengguna (MD) | `docs/manual/` | Fitur, cara pakai, role |
 | Panduan pengguna (PDF) | `pdf/manual/` | Distribusi ke stakeholder/UAT |
+| Rencana akses pegawai & pengguna | `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md` | Multi klinik pegawai, multi peran, scope sistem, indeks penugasan |
 
 ---
 

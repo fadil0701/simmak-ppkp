@@ -142,6 +142,7 @@ SIMMAK-PPKP/
 - `docs/ARCHITECTURE.md` — Arsitektur teknis & deployment
 - `docs/UIUX.md` — Design system
 - `docs/PROGRESS_TIMELINE.md` — **Progres & timeline pembangunan**
+- `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md` — **Rencana perbaikan master pegawai multi klinik, multi peran + scope sistem, dan indeks penugasan**
 - `docs/manual/` — **Panduan pengguna per fitur (Markdown)**
 - `pdf/manual/` — **PDF panduan pengguna per fitur + matriks role**
 

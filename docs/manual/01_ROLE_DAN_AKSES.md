@@ -81,3 +81,23 @@ Password semua akun demo: lihat output seeder (dari `DEMO_ACCOUNT_PASSWORD` atau
 3. Data scoped ke `organization_id` pengguna.
 4. Konteks klinik aktif mempengaruhi filter data klinik.
 5. Aksi kritis dicatat di audit trail (login/logout, dll.).
+
+## 8. Rencana Perubahan Model Akses (belum berlaku)
+
+Model akses berikut masih dalam tahap rencana dan **belum diterapkan** pada aplikasi.
+Rincian lengkap ada di `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md`.
+
+1. **Pegawai memegang beberapa klinik/unit kerja.** Master pegawai akan memiliki daftar
+   klinik/unit (satu di antaranya klinik utama), bukan hanya satu klinik.
+2. **Akses klinik akun mengikuti master pegawai.** Pilihan klinik manual pada form pengguna
+   akan dihapus; klinik yang dapat diakses akun diturunkan dari klinik pegawai terkait.
+3. **Satu pengguna boleh memiliki beberapa peran** dari katalog 8 peran resmi:
+   Super Admin, Admin Sistem, Kepala Pusat, Kasubbag TU, Kasatpel UKP, Kasatpel UKM,
+   Kepala Klinik/Unit, Admin Klinik/Unit.
+4. **Scope Sistem multi-pilih** (Audit Internal, Mutu, Akreditasi, Monitoring, Auditor,
+   Auditi) menambah kewenangan fungsional di atas peran, tanpa menghapus izin peran dan
+   tanpa melewati segregasi tugas maupun batas klinik.
+5. **Indeks penugasan** akan menampilkan petugas auditor, lokasi audit, tanggal audit, dan
+   judul standar/instrumen, dengan aksi "Detail Tim" untuk melihat susunan tim audit.
+
+Sampai implementasi selesai, perilaku aplikasi mengikuti tabel pada §2–§5 di atas.
