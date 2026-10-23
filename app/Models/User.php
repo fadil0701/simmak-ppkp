@@ -106,6 +106,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Super admin aktif: seluruh aksi CRUD pada semua modul terbuka.
+     *
+     * Dipakai untuk melewati pembatasan yang bukan berbasis izin, yaitu
+     * status alur kerja (mis. hanya draft yang boleh diubah) dan kepemilikan
+     * data (mis. hanya pengunggah yang boleh menghapus bukti). Jejak audit
+     * (created_by / updated_by / revisi jawaban) tetap dicatat seperti biasa.
+     */
+    public function hasUnrestrictedAccess(): bool
+    {
+        return $this->is_active && $this->isSuperAdmin();
+    }
+
+    /**
      * Apakah user berada pada scope manajemen (kantor pusat)?
      *
      * Manajemen Pusat adalah klinik dengan clinic_type 'pusat'. User dengan
@@ -157,6 +170,19 @@ class User extends Authenticatable
         }
 
         return $organizationId !== null && $this->organization_id === $organizationId;
+    }
+
+    /**
+     * ID organisasi untuk memfilter daftar data pada halaman indeks.
+     *
+     * Null berarti tanpa filter: administrator sistem (super admin) melihat
+     * data seluruh organisasi, konsisten dengan AuditWorkScope dan ClinicScope.
+     * Nilai null hanya boleh dipakai untuk query baca, bukan untuk validasi
+     * atau penulisan data (di sana organisasi harus eksplisit).
+     */
+    public function organizationFilterId(): ?string
+    {
+        return $this->hasUnrestrictedAccess() ? null : $this->organization_id;
     }
 
     /**

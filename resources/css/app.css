@@ -301,7 +301,15 @@
     }
 
     .sim-sidebar-nav {
-        @apply flex-1 space-y-0.5 overflow-y-auto p-3 text-sm;
+        @apply flex-1 space-y-3 overflow-y-auto p-3 text-sm;
+    }
+
+    .sim-sidebar-group {
+        @apply space-y-0.5;
+    }
+
+    .sim-sidebar-group-label {
+        @apply px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-sim-muted;
     }
 
     .sim-sidebar-link {
@@ -587,6 +595,64 @@
 
     .sim-empty-description {
         @apply text-sm text-sim-muted max-w-xs mx-auto;
+    }
+
+    /* Statistik ringkas (kartu KPI) */
+    .sim-stat-card {
+        @apply rounded-lg border border-sim-border bg-sim-white p-4 shadow-sim-sm;
+    }
+
+    .sim-stat-label {
+        @apply text-xs font-medium uppercase tracking-wide text-sim-muted;
+    }
+
+    .sim-stat-value {
+        @apply mt-1 text-2xl font-semibold leading-none text-sim-ink;
+    }
+
+    .sim-stat-meta {
+        @apply mt-2 text-xs text-sim-muted;
+    }
+
+    /* Batang progres pengisian */
+    .sim-progress {
+        @apply h-2 w-full overflow-hidden rounded-full bg-sim-surface-alt;
+    }
+
+    .sim-progress-bar {
+        @apply h-full rounded-full bg-sim-teal-600 transition-all duration-300;
+    }
+
+    .sim-progress-bar-success {
+        @apply bg-sim-success;
+    }
+
+    /* Grid identitas singkat (detail eksekusi) */
+    .sim-meta-grid {
+        @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4;
+    }
+
+    .sim-meta-label {
+        @apply text-xs font-medium uppercase tracking-wide text-sim-muted;
+    }
+
+    .sim-meta-value {
+        @apply mt-0.5 text-sm font-medium text-sim-ink;
+    }
+
+    /* Toolbar filter pada kepala kartu */
+    .sim-toolbar {
+        @apply flex flex-wrap items-center gap-2;
+    }
+
+    /* Bilah simpan yang melekat di bawah tabel instrumen */
+    .sim-save-bar {
+        @apply sticky bottom-0 z-40 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sim-border bg-sim-white/95 px-4 py-3 shadow-sim-lg backdrop-blur;
+    }
+
+    /* Potongan kode/nama izin di dalam teks */
+    .sim-code {
+        @apply rounded bg-sim-surface-alt px-1 py-0.5 font-mono text-xs text-sim-navy-800;
     }
 
     /* Utility text colors */

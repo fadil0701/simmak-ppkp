@@ -2,11 +2,16 @@
 
 namespace App\Services;
 
+use App\Exports\ReportExport;
+use App\Models\ApprovalEvent;
 use App\Models\AuditExecution;
 use App\Models\AuditFinding;
+use App\Models\AuditProgram;
 use App\Models\AuditReport;
 use App\Models\CapaCase;
+use App\Models\Clinic;
 use App\Models\User;
+use App\Support\AuditWorkScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Storage;
@@ -24,18 +29,29 @@ class AuditReportService
         $clinicId = $data['clinic_id'] ?? null;
         $executionId = $data['audit_execution_id'] ?? null;
 
-        // Ambil data berdasarkan filter
-        $reportData = $this->collectReportData($reportType, $orgId, $periodStart, $periodEnd, $clinicId, $executionId);
-
-        // Generate report number
+        $reportData = $this->collectReportData($user, $data);
         $reportNumber = $this->generateReportNumber($orgId, $reportType);
 
-        // Buat file PDF dan Excel
+        $clinicName = $clinicId
+            ? Clinic::query()->where('id', $clinicId)->value('name')
+            : 'Ruang lingkup pengguna';
+
+        $reportData = array_merge($reportData, [
+            'document_title' => 'SIMMAK Audit Internal Klinik',
+            'report_number' => $reportNumber,
+            'report_title' => $data['title'] ?? null,
+            'document_version' => '1',
+            'document_status' => 'generated',
+            'clinic_name' => $clinicName,
+            'executive_summary' => $data['executive_summary'] ?? null,
+            'generated_by' => $user->name,
+            'generated_at' => now()->format('d M Y H:i'),
+        ]);
+
         $fileName = strtolower(Str::slug($data['title'] ?? $reportType)).'_'.date('YmdHis');
         $pdfPath = 'reports/'.$orgId.'/'.$fileName.'.pdf';
         $xlsxPath = 'reports/'.$orgId.'/'.$fileName.'.xlsx';
 
-        // Generate PDF
         $pdf = Pdf::loadView('audit.reports.pdf', $reportData);
         Storage::disk('local')->put($pdfPath, $pdf->output());
 
@@ -96,11 +112,17 @@ class AuditReportService
         return $report;
     }
 
-    protected function collectReportData(string $reportType, string $orgId, ?string $periodStart, ?string $periodEnd, ?string $clinicId, ?string $executionId): array
+    public function collectReportData(User $user, array $filters): array
     {
-        $queryFindings = AuditFinding::forOrganization($orgId);
-        $queryCapa = CapaCase::forOrganization($orgId);
-        $queryExecutions = AuditExecution::forOrganization($orgId);
+        $periodStart = $filters['period_start'] ?? null;
+        $periodEnd = $filters['period_end'] ?? null;
+        $clinicId = $filters['clinic_id'] ?? null;
+        $executionId = $filters['audit_execution_id'] ?? null;
+
+        $queryFindings = AuditWorkScope::findings(AuditFinding::query(), $user);
+        $queryCapa = AuditWorkScope::capaCases(CapaCase::query(), $user);
+        $queryExecutions = AuditWorkScope::executions(AuditExecution::query(), $user);
+        $queryPrograms = AuditProgram::forOrganization($user->organization_id);
 
         if ($periodStart) {
             $queryFindings->whereDate('identified_at', '>=', $periodStart);
@@ -122,10 +144,43 @@ class AuditReportService
             $queryCapa->whereHas('sourceFinding', fn ($q) => $q->where('audit_execution_id', $executionId));
             $queryExecutions->where('id', $executionId);
         }
+        if (! empty($filters['finding_status'])) {
+            $queryFindings->where('status', $filters['finding_status']);
+        }
+        if (! empty($filters['severity'])) {
+            $queryFindings->where('severity', $filters['severity']);
+        }
+        if (! empty($filters['capa_status'])) {
+            $queryCapa->where('status', $filters['capa_status']);
+        }
+        if (! empty($filters['audit_type'])) {
+            $queryPrograms->where('audit_type', $filters['audit_type']);
+            $queryExecutions->whereHas('program', fn ($q) => $q->where('audit_type', $filters['audit_type']));
+            $queryFindings->whereHas('execution.program', fn ($q) => $q->where('audit_type', $filters['audit_type']));
+        }
+        if (! empty($filters['auditor_id'])) {
+            $auditorId = $filters['auditor_id'];
+            $queryExecutions->whereHas('assignment.teamMembers', fn ($q) => $q->where('user_id', $auditorId)->where('active', true));
+            $queryFindings->whereHas('execution.assignment.teamMembers', fn ($q) => $q->where('user_id', $auditorId)->where('active', true));
+        }
+        if (! empty($filters['standard_criterion_id'])) {
+            $queryFindings->where('standard_criterion_id', $filters['standard_criterion_id']);
+        }
 
-        $findings = $queryFindings->with(['clinic', 'execution'])->get();
-        $capaCases = $queryCapa->with(['clinic', 'owner'])->get();
-        $executions = $queryExecutions->with(['clinic', 'program'])->get();
+        $findings = $queryFindings->with(['clinic', 'execution.program', 'owner', 'assignee', 'capaCase.verifications'])->get();
+        $capaCases = $queryCapa->with(['clinic', 'owner', 'verifications.verifier', 'sourceFinding'])->get();
+        $executions = $queryExecutions->with(['clinic', 'program', 'assignment'])->get();
+        $programs = $queryPrograms->orderBy('name')->get();
+
+        $programIds = $programs->pluck('id');
+        $approvals = ApprovalEvent::query()
+            ->where('organization_id', $user->organization_id)
+            ->where('entity_type', 'audit_program')
+            ->whereIn('entity_id', $programIds)
+            ->with('actor')
+            ->orderByDesc('acted_at')
+            ->limit(50)
+            ->get();
 
         $findingsSummary = [
             'total' => $findings->count(),
@@ -140,8 +195,20 @@ class AuditReportService
             'by_priority' => $capaCases->groupBy('priority')->map(fn ($g) => $g->count())->all(),
         ];
 
+        $planVsActual = $programs->map(function (AuditProgram $program) use ($executions) {
+            $related = $executions->where('audit_program_id', $program->id);
+
+            return [
+                'code' => $program->program_code,
+                'name' => $program->name,
+                'status' => $program->status,
+                'planned' => $related->count(),
+                'finalized' => $related->where('status', 'finalized')->count(),
+            ];
+        });
+
         return [
-            'report_type' => $reportType,
+            'report_type' => $filters['report_type'] ?? 'summary',
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
             'clinic_id' => $clinicId,
@@ -149,10 +216,13 @@ class AuditReportService
             'findings' => $findings,
             'capa_cases' => $capaCases,
             'executions' => $executions,
+            'programs' => $programs,
+            'plan_vs_actual' => $planVsActual,
+            'approvals' => $approvals,
             'findings_summary' => $findingsSummary,
             'capa_summary' => $capaSummary,
-            'generated_at' => now(),
-            'generated_by' => auth()->user()->name ?? 'system',
+            'generated_at' => now()->format('d M Y H:i'),
+            'generated_by' => $user->name,
         ];
     }
 
@@ -174,7 +244,7 @@ class AuditReportService
         return $prefix.str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
 
-    public function getReportsForOrganization(string $organizationId)
+    public function getReportsForOrganization(?string $organizationId)
     {
         return AuditReport::forOrganization($organizationId)
             ->with(['clinic', 'execution', 'generator'])

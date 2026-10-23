@@ -9,10 +9,15 @@ use App\Models\StandardCriterion;
 use App\Models\User;
 use App\Services\AuditCapaService;
 use App\Services\AuditTrailService;
+use App\Support\AuditWorkScope;
+use App\Support\SpreadsheetCell;
+use App\Support\UiLabel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditFindingController extends Controller
 {
@@ -21,13 +26,65 @@ class AuditFindingController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $orgId = $user->organization_id;
 
-        $query = AuditFinding::forUserClinics($user)
+        $query = $this->filteredFindingsQuery($request);
+        $findings = $query->paginate(15)->withQueryString();
+
+        $stats = [
+            'total' => AuditWorkScope::findings(AuditFinding::query(), $user)->count(),
+            'draft' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'draft')->count(),
+            'under_review' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'under_review')->count(),
+            'confirmed' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'confirmed')->count(),
+            'action_required' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'action_required')->count(),
+            'pending_verification' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'pending_verification')->count(),
+            'closed' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'closed')->count(),
+            'critical' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('severity', 'critical')->whereIn('status', AuditFinding::OPEN_STATUSES)->count(),
+            'escalated' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('is_escalated', true)->where('status', '!=', 'closed')->count(),
+        ];
+
+        $clinics = Clinic::forUserClinics($user)->auditable()->where('is_active', true)->orderBy('name')->get();
+
+        return view('audit.findings.index', compact('findings', 'stats', 'clinics'));
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        abort_unless($request->user()->can('audit.finding.view'), 403);
+
+        $findings = $this->filteredFindingsQuery($request)->get();
+        $filename = 'temuan-audit-'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload(function () use ($findings) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Kode', 'Judul', 'Klinik', 'Severity', 'Status', 'PIC', 'Tenggat', 'Rekomendasi'], ',', '"', '\\');
+            foreach ($findings as $finding) {
+                fputcsv($handle, array_map([SpreadsheetCell::class, 'sanitize'], [
+                    $finding->finding_code,
+                    $finding->title,
+                    $finding->clinic?->name ?? '—',
+                    UiLabel::findingSeverity($finding->severity),
+                    UiLabel::findingStatus($finding->status),
+                    $finding->owner?->name ?? $finding->assignee?->name ?? '—',
+                    $finding->due_at?->format('Y-m-d') ?? '—',
+                    $finding->recommendation ?? '—',
+                ]), ',', '"', '\\');
+            }
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    private function filteredFindingsQuery(Request $request): Builder
+    {
+        $query = AuditWorkScope::findings(AuditFinding::query(), $request->user())
             ->with(['execution.clinic', 'clinic', 'assignee', 'owner', 'criterion', 'capaCase', 'escalatedBy'])
             ->orderByDesc('identified_at');
 
-        if ($request->filled('status')) {
+        if ($request->boolean('open') && ! $request->filled('status')) {
+            $query->whereIn('status', AuditFinding::OPEN_STATUSES);
+        } elseif ($request->filled('status')) {
             $query->where('status', $request->string('status'));
         }
 
@@ -43,41 +100,31 @@ class AuditFindingController extends Controller
             $query->where('is_escalated', true);
         }
 
-        $findings = $query->paginate(15)->withQueryString();
-
-        $stats = [
-            'total' => AuditFinding::forUserClinics($user)->count(),
-            'draft' => AuditFinding::forUserClinics($user)->where('status', 'draft')->count(),
-            'under_review' => AuditFinding::forUserClinics($user)->where('status', 'under_review')->count(),
-            'confirmed' => AuditFinding::forUserClinics($user)->where('status', 'confirmed')->count(),
-            'action_required' => AuditFinding::forUserClinics($user)->where('status', 'action_required')->count(),
-            'pending_verification' => AuditFinding::forUserClinics($user)->where('status', 'pending_verification')->count(),
-            'closed' => AuditFinding::forUserClinics($user)->where('status', 'closed')->count(),
-            'critical' => AuditFinding::forUserClinics($user)->where('severity', 'critical')->whereIn('status', ['open', 'in_capa', 'action_required', 'pending_verification'])->count(),
-            'escalated' => AuditFinding::forUserClinics($user)->where('is_escalated', true)->where('status', '!=', 'closed')->count(),
-        ];
-
-        $clinics = Clinic::forUserClinics($user)->auditable()->where('is_active', true)->orderBy('name')->get();
-
-        return view('audit.findings.index', compact('findings', 'stats', 'clinics'));
+        return $query;
     }
 
     public function create(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
+        $user = $request->user();
+        $orgId = $user->organization_id;
 
-        $executions = AuditExecution::where('organization_id', $orgId)
-            ->where('status', 'in_progress')
+        // Super admin: seluruh eksekusi lintas organisasi, termasuk yang sudah
+        // dikirim/difinalisasi (koreksi pasca-audit tetap tercatat).
+        $executions = AuditExecution::query()
+            ->when(! $user->hasUnrestrictedAccess(), fn ($query) => $query
+                ->where('organization_id', $orgId)
+                ->where('status', 'in_progress'))
             ->with('clinic')
             ->get();
 
-        $clinics = Clinic::forUserClinics($request->user())
+        $clinics = Clinic::forUserClinics($user)
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        $users = User::where('organization_id', $orgId)
+        $users = User::query()
+            ->when(! $user->hasUnrestrictedAccess(), fn ($query) => $query->where('organization_id', $orgId))
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -87,9 +134,15 @@ class AuditFindingController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $orgId = $request->user()->organization_id;
+        $user = $request->user();
 
-        $clinicIds = $request->user()->clinicScopeIds();
+        // Super admin: organisasi temuan mengikuti eksekusi audit yang dipilih,
+        // bukan organisasi user (koreksi lintas organisasi).
+        $orgId = $user->hasUnrestrictedAccess()
+            ? (AuditExecution::whereKey($request->input('audit_execution_id'))->value('organization_id') ?? $user->organization_id)
+            : $user->organization_id;
+
+        $clinicIds = $user->clinicScopeIds();
 
         $validated = $request->validate([
             'audit_execution_id' => ['required', 'uuid', Rule::exists('audit_executions', 'id')->where('organization_id', $orgId)],
@@ -135,13 +188,23 @@ class AuditFindingController extends Controller
     {
         $this->authorize('update', $finding);
 
-        if (! in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true)) {
+        // Super admin boleh mengoreksi temuan pada status apa pun.
+        if (! $request->user()->hasUnrestrictedAccess()
+            && ! in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true)) {
             abort(403, 'Temuan tidak dapat diedit pada status ini.');
         }
 
-        $orgId = $request->user()->organization_id;
+        // Super admin lintas organisasi: validasi mengikuti organisasi temuan.
+        $orgId = $request->user()->hasUnrestrictedAccess()
+            ? $finding->organization_id
+            : $request->user()->organization_id;
+
         $clinics = Clinic::forUserClinics($request->user())->auditable()->where('is_active', true)->orderBy('name')->get();
-        $users = User::where('organization_id', $orgId)->where('is_active', true)->orderBy('name')->get();
+        $users = User::query()
+            ->when(! $request->user()->hasUnrestrictedAccess(), fn ($query) => $query->where('organization_id', $orgId))
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
         $criteria = StandardCriterion::where('active', true)->get();
 
         return view('audit.findings.edit', compact('finding', 'clinics', 'users', 'criteria'));
@@ -153,9 +216,14 @@ class AuditFindingController extends Controller
 
         abort_unless($request->user()->belongsToOrganization($finding->organization_id), 403);
 
-        $orgId = $request->user()->organization_id;
+        // Super admin lintas organisasi: validasi mengikuti organisasi temuan.
+        $orgId = $request->user()->hasUnrestrictedAccess()
+            ? $finding->organization_id
+            : $request->user()->organization_id;
 
-        if (! in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true)) {
+        // Super admin boleh mengoreksi temuan pada status apa pun.
+        if (! $request->user()->hasUnrestrictedAccess()
+            && ! in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true)) {
             return back()->with('error', 'Temuan tidak dapat diperbarui pada status ini.');
         }
 
@@ -229,11 +297,17 @@ class AuditFindingController extends Controller
 
     public function close(Request $request, AuditFinding $finding): RedirectResponse
     {
+        $finding->load('capaCase.verifications');
         $this->authorize('close', $finding);
 
         $request->validate([
             'close_reason' => ['required', 'string'],
         ]);
+
+        $oldValues = [
+            'status' => $finding->status,
+            'closed_at' => $finding->closed_at?->toISOString(),
+        ];
 
         $finding->update([
             'status' => 'closed',
@@ -244,12 +318,12 @@ class AuditFindingController extends Controller
         (new AuditTrailService)->log(
             'audit.finding.closed',
             $finding,
-            null,
+            $oldValues,
             ['status' => 'closed', 'closed_at' => now()->toISOString(), 'reason' => $request->string('close_reason')],
             ['actor' => $request->user()->name]
         );
 
-        return back()->with('status', 'Temuan telah ditutup.');
+        return back()->with('status', 'Temuan telah ditutup setelah verifikasi efektif.');
     }
 
     public function reopen(Request $request, AuditFinding $finding): RedirectResponse
@@ -260,8 +334,15 @@ class AuditFindingController extends Controller
             'reopen_reason' => ['required', 'string'],
         ]);
 
+        $oldValues = [
+            'status' => $finding->status,
+            'closed_at' => $finding->closed_at?->toISOString(),
+        ];
+
+        $newStatus = $finding->capaCase ? 'in_capa' : 'under_review';
+
         $finding->update([
-            'status' => 'under_review',
+            'status' => $newStatus,
             'closed_at' => null,
             'updated_by' => $request->user()->id,
         ]);
@@ -269,8 +350,8 @@ class AuditFindingController extends Controller
         (new AuditTrailService)->log(
             'audit.finding.reopened',
             $finding,
-            null,
-            ['status' => 'under_review', 'reason' => $request->string('reopen_reason')],
+            $oldValues,
+            ['status' => $newStatus, 'reason' => $request->string('reopen_reason')],
             ['actor' => $request->user()->name]
         );
 
@@ -320,6 +401,11 @@ class AuditFindingController extends Controller
     public function createCapa(Request $request, AuditFinding $finding): RedirectResponse
     {
         abort_unless($request->user()->belongsToOrganization($finding->organization_id), 403);
+        abort_unless($request->user()->can('audit.action.update') || $request->user()->can('capa.manage'), 403);
+
+        if (! in_array($finding->status, ['confirmed', 'in_capa', 'action_required', 'pending_verification'], true)) {
+            return back()->with('error', 'CAPA hanya dapat dibuat setelah temuan dikonfirmasi.');
+        }
 
         if ($finding->capaCase) {
             return redirect()->route('capa.show', $finding->capaCase);

@@ -103,30 +103,63 @@
 </head>
 <body>
     <div class="header">
-        <h1>SIMMAK PPKP — Laporan Audit Internal</h1>
-        <div class="subtitle">{{ $report_type }} · PPKP Provinsi DKI Jakarta</div>
+        <h1>{{ $document_title ?? 'SIMMAK Audit Internal Klinik' }}</h1>
+        <div class="subtitle">PPKP Provinsi DKI Jakarta · dokumen sistem, bukan sertifikat atau hasil akreditasi resmi</div>
     </div>
 
     <table class="meta-table">
         <tr>
             <td class="label">Nomor Laporan</td>
             <td>{{ $report_number ?? '-' }}</td>
-            <td class="label">Tipe Laporan</td>
-            <td>{{ ucfirst(str_replace('_', ' ', $report_type ?? '-')) }}</td>
+            <td class="label">Tipe / Status</td>
+            <td>{{ ucfirst(str_replace('_', ' ', $report_type ?? '-')) }} · {{ $document_status ?? 'generated' }}</td>
         </tr>
         <tr>
             <td class="label">Periode</td>
             <td>{{ $period_start ?? '-' }} s.d. {{ $period_end ?? '-' }}</td>
             <td class="label">Klinik</td>
-            <td>{{ $clinic_id ?? 'Semua Klinik' }}</td>
+            <td>{{ $clinic_name ?? 'Ruang lingkup pengguna' }}</td>
         </tr>
         <tr>
             <td class="label">Dibuat Oleh</td>
             <td>{{ $generated_by ?? '-' }}</td>
-            <td class="label">Tanggal</td>
-            <td>{{ $generated_at ?? '-' }}</td>
+            <td class="label">Tanggal / Versi</td>
+            <td>{{ $generated_at ?? '-' }} · v{{ $document_version ?? '1' }}</td>
         </tr>
     </table>
+
+    @if (! empty($executive_summary))
+        <div class="section">
+            <h2>Ringkasan</h2>
+            <p>{{ $executive_summary }}</p>
+        </div>
+    @endif
+
+    @if (isset($plan_vs_actual) && count($plan_vs_actual))
+        <div class="section">
+            <h2>Rencana vs Realisasi Program</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Program</th>
+                        <th>Status</th>
+                        <th class="text-right">Eksekusi</th>
+                        <th class="text-right">Difinalisasi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($plan_vs_actual as $row)
+                        <tr>
+                            <td>{{ $row['code'] }} — {{ $row['name'] }}</td>
+                            <td>{{ $row['status'] }}</td>
+                            <td class="text-right">{{ $row['planned'] }}</td>
+                            <td class="text-right">{{ $row['finalized'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     @if (isset($findings_summary) && is_array($findings_summary))
         <div class="section">
@@ -217,9 +250,62 @@
         </div>
     @endif
 
+    @if (isset($capa_cases) && $capa_cases->count() > 0)
+        <div class="section">
+            <h2>CAPA dan Verifikasi</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nomor</th>
+                        <th>Klinik</th>
+                        <th>Status</th>
+                        <th>Verifikasi terakhir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($capa_cases as $capa)
+                        @php $last = $capa->verifications->sortByDesc('verification_date')->first(); @endphp
+                        <tr>
+                            <td>{{ $capa->case_number }}</td>
+                            <td>{{ $capa->clinic?->name ?? '—' }}</td>
+                            <td>{{ $capa->status }}</td>
+                            <td>{{ $last ? $last->result.' ('.$last->verification_date?->format('d M Y').')' : '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if (isset($approvals) && $approvals->count() > 0)
+        <div class="section">
+            <h2>Riwayat Persetujuan Program</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Langkah</th>
+                        <th>Keputusan</th>
+                        <th>Aktor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($approvals as $event)
+                        <tr>
+                            <td>{{ $event->acted_at?->format('d M Y H:i') }}</td>
+                            <td>{{ $event->step_key }}</td>
+                            <td>{{ $event->decision }}</td>
+                            <td>{{ $event->actor?->name ?? '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
     <div class="footer">
-        Laporan ini dihasilkan oleh SIMMAK PPKP pada {{ now()->format('d M Y H:i') }}.
-        Dokumen ini merupakan hasil sistem informasi dan bukan sertifikat akreditasi resmi.
+        {{ $document_title ?? 'SIMMAK Audit Internal Klinik' }} · dihasilkan {{ $generated_at ?? now()->format('d M Y H:i') }}.
+        Bukan sertifikat atau hasil akreditasi resmi.
     </div>
 </body>
 </html>

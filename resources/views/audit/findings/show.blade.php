@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', '{{ $finding->finding_code }} — SIMMAK PPKP')
-@section('page-title', 'Detail Temuan: {{ $finding->finding_code }}')
+@section('title', $finding->finding_code.' — SIMMAK PPKP')
+@section('page-title', 'Detail Temuan: '.$finding->finding_code)
 
 @section('content')
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -28,14 +28,13 @@
                               :fields="['review_decision' => 'return', 'review_reason' => 'Perlu revisi']" />
                 @endif
             @endcan
-            @can('audit.finding.close', $finding)
-                @if ($finding->status !== 'closed')
-                    <x-action href="{{ route('findings.close', $finding) }}" icon="check-circle" label="Tutup Temuan" size="sm"
-                              method="POST" confirm="Tutup temuan ini?" :fields="['close_reason' => 'Telah diselesaikan']" />
-                @else
-                    <x-action href="{{ route('findings.reopen', $finding) }}" icon="x-mark" label="Buka Kembali" variant="secondary" size="sm"
-                              method="POST" confirm="Buka kembali temuan ini?" :fields="['reopen_reason' => 'Perlu peninjauan ulang']" />
-                @endif
+            @can('close', $finding)
+                <x-action href="{{ route('findings.close', $finding) }}" icon="check-circle" label="Tutup Temuan" size="sm"
+                          method="POST" confirm="Tutup temuan ini setelah verifikasi efektif?" :fields="['close_reason' => 'Verifikasi efektif tercatat']" />
+            @endcan
+            @can('reopen', $finding)
+                <x-action href="{{ route('findings.reopen', $finding) }}" icon="x-mark" label="Buka Kembali" variant="secondary" size="sm"
+                          method="POST" confirm="Buka kembali temuan ini?" :fields="['reopen_reason' => 'Perlu peninjauan ulang']" />
             @endcan
             @can('escalate', $finding)
                 @if ($finding->severity === 'critical' && ! $finding->is_escalated && $finding->status !== 'closed')
@@ -162,12 +161,16 @@
                         <x-action href="{{ route('capa.show', $finding->capaCase) }}" icon="tool" label="Lihat CAPA" variant="outline" size="sm" class="mt-2" />
                     </div>
                 @else
-                    @can('audit.action.update')
-                        <x-action href="{{ route('findings.create-capa', $finding) }}" icon="plus" label="Buat CAPA" class="w-full"
-                                  method="POST" confirm="Buat CAPA dari temuan ini?" />
+                    @if (in_array($finding->status, ['confirmed', 'in_capa', 'action_required', 'pending_verification'], true))
+                        @canany(['audit.action.update', 'capa.manage'])
+                            <x-action href="{{ route('findings.create-capa', $finding) }}" icon="plus" label="Buat CAPA" class="w-full"
+                                      method="POST" confirm="Buat CAPA dari temuan ini?" />
+                        @else
+                            <p class="text-xs text-slate-500">Tidak berwenang membuat CAPA.</p>
+                        @endcanany
                     @else
-                        <p class="text-xs text-slate-500">Tidak berwenang membuat CAPA.</p>
-                    @endcan
+                        <p class="text-xs text-slate-500">Konfirmasi temuan terlebih dahulu sebelum membuat CAPA.</p>
+                    @endif
                 @endif
             </div>
         </div>

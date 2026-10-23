@@ -210,7 +210,7 @@ class SimmakRoles
             'audit.execution.view', 'audit.execution.execute', 'audit.execution.submit',
             'audit.evidence.upload', 'audit.evidence.view', 'audit.evidence.download',
             'audit.finding.view', 'audit.finding.create', 'audit.finding.update', 'audit.finding.review',
-            'audit.action.view', 'audit.action.update', 'audit.action.submit',
+            'audit.action.view', 'audit.action.update', 'audit.action.submit', 'audit.capa.verify',
             'audit.finding.close', 'audit.finding.reopen', 'audit.finding.escalate',
             'audit.report.view', 'audit.report.manage', 'audit.report.export', 'audit.report.publish',
         ])));
@@ -221,7 +221,7 @@ class SimmakRoles
             'audit.program.submit', 'audit.program.approve',
             'audit.assignment.view', 'audit.assignment.manage',
             'audit.standard.view', 'audit.standard.manage', 'audit.standard.review', 'audit.standard.publish',
-            'audit.execution.view', 'audit.finding.view', 'audit.finding.review',
+            'audit.execution.view', 'audit.finding.view', 'audit.finding.review', 'audit.capa.verify',
             'audit.evidence.view', 'audit.evidence.download',
             'audit.report.view', 'audit.report.manage', 'audit.report.export', 'audit.report.publish',
             'audit.log.view', 'capa.view', 'clinics.view',
@@ -267,9 +267,12 @@ class SimmakRoles
                 'audit.execution.view', 'audit.execution.execute', 'audit.execution.submit',
                 'audit.evidence.upload', 'audit.evidence.view',
                 'audit.finding.view', 'audit.finding.create', 'audit.finding.update',
-                'audit.action.view', 'audit.action.update',
+                'audit.action.view', 'audit.action.update', 'audit.capa.verify',
                 'audit.report.view', 'capa.view',
             ],
+            // Sisi klinik (07_TEMUAN_AUDIT.md §3, 08_CAPA.md §3): hanya melihat temuan
+            // kliniknya, menindaklanjuti CAPA, dan mengajukan eskalasi. Review temuan,
+            // penutupan temuan, dan validasi CAPA adalah kewenangan auditor/pengawas.
             self::KEPALA_KLINIK => [
                 'dashboard.view', 'dashboard.clinic',
                 'dms.view', 'audit.view', 'capa.view', 'capa.manage',
@@ -277,8 +280,8 @@ class SimmakRoles
                 'clinics.view', 'employees.view', 'positions.view',
                 'audit.program.view', 'audit.assignment.view', 'audit.execution.view',
                 'audit.standard.view', 'audit.evidence.view',
-                'audit.finding.view', 'audit.finding.review', 'audit.action.view',
-                'audit.finding.close', 'audit.finding.escalate',
+                'audit.finding.view', 'audit.action.view', 'audit.action.update', 'audit.action.submit',
+                'audit.finding.escalate',
                 'audit.report.view', 'audit.report.export',
             ],
             self::AUDITI => [
@@ -286,6 +289,7 @@ class SimmakRoles
                 'dms.view', 'audit.view',
                 'audit.execution.view', 'audit.evidence.view',
                 'audit.finding.view', 'audit.action.view', 'audit.action.update', 'audit.action.submit',
+                'audit.evidence.view', 'audit.evidence.download',
                 'capa.view', 'capa.manage', 'accreditation.view',
             ],
             default => [],

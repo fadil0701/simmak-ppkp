@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Support\SpreadsheetCell;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -107,20 +108,7 @@ class ReportExport implements FromCollection, WithColumnWidths, WithHeadings, Wi
                 break;
         }
 
-        return array_map([$this, 'sanitizeCell'], $result);
-    }
-
-    protected function sanitizeCell($value): mixed
-    {
-        if (! is_string($value)) {
-            return $value;
-        }
-        $trimmed = ltrim($value);
-        if ($trimmed !== '' && in_array($trimmed[0], ['=', '+', '-', '@'], true)) {
-            return "'".$value;
-        }
-
-        return $value;
+        return array_map([SpreadsheetCell::class, 'sanitize'], $result);
     }
 
     public function styles(Worksheet $sheet)

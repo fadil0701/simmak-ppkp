@@ -71,7 +71,8 @@ class AuditStandardService
 
     public function submitForReview(InstrumentVersion $version, User $user): void
     {
-        if ($version->status !== 'draft') {
+        // Super admin boleh mengajukan versi dari status mana pun.
+        if ($version->status !== 'draft' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya versi draft yang dapat diajukan tinjauan.');
         }
         $version->update(['status' => 'review']);
@@ -79,7 +80,8 @@ class AuditStandardService
 
     public function approveVersion(InstrumentVersion $version, User $user): void
     {
-        if ($version->status !== 'review') {
+        // Super admin boleh mengesahkan versi dari status mana pun.
+        if ($version->status !== 'review' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya versi pada status tinjauan yang dapat disahkan.');
         }
         $version->update([
@@ -91,7 +93,8 @@ class AuditStandardService
 
     public function activateVersion(InstrumentVersion $version, User $user): void
     {
-        if ($version->status !== 'approved') {
+        // Super admin boleh mengaktifkan versi dari status mana pun.
+        if ($version->status !== 'approved' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya versi yang sudah disahkan yang dapat diaktifkan.');
         }
 
@@ -107,7 +110,8 @@ class AuditStandardService
     {
         $version = InstrumentVersion::findOrFail($data['instrument_version_id']);
 
-        if ($version->isLocked()) {
+        // Super admin boleh menambah seksi walau versi sudah dikunci eksekusi.
+        if ($version->isLocked() && ! $user->hasUnrestrictedAccess()) {
             throw ValidationException::withMessages([
                 'version' => 'Versi instrumen sudah dipakai eksekusi audit dan dikunci. Buat versi baru untuk mengubah isi kriteria/seksi.',
             ]);
@@ -128,7 +132,8 @@ class AuditStandardService
         $section = StandardSection::with('instrumentVersion')->findOrFail($data['standard_section_id']);
         $version = $section->instrumentVersion;
 
-        if ($version && $version->isLocked()) {
+        // Super admin boleh menambah kriteria walau versi sudah dikunci eksekusi.
+        if ($version && $version->isLocked() && ! $user->hasUnrestrictedAccess()) {
             throw ValidationException::withMessages([
                 'version' => 'Versi instrumen sudah dipakai eksekusi audit dan dikunci. Buat versi baru untuk mengubah isi kriteria/seksi.',
             ]);
@@ -150,9 +155,9 @@ class AuditStandardService
         ]);
     }
 
-    public function getStandardsForOrganization(string $organizationId)
+    public function getStandardsForOrganization(?string $organizationId)
     {
-        return AuditStandard::where('organization_id', $organizationId)
+        return AuditStandard::forOrganization($organizationId)
             ->with('sourceDocument', 'instrumentVersions')
             ->orderBy('code')
             ->get();

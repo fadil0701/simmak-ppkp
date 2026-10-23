@@ -4,14 +4,17 @@ namespace App\Policies;
 
 use App\Models\Evidence;
 use App\Models\User;
+use App\Support\AuditWorkScope;
 
 class EvidencePolicy
 {
     public function view(?User $user, Evidence $evidence): bool
     {
-        return $user && $user->is_active
-            && $user->belongsToOrganization($evidence->organization_id)
-            && $user->hasClinicAccess($evidence->clinic_id);
+        if (! $user || ! $user->is_active || ! $user->belongsToOrganization($evidence->organization_id)) {
+            return false;
+        }
+
+        return AuditWorkScope::canViewWork($user, $evidence->clinic_id, $evidence->execution?->assignment);
     }
 
     public function viewAny(?User $user): bool
@@ -41,8 +44,6 @@ class EvidencePolicy
 
     public function download(User $user, Evidence $evidence): bool
     {
-        return $user && $user->is_active
-            && $user->belongsToOrganization($evidence->organization_id)
-            && $user->hasClinicAccess($evidence->clinic_id);
+        return $this->view($user, $evidence);
     }
 }

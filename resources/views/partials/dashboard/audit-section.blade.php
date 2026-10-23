@@ -1,7 +1,7 @@
 <section class="mt-8 space-y-6" aria-labelledby="audit-dashboard-heading">
     <div class="border-t border-sim-border pt-6">
         <h2 id="audit-dashboard-heading" class="text-lg font-bold tracking-tight text-sim-navy-900">Dashboard Audit Internal</h2>
-        <p class="mt-1 text-sm text-sim-muted">Antrian kerja, temuan prioritas, dan status audit seluruh klinik.</p>
+        <p class="mt-1 text-sm text-sim-muted">Antrian kerja sesuai ruang lingkup klinik Anda. Angka dihitung dari data operasional, bukan estimasi.</p>
     </div>
 
     <div class="sim-card">
@@ -10,33 +10,25 @@
         </div>
         <div class="sim-card-body">
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="sim-card p-4 border-l-4 {{ $reviewQueue->isNotEmpty() ? 'border-sim-warning bg-sim-warning/5' : 'border-sim-success bg-sim-success-bg' }}">
-                    <div class="mb-2 text-xs font-semibold uppercase {{ $reviewQueue->isNotEmpty() ? 'text-sim-warning' : 'text-sim-success' }}">Antrean Tinjauan Eksekusi</div>
-                    <div class="text-2xl font-bold text-sim-ink">{{ $reviewQueue->count() }}</div>
-                    <div class="mt-1 text-xs text-sim-muted">
-                        {{ $reviewQueue->isNotEmpty() ? 'Eksekusi yang diserahkan dan menunggu tinjauan.' : 'Tidak ada eksekusi yang menunggu tinjauan.' }}
-                    </div>
-                    @if ($reviewQueue->isNotEmpty())
-                        <a href="{{ route('audit.executions.checklist', $reviewQueue->first()) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Tinjau sekarang →</a>
-                    @endif
+                <div class="sim-card p-4 border-l-4 {{ $auditStats['executions_submitted'] > 0 ? 'border-sim-warning bg-sim-warning/5' : 'border-sim-success bg-sim-success-bg' }}">
+                    <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['executions_submitted'] > 0 ? 'text-sim-warning' : 'text-sim-success' }}">Menunggu tinjauan</div>
+                    <div class="text-2xl font-bold text-sim-ink">{{ $auditStats['executions_submitted'] }}</div>
+                    <div class="mt-1 text-xs text-sim-muted">Eksekusi berstatus diserahkan untuk tinjauan, dalam ruang lingkup klinik Anda.</div>
+                    <a href="{{ route('audit.executions.index', ['status' => 'submitted_for_review']) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka daftar eksekusi →</a>
                 </div>
 
-                <div class="sim-card p-4 border-l-4 {{ $highRiskFindings->isNotEmpty() ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
-                    <div class="mb-2 text-xs font-semibold uppercase {{ $highRiskFindings->isNotEmpty() ? 'text-sim-danger' : 'text-sim-success' }}">Temuan Risiko Tinggi</div>
-                    <div class="text-2xl font-bold text-sim-ink">{{ $highRiskFindings->count() }}</div>
-                    <div class="mt-1 text-xs text-sim-muted">
-                        {{ $highRiskFindings->isNotEmpty() ? 'Temuan kritis yang membutuhkan perhatian segera.' : 'Tidak ada temuan kritis terbuka.' }}
-                    </div>
-                    <a href="{{ route('findings.index', ['severity' => 'critical']) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Lihat semua temuan →</a>
+                <div class="sim-card p-4 border-l-4 {{ $auditStats['findings_critical'] > 0 ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
+                    <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['findings_critical'] > 0 ? 'text-sim-danger' : 'text-sim-success' }}">Temuan kritis terbuka</div>
+                    <div class="text-2xl font-bold text-sim-ink">{{ $auditStats['findings_critical'] }}</div>
+                    <div class="mt-1 text-xs text-sim-muted">Severity kritis dan status belum ditutup (draf sampai CAPA/verifikasi).</div>
+                    <a href="{{ route('findings.index', ['severity' => 'critical', 'open' => 1]) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka temuan kritis →</a>
                 </div>
 
-                <div class="sim-card p-4 border-l-4 {{ $overdueActions->isNotEmpty() ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
-                    <div class="mb-2 text-xs font-semibold uppercase {{ $overdueActions->isNotEmpty() ? 'text-sim-danger' : 'text-sim-success' }}">Tindak Lanjut Terlambat</div>
-                    <div class="text-2xl font-bold text-sim-ink">{{ $overdueActions->count() }}</div>
-                    <div class="mt-1 text-xs text-sim-muted">
-                        {{ $overdueActions->isNotEmpty() ? 'CAPA yang telah melewati tenggat penyelesaian.' : 'Semua tindak lanjut tepat waktu.' }}
-                    </div>
-                    <a href="{{ route('capa.index') }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Tindak lanjuti →</a>
+                <div class="sim-card p-4 border-l-4 {{ $auditStats['capa_overdue'] > 0 ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
+                    <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['capa_overdue'] > 0 ? 'text-sim-danger' : 'text-sim-success' }}">CAPA terlambat</div>
+                    <div class="text-2xl font-bold text-sim-ink">{{ $auditStats['capa_overdue'] }}</div>
+                    <div class="mt-1 text-xs text-sim-muted">Kasus belum selesai dengan target penutupan sebelum hari ini. Terlambat adalah indikator, bukan status.</div>
+                    <a href="{{ route('capa.index', ['overdue' => 1]) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka CAPA terlambat →</a>
                 </div>
             </div>
         </div>
@@ -49,7 +41,7 @@
                     <h3 class="sim-card-title">Jadwal Audit Berikutnya</h3>
                     <p class="text-xs text-sim-muted">Penugasan aktif atau diajukan, diurutkan menurut jadwal</p>
                 </div>
-                <a href="{{ route('audit.assignments.index') }}" class="text-xs font-medium text-sim-primary hover:underline">Penugasan</a>
+                    <a href="{{ route('audit.assignments.index', ['upcoming' => 1]) }}" class="text-xs font-medium text-sim-primary hover:underline">Penugasan berikutnya</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="sim-table w-full">
@@ -142,8 +134,8 @@
             </div>
             <div class="sim-card-body space-y-3 text-sm">
                 <div class="flex justify-between gap-3">
-                    <span class="text-sim-muted">Program audit</span>
-                    <span class="font-medium">{{ $auditStats['programs'] }} <span class="font-normal text-sim-muted">({{ $auditStats['programs_approved'] }} disetujui)</span></span>
+                    <span class="text-sim-muted">Program audit (organisasi)</span>
+                    <a href="{{ route('audit.programs.index') }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['programs'] }} <span class="font-normal text-sim-muted">({{ $auditStats['programs_approved'] }} disetujui)</span></a>
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-sim-muted">Penugasan aktif</span>
@@ -151,12 +143,17 @@
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-sim-muted">Eksekusi berjalan</span>
-                    <a href="{{ route('audit.executions.index') }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['executions_in_progress'] }}</a>
+                    <a href="{{ route('audit.executions.index', ['status' => 'in_progress']) }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['executions_in_progress'] }}</a>
+                </div>
+                <div class="flex justify-between gap-3">
+                    <span class="text-sim-muted">Temuan terbuka</span>
+                    <a href="{{ route('findings.index', ['open' => 1]) }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['findings_open'] }}</a>
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-sim-muted">CAPA terbuka</span>
                     <a href="{{ route('capa.index') }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['capa_open'] }}</a>
                 </div>
+                <p class="pt-2 text-[11px] leading-relaxed text-sim-muted">Periode hitungan: data berjalan (bukan rentang tanggal). Program dihitung per organisasi; temuan, CAPA, eksekusi, dan penugasan mengikuti klinik yang dapat Anda akses.</p>
             </div>
         </div>
     </div>

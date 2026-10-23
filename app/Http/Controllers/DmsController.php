@@ -23,7 +23,8 @@ class DmsController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $orgId = $user->organization_id;
+        // Super admin: seluruh dokumen lintas organisasi.
+        $orgId = $user->organizationFilterId();
 
         $query = Document::query()
             ->forOrganization($orgId)
@@ -141,7 +142,8 @@ class DmsController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
-        if ($document->status !== 'draft') {
+        // Super admin boleh mengajukan review dari status dokumen mana pun.
+        if ($document->status !== 'draft' && ! $request->user()->hasUnrestrictedAccess()) {
             return back()->withErrors(['document' => 'Hanya dokumen berstatus draft yang dapat diajukan untuk review.']);
         }
 
@@ -166,7 +168,8 @@ class DmsController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($document->organization_id), 403);
 
-        if ($document->status !== 'review') {
+        // Super admin boleh menyetujui review dari status dokumen mana pun.
+        if ($document->status !== 'review' && ! $request->user()->hasUnrestrictedAccess()) {
             return back()->withErrors(['document' => 'Hanya dokumen berstatus review yang dapat disetujui.']);
         }
 

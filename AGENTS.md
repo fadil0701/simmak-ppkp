@@ -26,7 +26,7 @@ php artisan serve                 # or: composer app
 
 - **Satu berkas `.env` untuk semua lingkungan** (lihat `.env.example`). Docker Compose memakai `.env` yang sama; nilai khusus container (`DB_HOST=postgres`, `REDIS_HOST=redis`, `CLAMAV_HOST=clamav`, `APP_URL`) di-override lewat blok `environment:` di `docker-compose.yml` — jadi jangan bikin `.env.docker` lagi.
 - The app must stay compatible with **both MySQL (dev) and PostgreSQL 17 (prod)**. `FIELD()`, `MAX(uuid)`, and double-quoted string literals have already caused PG breakage — see `docs/DEPLOY_DOCKER.md` "Perbaikan PostgreSQL" before writing raw SQL.
-- `phpunit.xml` intentionally does **not** override `DB_CONNECTION`/`DB_DATABASE` (commented out), so tests run against the database configured in `.env`. Only `tests/Feature` and `tests/Unit` sample tests exist.
+- `phpunit.xml` **forces** `DB_DATABASE=simmak_ppkp_test` (`force="true"`) so tests never touch the app database; `tests/TestCase.php::beforeRefreshingDatabase()` aborts with a `RuntimeException` if the resolved database is not a `*_test` / `testing` / `phpunit` / `:memory:` name. Create the test database once (`CREATE DATABASE simmak_ppkp_test;`) before running `php artisan test`.
 - Docker stack: `docker compose build app && docker compose up -d`, build assets with `docker compose --profile tools run --rm assets`, run artisan as `docker compose exec app gosu www-data php artisan …`.
 
 ## Architecture

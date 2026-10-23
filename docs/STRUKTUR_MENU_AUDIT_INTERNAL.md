@@ -83,15 +83,15 @@ Dashboard eksekutif (plus blok audit) dan Dashboard Klinik tetap di atas, di lua
 
 ### 3.4 Penugasan Auditor
 
-**Isian:** kode tugas, program, klinik/unit sasaran (`is_auditable` saja), ketua tim, anggota, jadwal, deklarasi konflik kepentingan.
+**Isian:** kode tugas, program, klinik/unit yang diaudit (`is_auditable` saja), ketua tim (nama pegawai + unit), anggota tim, tanggal mulai/selesai, deklarasi konflik kepentingan.
 
-**Rekomendasi:** ketua tim otomatis anggota tim; aktivasi tidak memaksa “ada konflik”; satu penugasan = satu klinik/unit.
+**Rekomendasi:** ketua tim otomatis anggota tim; aktivasi tidak memaksa “ada konflik”; satu penugasan = satu klinik/unit. Auditor hanya mengerjakan penugasan tempat ia anggota tim. Rincian UI: `docs/UI_PELAKSANAAN_AUDIT_TEMUAN_CAPA.md`.
 
 ### 3.5 Pelaksanaan Audit
 
-**Isian:** pilih penugasan aktif dan versi instrumen; isi EP; unggah bukti; serahkan tinjauan.
+**Isian:** pilih penugasan aktif yang diikuti dan versi instrumen; tabel EP dari instrumen; auditor hanya mengisi nilai kesesuaian dan rekomendasi.
 
-**Rekomendasi:** form buat eksekusi tidak query di Blade; progres checklist jelas; unggah bukti dari item EP.
+**Rekomendasi:** EP tidak sesuai / sesuai sebagian otomatis menjadi temuan + CAPA. Jangan menampilkan skor sebagai kepatuhan Kemenkes. Rincian UI: `docs/UI_PELAKSANAAN_AUDIT_TEMUAN_CAPA.md`.
 
 ### 3.6 Bukti Audit (arsip)
 
@@ -101,15 +101,15 @@ Dashboard eksekutif (plus blok audit) dan Dashboard Klinik tetap di atas, di lua
 
 ### 3.7 Temuan Audit
 
-**Isian:** kode, judul, kriteria, keparahan, klinik, status, rekomendasi.
+**Isian:** kode, judul (dari EP), kriteria, keparahan, klinik, status, rekomendasi.
 
-**Rekomendasi:** transisi draf → tinjau → konfirmasi → CAPA; penutupan mengikuti SoD (bukan tutup tanpa verifikasi jika kebijakan mensyaratkan independen).
+**Rekomendasi:** jalur utama dari form pemeriksaan (status dalam CAPA). Auditi hanya melihat kliniknya. Penutupan setelah auditor memvalidasi tindak lanjut, bukan setelah unggah bukti.
 
 ### 3.8 CAPA
 
-**Isian:** nomor kasus, temuan, PIC, tenggat, status, bukti tindakan, verifikasi efektivitas.
+**Isian:** nomor kasus, temuan terkait, PIC klinik, tenggat, status, uraian + unggah bukti, validasi auditor.
 
-**Rekomendasi:** aksi UI lengkap (kirim bukti, verifikasi oleh pihak lain, efektivitas). Tenggat terlambat adalah indikator, bukan status yang menimpa.
+**Rekomendasi:** auditi mengirim bukti; auditor yang ditugaskan memvalidasi kesesuaian. PIC tidak memvalidasi sendiri. Tenggat terlambat adalah indikator, bukan status yang menimpa.
 
 ### 3.9 Laporan Audit
 

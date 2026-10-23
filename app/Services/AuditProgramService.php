@@ -27,7 +27,8 @@ class AuditProgramService
 
     public function submitProgram(AuditProgram $program, User $user): void
     {
-        if ($program->status !== 'draft') {
+        // Super admin boleh mengajukan program dari status mana pun.
+        if ($program->status !== 'draft' && ! $user->hasUnrestrictedAccess()) {
             throw new AuthorizationException('Hanya program draft yang dapat diajukan.');
         }
         $program->update([
@@ -39,10 +40,11 @@ class AuditProgramService
 
     public function approveProgram(AuditProgram $program, User $user): void
     {
-        if ($program->status !== 'submitted_for_review') {
+        // Super admin boleh menyetujui program dari status mana pun.
+        if ($program->status !== 'submitted_for_review' && ! $user->hasUnrestrictedAccess()) {
             throw new AuthorizationException('Hanya program yang diajukan tinjauan yang dapat disetujui.');
         }
-        if ($program->created_by === $user->id) {
+        if ($program->created_by === $user->id && ! $user->hasUnrestrictedAccess()) {
             throw new AuthorizationException('Tidak dapat menyetujui program yang sendiri buat (separation of duties).');
         }
         $program->update([
@@ -55,7 +57,8 @@ class AuditProgramService
 
     public function returnForRevision(AuditProgram $program, User $user, string $reason): void
     {
-        if ($program->status !== 'submitted_for_review') {
+        // Super admin boleh mengembalikan program dari status mana pun.
+        if ($program->status !== 'submitted_for_review' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya program yang diajukan tinjauan yang dapat dikembalikan.');
         }
         $program->update([
@@ -66,7 +69,8 @@ class AuditProgramService
 
     public function scheduleProgram(AuditProgram $program, array $data, User $user): void
     {
-        if ($program->status !== 'approved') {
+        // Super admin boleh menjadwalkan program tanpa prasyarat status.
+        if ($program->status !== 'approved' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya program yang disetujui yang dapat dijadwalkan.');
         }
         $program->update([
@@ -75,9 +79,9 @@ class AuditProgramService
         ]);
     }
 
-    public function getProgramsForOrganization(string $organizationId)
+    public function getProgramsForOrganization(?string $organizationId)
     {
-        $query = AuditProgram::where('organization_id', $organizationId)
+        $query = AuditProgram::forOrganization($organizationId)
             ->withCount('schedules')
             ->orderByDesc('created_at');
 

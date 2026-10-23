@@ -55,9 +55,9 @@
                     </div>
 
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Klinik Sasaran</label>
-                        <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}">
-                            <option value="">— Pilih klinik (opsional) —</option>
+                        <label class="sim-form-label">Klinik / Unit yang Diaudit<span class="sim-form-label-required"></span></label>
+                        <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}" required>
+                            <option value="">— Pilih klinik —</option>
                             @foreach ($clinics as $clinic)
                                 <option value="{{ $clinic->id }}" {{ old('clinic_id') === $clinic->id ? 'selected' : '' }}>
                                     {{ $clinic->code }} — {{ $clinic->name }}
@@ -72,12 +72,17 @@
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Ketua Tim Auditor</label>
-                        <select name="lead_auditor_id" class="sim-form-select {{ $errors->has('lead_auditor_id') ? 'border-sim-danger' : '' }}">
-                            <option value="">— Pilih ketua tim —</option>
+                        <label class="sim-form-label">Ketua Tim (nama pegawai)<span class="sim-form-label-required"></span></label>
+                        <select name="lead_auditor_id" class="sim-form-select {{ $errors->has('lead_auditor_id') ? 'border-sim-danger' : '' }}" required>
+                            <option value="">— Pilih pegawai auditor —</option>
                             @foreach ($auditors as $auditor)
                                 <option value="{{ $auditor->id }}" {{ old('lead_auditor_id') === $auditor->id ? 'selected' : '' }}>
-                                    {{ $auditor->name }}
+                                    {{ $auditor->employee?->full_name ?? $auditor->name }}
+                                    @if ($auditor->employee?->unit?->name)
+                                        — {{ $auditor->employee->unit->name }}
+                                    @elseif ($auditor->employee?->clinic?->name)
+                                        — {{ $auditor->employee->clinic->name }}
+                                    @endif
                                 </option>
                             @endforeach
                         </select>
@@ -108,6 +113,28 @@
                         @endif
                     </div>
                 </div>
+
+                @if ($auditors->count() > 1)
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Anggota Tim Auditor</label>
+                        <div class="space-y-2 rounded-lg border border-slate-200 p-3 max-h-48 overflow-y-auto">
+                            @foreach ($auditors as $auditor)
+                                <label class="flex items-start gap-2 text-sm text-slate-700">
+                                    <input type="checkbox" name="member_ids[]" value="{{ $auditor->id }}"
+                                           class="mt-1"
+                                           @checked(in_array($auditor->id, old('member_ids', []), true))>
+                                    <span>
+                                        {{ $auditor->employee?->full_name ?? $auditor->name }}
+                                        <span class="block text-xs text-slate-500">
+                                            {{ $auditor->employee?->unit?->name ?? $auditor->employee?->clinic?->name ?? $auditor->email }}
+                                        </span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">Ketua tim otomatis menjadi anggota. Auditor hanya dapat memeriksa klinik pada penugasan ini.</p>
+                    </div>
+                @endif
 
                 <div class="sim-form-group">
                     <label class="sim-form-label">Catatan Ruang Lingkup</label>

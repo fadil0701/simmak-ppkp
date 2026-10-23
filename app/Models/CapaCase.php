@@ -56,4 +56,24 @@ class CapaCase extends BaseModel
     {
         return $this->belongsTo(AuditFinding::class, 'source_id');
     }
+
+    public function hasSubmittedActionEvidence(): bool
+    {
+        return $this->actions->contains(fn (CapaAction $action) => $action->hasSubmittedEvidence())
+            || $this->actions()->whereNotNull('evidence_submitted_at')->exists();
+    }
+
+    public function hasEffectiveVerification(): bool
+    {
+        return $this->verifications()->where(function ($query) {
+            $query->where('is_effective', true)->orWhere('result', 'effective');
+        })->exists();
+    }
+
+    public function isOverdue(): bool
+    {
+        return $this->status !== 'closed'
+            && $this->target_close_date
+            && $this->target_close_date->isPast();
+    }
 }

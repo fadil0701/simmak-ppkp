@@ -9,17 +9,22 @@
         </div>
     </div>
 
-    <nav class="flex-1 space-y-0.5 overflow-y-auto p-3 text-sm">
-        @foreach (\App\Support\SimmakMenu::forUser(auth()->user()) as $item)
-            @php
-                $active = request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*');
-                $href = route($item['route']);
-            @endphp
-            <a href="{{ $href }}"
-               class="simmak-sidebar-link {{ $active ? 'simmak-sidebar-link-active' : '' }}">
-                @include('partials.icons.'.$item['icon'])
-                <span class="flex-1">{{ $item['label'] }}</span>
-            </a>
+    <nav class="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
+        @foreach (\App\Support\SimmakMenu::groupsForUser(auth()->user()) as $group)
+            <div>
+                <div class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{{ $group['label'] }}</div>
+                @foreach ($group['items'] as $item)
+                    @php
+                        $active = request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*');
+                        $href = route($item['route']);
+                    @endphp
+                    <a href="{{ $href }}"
+                       class="simmak-sidebar-link {{ $active ? 'simmak-sidebar-link-active' : '' }}">
+                        @include('partials.icons.'.$item['icon'])
+                        <span class="flex-1">{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
+            </div>
         @endforeach
     </nav>
 

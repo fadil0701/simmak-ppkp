@@ -25,7 +25,8 @@ class AuditExecutionService
 
     public function startExecution(AuditExecution $execution, User $user): void
     {
-        if ($execution->status !== 'preparation') {
+        // Super admin boleh menjalankan ulang eksekusi yang sudah lewat persiapan.
+        if ($execution->status !== 'preparation' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya execution pada persiapan yang dapat dimulai.');
         }
         $execution->update([
@@ -43,7 +44,8 @@ class AuditExecutionService
      */
     public function submitExecution(AuditExecution $execution, User $user): void
     {
-        if ($execution->status !== 'in_progress') {
+        // Super admin boleh menyerahkan eksekusi dari status mana pun.
+        if ($execution->status !== 'in_progress' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya execution yang sedang berjalan yang dapat diserahkan.');
         }
 
@@ -58,7 +60,8 @@ class AuditExecutionService
 
     public function finalizeExecution(AuditExecution $execution, User $user): void
     {
-        if ($execution->status !== 'submitted_for_review') {
+        // Super admin boleh memfinalisasi eksekusi tanpa tahap tinjauan.
+        if ($execution->status !== 'submitted_for_review' && ! $user->hasUnrestrictedAccess()) {
             throw new ModelNotFoundException('Hanya execution yang diserahkan untuk tinjauan yang dapat difinalisasi.');
         }
         $execution->update([
@@ -75,7 +78,9 @@ class AuditExecutionService
             $execution = AuditExecution::findOrFail($data['audit_execution_id']);
 
             abort_unless($user->belongsToOrganization($execution->organization_id), 403);
-            abort_unless($execution->status === 'in_progress', 403);
+            // Super admin boleh memperbaiki jawaban walau eksekusi sudah
+            // diserahkan/difinalisasi; revisi tetap terekam (B-13).
+            abort_unless($execution->status === 'in_progress' || $user->hasUnrestrictedAccess(), 403);
 
             $existing = ChecklistResponse::where('audit_execution_id', $execution->id)
                 ->where('standard_criterion_id', $data['standard_criterion_id'])
@@ -92,7 +97,7 @@ class AuditExecutionService
                     'standard_criterion_id' => $data['standard_criterion_id'],
                 ],
                 [
-                    'organization_id' => $user->organization_id,
+                    'organization_id' => $execution->organization_id,
                     'response_value' => $data['response_value'] ?? null,
                     'score' => $data['score'] ?? null,
                     'max_score' => $data['max_score'] ?? null,
@@ -125,7 +130,7 @@ class AuditExecutionService
     public function saveTableRows(AuditExecution $execution, array $rows, User $user): int
     {
         abort_unless($user->belongsToOrganization($execution->organization_id), 403);
-        abort_unless($execution->status === 'in_progress', 403);
+        abort_unless($execution->status === 'in_progress' || $user->hasUnrestrictedAccess(), 403);
 
         $criterionIds = $this->getInstrumentCriteriaIds($execution)->all();
 
@@ -141,9 +146,10 @@ class AuditExecutionService
             $score = ($score === null || $score === '') ? null : (int) $score;
             $facts = $this->trimOrNull($row['facts_analysis'] ?? null);
             $recommendation = $this->trimOrNull($row['recommendation'] ?? null);
+            $responseValue = $this->trimOrNull($row['response_value'] ?? null);
 
             // Baris kosong diabaikan agar tidak menimpa nilai yang sudah tersimpan.
-            if ($score === null && $facts === null && $recommendation === null) {
+            if ($score === null && $facts === null && $recommendation === null && $responseValue === null) {
                 continue;
             }
 
@@ -153,7 +159,7 @@ class AuditExecutionService
             $this->saveResponse([
                 'audit_execution_id' => $execution->id,
                 'standard_criterion_id' => $criterionId,
-                'response_value' => $row['response_value'] ?? $this->deriveResponseValue($score, $maxScore),
+                'response_value' => $responseValue ?? $this->deriveResponseValue($score, $maxScore),
                 'score' => $score,
                 'max_score' => $maxScore,
                 'facts_analysis' => $facts,

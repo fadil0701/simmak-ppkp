@@ -159,8 +159,7 @@ class ChecklistTableTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Elemen Penilaian');
         $response->assertSee('Kelengkapan Bukti');
-        $response->assertSee('SKOR Maks');
-        $response->assertSee('Fakta dan Analisis');
+        $response->assertSee('Nilai Kesesuaian');
         $response->assertSee('Rekomendasi');
     }
 
@@ -171,9 +170,8 @@ class ChecklistTableTest extends TestCase
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'score' => 7,
-                    'facts_analysis' => 'SK sudah ada namun belum ditindaklanjuti.',
-                    'recommendation' => 'Tetapkan SK penetrate baru.',
+                    'response_value' => 'compliant',
+                    'recommendation' => 'Pertahankan praktik yang ada.',
                 ],
             ],
         ]);
@@ -183,41 +181,27 @@ class ChecklistTableTest extends TestCase
         $this->assertDatabaseHas('checklist_responses', [
             'audit_execution_id' => $this->execution->id,
             'standard_criterion_id' => $this->criterion->id,
-            'score' => 7,
-            'max_score' => 10,
-            'response_value' => 'partial',
+            'response_value' => 'compliant',
+            'recommendation' => 'Pertahankan praktik yang ada.',
         ]);
 
-        $this->assertDatabaseHas('checklist_responses', [
-            'facts_analysis' => 'SK sudah ada namun belum ditindaklanjuti.',
+        $this->assertDatabaseMissing('audit_findings', [
+            'audit_execution_id' => $this->execution->id,
+            'standard_criterion_id' => $this->criterion->id,
         ]);
     }
 
     /** @test */
     public function finding_can_be_created_from_table_row(): void
     {
-        $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
-            'rows' => [
-                $this->criterion->id => [
-                    'standard_criterion_id' => $this->criterion->id,
-                    'score' => 3,
-                    'facts_analysis' => 'Belum ada SK penetrate.',
-                    'recommendation' => 'Tetapkan SK penetrate.',
-                ],
-            ],
-        ]);
-
         $response = $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'score' => 3,
-                    'facts_analysis' => 'Belum ada SK penetrate.',
-                    'recommendation' => 'Tetapkan SK penetrate.',
+                    'response_value' => 'non_compliant',
+                    'recommendation' => 'Tetapkan SK penetapan.',
                 ],
             ],
-            'create_finding' => [$this->criterion->id => 1],
-            'severity' => [$this->criterion->id => 'major'],
         ]);
 
         $response->assertStatus(302);
@@ -226,7 +210,12 @@ class ChecklistTableTest extends TestCase
             'audit_execution_id' => $this->execution->id,
             'standard_criterion_id' => $this->criterion->id,
             'severity' => 'major',
-            'status' => 'draft',
+            'status' => 'in_capa',
+        ]);
+        $this->assertDatabaseHas('capa_cases', [
+            'clinic_id' => $this->clinic->id,
+            'source_type' => 'audit_finding',
+            'status' => 'action',
         ]);
     }
 
@@ -237,8 +226,7 @@ class ChecklistTableTest extends TestCase
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'score' => 10,
-                    'facts_analysis' => 'Sudah lengkap.',
+                    'response_value' => 'compliant',
                 ],
             ],
         ]);

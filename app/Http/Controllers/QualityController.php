@@ -10,7 +10,8 @@ class QualityController extends Controller
 {
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
+        // Super admin: seluruh program mutu lintas organisasi.
+        $orgId = $request->user()->organizationFilterId();
         $clinic = $request->attributes->get('active_clinic');
 
         $programs = QualityProgram::forOrganization($orgId)

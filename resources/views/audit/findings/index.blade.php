@@ -18,9 +18,12 @@
             <p class="sim-page-subtitle">Temuan dikategorikan berdasarkan tingkat risiko dan status tindak lanjut. Temuan risiko tinggi memerlukan perhatian segera.</p>
         </div>
 
-        @can('audit.finding.create')
-            <x-action href="{{ route('findings.create') }}" icon="plus" label="Tambah Temuan" />
-        @endcan
+        <div class="flex flex-wrap gap-2">
+            <x-action href="{{ route('findings.export', request()->query()) }}" icon="download" label="Ekspor CSV" variant="outline" />
+            @can('audit.finding.create')
+                <x-action href="{{ route('findings.create') }}" icon="plus" label="Tambah Temuan" />
+            @endcan
+        </div>
     </div>
 
     <div class="sim-card">
@@ -35,7 +38,7 @@
                     <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
                     <select name="status" class="sim-form-select" onchange="this.form.submit()">
                         <option value="">Semua Status</option>
-                        @foreach (['draft', 'under_review', 'confirmed', 'action_required', 'pending_verification', 'closed'] as $s)
+                        @foreach (['draft', 'under_review', 'confirmed', 'in_capa', 'pending_verification', 'closed'] as $s)
                             <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>
                                 {{ \App\Support\UiLabel::findingStatus($s) }}
                             </option>

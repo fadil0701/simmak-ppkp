@@ -41,9 +41,9 @@
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Klinik Sasaran</label>
-                        <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}">
-                            <option value="">— Pilih klinik (opsional) —</option>
+                        <label class="sim-form-label">Klinik / Unit yang Diaudit<span class="sim-form-label-required"></span></label>
+                        <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}" required>
+                            <option value="">— Pilih klinik —</option>
                             @foreach ($clinics as $clinic)
                                 <option value="{{ $clinic->id }}" {{ old('clinic_id', $assignment->clinic_id) === $clinic->id ? 'selected' : '' }}>
                                     {{ $clinic->code }} — {{ $clinic->name }}
@@ -56,12 +56,17 @@
                     </div>
 
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Ketua Tim Auditor</label>
-                        <select name="lead_auditor_id" class="sim-form-select {{ $errors->has('lead_auditor_id') ? 'border-sim-danger' : '' }}">
+                        <label class="sim-form-label">Ketua Tim Auditor<span class="sim-form-label-required"></span></label>
+                        <select name="lead_auditor_id" class="sim-form-select {{ $errors->has('lead_auditor_id') ? 'border-sim-danger' : '' }}" required>
                             <option value="">— Pilih ketua tim —</option>
                             @foreach ($auditors as $auditor)
                                 <option value="{{ $auditor->id }}" {{ old('lead_auditor_id', $assignment->lead_auditor_id) === $auditor->id ? 'selected' : '' }}>
-                                    {{ $auditor->name }}
+                                    {{ $auditor->employee?->full_name ?? $auditor->name }}
+                                    @if ($auditor->employee?->unit?->name)
+                                        — {{ $auditor->employee->unit->name }}
+                                    @elseif ($auditor->employee?->clinic?->name)
+                                        — {{ $auditor->employee->clinic->name }}
+                                    @endif
                                 </option>
                             @endforeach
                         </select>

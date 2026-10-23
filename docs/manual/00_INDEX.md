@@ -8,6 +8,8 @@
 | Tanggal | 11 Juli 2026 |
 | Format | Markdown + PDF (`pdf/manual/`) |
 
+Dokumen internal tim (bukan PDF panduan pengguna): `docs/UI_PELAKSANAAN_AUDIT_TEMUAN_CAPA.md` — perubahan layar pelaksanaan, temuan, dan CAPA (kesesuaian + rekomendasi, CAPA klinik, validasi auditor).
+
 ## Daftar Dokumen
 
 | No | Dokumen | PDF |

@@ -10,69 +10,67 @@ use App\Models\AuditTrail;
 use App\Models\CapaCase;
 use App\Models\Clinic;
 use App\Models\User;
+use App\Support\AuditWorkScope;
 use Illuminate\Support\Collection;
 
 class AuditDashboardService
 {
-    /** @var list<string> */
-    public const OPEN_FINDING_STATUSES = [
-        'draft',
-        'under_review',
-        'confirmed',
-        'action_required',
-        'pending_verification',
-        'in_capa',
-        'open',
-    ];
-
     public function auditDashboardData(User $user): array
     {
-        $orgId = $user->organization_id;
+        $clinicIds = $this->clinicIdsForActivities($user);
 
         return [
-            'stats' => $this->stats($orgId),
-            'overdueActions' => $this->overdueActions($orgId),
-            'reviewQueue' => $this->reviewQueue($orgId),
-            'highRiskFindings' => $this->highRiskFindings($orgId),
-            'upcomingAssignments' => $this->upcomingAssignments($orgId),
-            'recentActivities' => $this->recentActivities($orgId),
-            'findingsByClinic' => $this->findingsByClinic($orgId),
+            'stats' => $this->stats($user),
+            'overdueActions' => $this->overdueActions($user),
+            'reviewQueue' => $this->reviewQueue($user),
+            'highRiskFindings' => $this->highRiskFindings($user),
+            'upcomingAssignments' => $this->upcomingAssignments($user),
+            'recentActivities' => $this->recentActivities($user, $clinicIds),
+            'findingsByClinic' => $this->findingsByClinic($user),
         ];
     }
 
-    private function stats(string $orgId): array
+    public function stats(User $user): array
     {
         return [
-            'programs' => AuditProgram::forOrganization($orgId)->count(),
-            'programs_approved' => AuditProgram::forOrganization($orgId)->where('status', 'approved')->count(),
-            'assignments_active' => AuditAssignment::forOrganization($orgId)->where('status', 'active')->count(),
-            'executions_in_progress' => AuditExecution::forOrganization($orgId)->where('status', 'in_progress')->count(),
-            'executions_submitted' => AuditExecution::forOrganization($orgId)->where('status', 'submitted_for_review')->count(),
-            'findings_open' => AuditFinding::forOrganization($orgId)->whereIn('status', self::OPEN_FINDING_STATUSES)->count(),
-            'findings_closed' => AuditFinding::forOrganization($orgId)->where('status', 'closed')->count(),
-            'capa_open' => CapaCase::forOrganization($orgId)->whereNotIn('status', ['closed'])->count(),
-            'capa_closed' => CapaCase::forOrganization($orgId)->where('status', 'closed')->count(),
-            'capa_overdue' => CapaCase::forOrganization($orgId)
-                ->whereNotIn('status', ['closed'])
-                ->where('target_close_date', '<', now()->toDateString())
+            'programs' => AuditProgram::forOrganization($user->organization_id)->count(),
+            'programs_approved' => AuditProgram::forOrganization($user->organization_id)->where('status', 'approved')->count(),
+            'assignments_active' => AuditWorkScope::assignments(AuditAssignment::query(), $user)->where('status', 'active')->count(),
+            'assignments_upcoming' => $this->upcomingAssignmentsQuery($user)->count(),
+            'executions_in_progress' => AuditWorkScope::executions(AuditExecution::query(), $user)->where('status', 'in_progress')->count(),
+            'executions_submitted' => AuditWorkScope::executions(AuditExecution::query(), $user)->where('status', 'submitted_for_review')->count(),
+            'findings_open' => AuditWorkScope::findings(AuditFinding::query(), $user)->whereIn('status', AuditFinding::OPEN_STATUSES)->count(),
+            'findings_closed' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'closed')->count(),
+            'findings_critical' => AuditWorkScope::findings(AuditFinding::query(), $user)
+                ->where('severity', 'critical')
+                ->whereIn('status', AuditFinding::OPEN_STATUSES)
                 ->count(),
+            'findings_under_review' => AuditWorkScope::findings(AuditFinding::query(), $user)->where('status', 'under_review')->count(),
+            'capa_open' => AuditWorkScope::capaCases(CapaCase::query(), $user)->whereNotIn('status', ['closed'])->count(),
+            'capa_closed' => AuditWorkScope::capaCases(CapaCase::query(), $user)->where('status', 'closed')->count(),
+            'capa_overdue' => $this->overdueCapaQuery($user)->count(),
         ];
     }
 
-    private function overdueActions(string $orgId): Collection
+    private function overdueCapaQuery(User $user)
     {
-        return CapaCase::forOrganization($orgId)
+        return AuditWorkScope::capaCases(CapaCase::query(), $user)
             ->whereNotIn('status', ['closed'])
-            ->where('target_close_date', '<', now()->toDateString())
+            ->where('target_close_date', '<', now()->toDateString());
+    }
+
+    private function overdueActions(User $user): Collection
+    {
+        return $this->overdueCapaQuery($user)
             ->with('clinic', 'owner')
             ->orderBy('target_close_date')
             ->limit(10)
             ->get();
     }
 
-    private function reviewQueue(string $orgId): Collection
+    private function reviewQueue(User $user): Collection
     {
-        return AuditExecution::forOrganization($orgId)
+        return AuditWorkScope::executions(AuditExecution::query(), $user)
             ->where('status', 'submitted_for_review')
             ->with('clinic', 'assignment')
             ->orderBy('submitted_at')
@@ -80,74 +78,81 @@ class AuditDashboardService
             ->get();
     }
 
-    private function highRiskFindings(string $orgId): Collection
+    private function highRiskFindings(User $user): Collection
     {
-        return AuditFinding::forOrganization($orgId)
-            ->where('severity', 'critical')
-            ->whereIn('status', self::OPEN_FINDING_STATUSES)
+        // 07_TEMUAN_AUDIT.md §5: risiko tinggi = Kritikal dan Mayor.
+        return AuditWorkScope::findings(AuditFinding::query(), $user)
+            ->whereIn('severity', ['critical', 'major'])
+            ->whereIn('status', AuditFinding::OPEN_STATUSES)
             ->with('clinic', 'owner')
             ->orderByDesc('identified_at')
             ->limit(10)
             ->get();
     }
 
-    private function upcomingAssignments(string $orgId): Collection
+    private function upcomingAssignmentsQuery(User $user)
     {
-        return AuditAssignment::forOrganization($orgId)
+        return AuditWorkScope::assignments(AuditAssignment::query(), $user)
             ->whereIn('status', ['active', 'proposed'])
+            ->whereDate('scheduled_end', '>=', now()->toDateString());
+    }
+
+    private function upcomingAssignments(User $user): Collection
+    {
+        return $this->upcomingAssignmentsQuery($user)
             ->with(['clinic', 'program', 'leadAuditor'])
             ->orderBy('scheduled_start')
             ->limit(8)
             ->get();
     }
 
-    private function recentActivities(string $orgId): array
+    /**
+     * @param  list<string>|null  $clinicIds
+     */
+    private function recentActivities(User $user, ?array $clinicIds): array
     {
-        $activities = [];
-
-        $trails = AuditTrail::query()
-            ->where('organization_id', $orgId)
+        $query = AuditTrail::query()
+            ->where('organization_id', $user->organization_id)
             ->with(['user', 'clinic'])
             ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
+            ->limit(10);
 
-        foreach ($trails as $trail) {
-            $activities[] = [
-                'event' => $trail->event,
-                'actor' => $trail->user?->name ?? 'Sistem',
-                'clinic' => $trail->clinic?->name ?? '-',
-                'time' => $trail->created_at?->diffForHumans() ?? '—',
-            ];
+        if ($clinicIds !== null) {
+            $query->where(function ($inner) use ($clinicIds) {
+                $inner->whereIn('clinic_id', $clinicIds)->orWhereNull('clinic_id');
+            });
         }
 
-        return $activities;
+        return $query->get()->map(fn (AuditTrail $trail) => [
+            'event' => $trail->event,
+            'actor' => $trail->user?->name ?? 'Sistem',
+            'clinic' => $trail->clinic?->name ?? '-',
+            'time' => $trail->created_at?->diffForHumans() ?? '—',
+        ])->all();
     }
 
-    private function findingsByClinic(string $orgId): Collection
+    private function findingsByClinic(User $user): Collection
     {
-        $clinics = Clinic::forOrganization($orgId)
+        $clinics = Clinic::forUserClinics($user)
             ->auditable()
             ->where('is_active', true)
             ->orderBy('code')
             ->get(['id', 'code', 'name', 'city']);
 
-        $findingsByClinic = AuditFinding::forOrganization($orgId)
-            ->whereIn('status', self::OPEN_FINDING_STATUSES)
+        $findingsByClinic = AuditWorkScope::findings(AuditFinding::query(), $user)
+            ->whereIn('status', AuditFinding::OPEN_STATUSES)
             ->selectRaw('clinic_id, COUNT(*) as total')
             ->groupBy('clinic_id')
             ->pluck('total', 'clinic_id');
 
-        $criticalByClinic = AuditFinding::forOrganization($orgId)
-            ->whereIn('status', self::OPEN_FINDING_STATUSES)
+        $criticalByClinic = AuditWorkScope::findings(AuditFinding::query(), $user)
+            ->whereIn('status', AuditFinding::OPEN_STATUSES)
             ->where('severity', 'critical')
             ->selectRaw('clinic_id, COUNT(*) as total')
             ->groupBy('clinic_id')
             ->pluck('total', 'clinic_id');
 
-        $capaOverdueByClinic = CapaCase::forOrganization($orgId)
-            ->whereNotIn('status', ['closed'])
-            ->where('target_close_date', '<', now()->toDateString())
+        $capaOverdueByClinic = $this->overdueCapaQuery($user)
             ->selectRaw('clinic_id, COUNT(*) as total')
             ->groupBy('clinic_id')
             ->pluck('total', 'clinic_id');
@@ -163,5 +168,17 @@ class AuditDashboardService
                 'capa_overdue' => (int) ($capaOverdueByClinic[$clinic->id] ?? 0),
             ];
         });
+    }
+
+    /**
+     * @return list<string>|null null = seluruh klinik organisasi (pengawas)
+     */
+    private function clinicIdsForActivities(User $user): ?array
+    {
+        if ($user->isSuperAdmin() || $user->hasCrossClinicAccess()) {
+            return null;
+        }
+
+        return $user->clinics()->pluck('clinics.id')->all();
     }
 }

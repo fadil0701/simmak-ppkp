@@ -29,18 +29,23 @@
             </div>
 
             <nav class="sim-sidebar-nav" aria-label="Menu navigasi">
-                @foreach (\App\Support\SimmakMenu::forUser(auth()->user()) as $item)
-                    @php
-                        $active = request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*');
-                        $href = route($item['route']);
-                    @endphp
-                    <a href="{{ $href }}"
-                       class="sim-sidebar-link {{ $active ? 'sim-sidebar-link-active' : '' }}"
-                       aria-current="{{ $active ? 'page' : 'false' }}"
-                       @click="sidebarOpen = false">
-                        @include('partials.icons.'.$item['icon'])
-                        <span class="sim-sidebar-link-label">{{ $item['label'] }}</span>
-                    </a>
+                @foreach (\App\Support\SimmakMenu::groupsForUser(auth()->user()) as $group)
+                    <div class="sim-sidebar-group">
+                        <div class="sim-sidebar-group-label">{{ $group['label'] }}</div>
+                        @foreach ($group['items'] as $item)
+                            @php
+                                $active = request()->routeIs($item['route']) || request()->routeIs($item['route'].'.*');
+                                $href = route($item['route']);
+                            @endphp
+                            <a href="{{ $href }}"
+                               class="sim-sidebar-link {{ $active ? 'sim-sidebar-link-active' : '' }}"
+                               aria-current="{{ $active ? 'page' : 'false' }}"
+                               @click="sidebarOpen = false">
+                                @include('partials.icons.'.$item['icon'])
+                                <span class="sim-sidebar-link-label">{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
                 @endforeach
             </nav>
 

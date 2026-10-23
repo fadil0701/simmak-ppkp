@@ -2,21 +2,36 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActionEvidence;
+use App\Models\CapaAction;
 use App\Models\CapaCase;
 use App\Models\CapaRootCauseAnalysis;
-use App\Models\CapaVerification;
+use App\Models\User;
+use App\Services\AuditCapaService;
+use App\Services\AuditEvidenceService;
 use App\Services\AuditTrailService;
+use App\Support\AuditWorkScope;
+use App\Support\SpreadsheetCell;
+use App\Support\UiLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CapaController extends Controller
 {
+    public function __construct(
+        private AuditCapaService $capaService,
+        private AuditEvidenceService $evidenceService,
+    ) {}
+
     public function index(Request $request): View
     {
         $user = $request->user();
 
-        $query = CapaCase::forUserClinics($user)
+        $query = AuditWorkScope::capaCases(CapaCase::query(), $user)
             ->with(['clinic', 'owner', 'sourceFinding'])
             ->orderByDesc('created_at');
 
@@ -24,14 +39,19 @@ class CapaController extends Controller
             $query->where('status', $request->string('status'));
         }
 
+        if ($request->boolean('overdue')) {
+            $query->whereNotIn('status', ['closed'])
+                ->where('target_close_date', '<', now()->toDateString());
+        }
+
         $cases = $query->paginate(15)->withQueryString();
 
         $stats = [
-            'total' => CapaCase::forUserClinics($user)->count(),
-            'open' => CapaCase::forUserClinics($user)->whereIn('status', ['open', 'analysis'])->count(),
-            'action' => CapaCase::forUserClinics($user)->where('status', 'action')->count(),
-            'closed' => CapaCase::forUserClinics($user)->where('status', 'closed')->count(),
-            'overdue' => CapaCase::forUserClinics($user)
+            'total' => AuditWorkScope::capaCases(CapaCase::query(), $user)->count(),
+            'open' => AuditWorkScope::capaCases(CapaCase::query(), $user)->whereIn('status', ['open', 'analysis'])->count(),
+            'action' => AuditWorkScope::capaCases(CapaCase::query(), $user)->where('status', 'action')->count(),
+            'closed' => AuditWorkScope::capaCases(CapaCase::query(), $user)->where('status', 'closed')->count(),
+            'overdue' => AuditWorkScope::capaCases(CapaCase::query(), $user)
                 ->whereNotIn('status', ['closed'])
                 ->where('target_close_date', '<', now()->toDateString())
                 ->count(),
@@ -40,13 +60,58 @@ class CapaController extends Controller
         return view('capa.index', compact('cases', 'stats'));
     }
 
+    public function export(Request $request): StreamedResponse
+    {
+        abort_unless($request->user()->can('capa.view') || $request->user()->can('audit.action.view'), 403);
+
+        $query = AuditWorkScope::capaCases(CapaCase::query(), $request->user())
+            ->with(['clinic', 'owner', 'sourceFinding'])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->string('status'));
+        }
+        if ($request->boolean('overdue')) {
+            $query->whereNotIn('status', ['closed'])
+                ->where('target_close_date', '<', now()->toDateString());
+        }
+
+        $cases = $query->get();
+        $filename = 'capa-'.now()->format('Ymd_His').'.csv';
+
+        return response()->streamDownload(function () use ($cases) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Nomor', 'Masalah', 'Klinik', 'Prioritas', 'Status', 'PIC', 'Target'], ',', '"', '\\');
+            foreach ($cases as $case) {
+                fputcsv($handle, array_map([SpreadsheetCell::class, 'sanitize'], [
+                    $case->case_number,
+                    $case->problem_statement,
+                    $case->clinic?->name ?? '—',
+                    UiLabel::capaPriority($case->priority),
+                    UiLabel::capaStatus($case->status),
+                    $case->owner?->name ?? '—',
+                    $case->target_close_date?->format('Y-m-d') ?? '—',
+                ]), ',', '"', '\\');
+            }
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function show(Request $request, CapaCase $capa): View
     {
         $this->authorize('view', $capa);
 
-        $capa->load(['clinic', 'owner', 'sourceFinding.schedule', 'actions.assignee', 'rca.creator', 'verifications.verifier']);
+        $capa->load(['clinic', 'owner', 'sourceFinding.execution.assignment', 'actions.assignee', 'actions.evidenceLinks.evidence', 'rca.creator', 'verifications.verifier']);
 
-        return view('capa.show', compact('capa'));
+        $users = User::where('organization_id', $capa->organization_id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('capa.show', compact('capa', 'users'));
     }
 
     public function storeRca(Request $request, CapaCase $capa): RedirectResponse
@@ -102,46 +167,80 @@ class CapaController extends Controller
         return back()->with('status', 'Analisis akar masalah berhasil disimpan.');
     }
 
+    public function storeAction(Request $request, CapaCase $capa): RedirectResponse
+    {
+        $this->authorize('update', $capa);
+
+        $validated = $request->validate([
+            'action_type' => ['required', 'in:corrective,preventive'],
+            'description' => ['required', 'string'],
+            'assigned_to' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('organization_id', $capa->organization_id)],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $this->capaService->addAction($capa, $validated, $request->user());
+
+        return back()->with('status', 'Tindakan CAPA berhasil ditambahkan.');
+    }
+
+    public function submitEvidence(Request $request, CapaAction $action): RedirectResponse
+    {
+        $this->authorize('update', $action);
+
+        $validated = $request->validate([
+            'evidence_notes' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
+        ]);
+
+        if (! filled($validated['evidence_notes'] ?? null) && ! $request->hasFile('file')) {
+            throw ValidationException::withMessages([
+                'evidence_notes' => 'Uraian atau berkas bukti tindak lanjut wajib diisi.',
+            ]);
+        }
+
+        $capa = $action->capaCase;
+        if ($request->hasFile('file') && $capa) {
+            $evidence = $this->evidenceService->store($request->file('file'), $request->user(), [
+                'clinic_id' => $capa->clinic_id,
+                'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
+                'evidence_type' => 'capa_follow_up',
+                'description' => $validated['evidence_notes'] ?? 'Bukti tindak lanjut CAPA',
+            ]);
+            ActionEvidence::create([
+                'corrective_action_id' => $action->id,
+                'evidence_id' => $evidence->id,
+                'description' => $validated['evidence_notes'] ?? $evidence->original_filename,
+            ]);
+            if (! filled($validated['evidence_notes'] ?? null)) {
+                $validated['evidence_notes'] = 'Berkas: '.$evidence->original_filename;
+            }
+        }
+
+        $this->capaService->submitActionEvidence($action, $validated, $request->user());
+
+        return back()->with('status', 'Bukti tindak lanjut telah dikirim. Temuan belum tertutup sampai auditor memvalidasi kesesuaiannya.');
+    }
+
     public function storeVerification(Request $request, CapaCase $capa): RedirectResponse
     {
+        $capa->load(['sourceFinding', 'actions']);
         $this->authorize('verify', $capa);
 
         $validated = $request->validate([
             'verification_date' => ['required', 'date'],
-            'result' => ['required', 'in:effective,not_effective,pending'],
-            'notes' => ['nullable', 'string'],
-            'is_effective' => ['nullable', 'boolean'],
+            'result' => ['required', 'in:effective,needs_improvement,not_effective'],
+            'notes' => ['required', 'string'],
+            'new_target_close_date' => ['required_unless:result,effective', 'nullable', 'date', 'after_or_equal:today'],
         ]);
 
-        CapaVerification::create([
-            'organization_id' => $capa->organization_id,
-            'capa_case_id' => $capa->id,
-            'verification_date' => $validated['verification_date'],
-            'result' => $validated['result'],
-            'notes' => $validated['notes'] ?? null,
-            'is_effective' => $validated['result'] === 'effective',
-            'verified_by' => $request->user()->id,
-        ]);
+        $this->capaService->recordVerification($capa, $validated, $request->user());
 
-        if ($validated['result'] === 'effective') {
-            $capa->update([
-                'status' => 'closed',
-                'closed_at' => now()->toDateString(),
-                'updated_by' => $request->user()->id,
-            ]);
-        } elseif ($capa->status !== 'verification') {
-            $capa->update(['status' => 'verification', 'updated_by' => $request->user()->id]);
-        }
+        $message = match ($validated['result']) {
+            'effective' => 'Auditor menerima tindak lanjut. Temuan dan CAPA ditutup.',
+            'needs_improvement' => 'Hasil: perlu perbaikan. Kasus dikembalikan ke tindak lanjut.',
+            default => 'Hasil: tidak efektif. Kasus dikembalikan ke tindak lanjut dengan tenggat baru.',
+        };
 
-        // Audit trail
-        (new AuditTrailService)->log(
-            'capa.verified',
-            $capa,
-            null,
-            ['result' => $validated['result'], 'capa_case_id' => $capa->id],
-            ['actor' => $request->user()->name]
-        );
-
-        return back()->with('status', 'Verifikasi CAPA berhasil dicatat.');
+        return back()->with('status', $message);
     }
 }

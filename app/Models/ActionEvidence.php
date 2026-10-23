@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BaseModel;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ActionEvidence extends BaseModel
+class ActionEvidence extends Model
 {
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     protected $fillable = [
         'corrective_action_id', 'evidence_id', 'description',
     ];

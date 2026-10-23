@@ -28,12 +28,18 @@ class AuditEvidenceController extends Controller
 
     public function create(Request $request): View
     {
-        $executions = AuditExecution::where('organization_id', $request->user()->organization_id)
-            ->where('status', 'in_progress')
+        $user = $request->user();
+
+        // Super admin: seluruh eksekusi lintas organisasi, termasuk yang sudah
+        // dikirim/difinalisasi (unggah bukti pasca-audit tetap tercatat).
+        $executions = AuditExecution::query()
+            ->when(! $user->hasUnrestrictedAccess(), fn ($query) => $query
+                ->where('organization_id', $user->organization_id)
+                ->where('status', 'in_progress'))
             ->with('clinic')
             ->get();
 
-        $clinics = Clinic::forUserClinics($request->user())
+        $clinics = Clinic::forUserClinics($user)
             ->auditable()
             ->where('is_active', true)
             ->orderBy('name')

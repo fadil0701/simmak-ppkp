@@ -33,6 +33,9 @@
                     <div><span class="text-xs text-slate-500">Sumber</span><p class="font-medium">{{ ucfirst(str_replace('_', ' ', $capa->source_type)) }}</p></div>
                     <div><span class="text-xs text-slate-500">Target Penutupan</span><p class="font-medium {{ $capa->target_close_date->isPast() && $capa->status !== 'closed' ? 'text-red-600' : '' }}">{{ $capa->target_close_date->format('d M Y') }}</p></div>
                 </div>
+                @if ($capa->isOverdue())
+                    <p class="text-sm font-medium text-red-700">Terlambat terhadap tenggat — status kasus tidak diubah otomatis.</p>
+                @endif
                 @if ($capa->sourceFinding)
                     <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">
                         <span class="text-xs font-medium text-slate-500">Temuan Audit Terkait</span>
@@ -52,17 +55,63 @@
                 @forelse ($capa->actions as $action)
                     <div class="border-b border-slate-50 pb-3 last:border-0">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-medium uppercase text-slate-500">{{ str_replace('_', ' ', $action->action_type) }}</span>
-                            <span class="simmak-badge bg-slate-100 text-slate-700">{{ ucfirst($action->status) }}</span>
+                            <span class="text-xs font-medium uppercase text-slate-500">{{ $action->action_type === 'preventive' ? 'Pencegahan' : 'Korektif' }}</span>
+                            <span class="simmak-badge bg-slate-100 text-slate-700">{{ \App\Support\UiLabel::capaActionStatus($action->status) }}</span>
                         </div>
                         <p class="mt-1 text-sm text-slate-700">{{ $action->description }}</p>
-                        @if ($action->due_date)
-                            <p class="mt-1 text-xs text-slate-500">Due: {{ $action->due_date->format('d M Y') }}</p>
+                        <p class="mt-1 text-xs text-slate-500">PIC: {{ $action->assignee?->name ?? '—' }}
+                            @if ($action->due_date)
+                                · Tenggat {{ $action->due_date->format('d M Y') }}
+                            @endif
+                        </p>
+                        @if ($action->hasSubmittedEvidence())
+                            <p class="mt-2 text-xs text-slate-600 whitespace-pre-wrap">Bukti: {{ $action->evidence_notes }}</p>
+                            @foreach ($action->evidenceLinks as $link)
+                                @if ($link->evidence)
+                                    <p class="text-xs">
+                                        <a href="{{ route('audit.evidence.download', $link->evidence) }}" class="text-teal-700 hover:underline">{{ $link->evidence->original_filename }}</a>
+                                    </p>
+                                @endif
+                            @endforeach
+                            <p class="text-[11px] text-slate-400">Dikirim {{ $action->evidence_submitted_at?->format('d M Y H:i') }} · menunggu validasi auditor</p>
+                        @elseif ($capa->status !== 'closed')
+                            @can('update', $action)
+                                <form method="POST" action="{{ route('capa.submit-evidence', $action) }}" class="mt-2 space-y-2" enctype="multipart/form-data">
+                                    @csrf
+                                    <label class="sim-form-label">Uraian tindak lanjut</label>
+                                    <textarea name="evidence_notes" rows="2" class="sim-form-textarea" placeholder="Uraikan tindakan yang sudah dikerjakan.">{{ old('evidence_notes') }}</textarea>
+                                    <label class="sim-form-label">Unggah bukti (PDF/gambar/Office, maks. 10 MB)</label>
+                                    <input type="file" name="file" class="sim-form-input text-sm" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                                    <x-action icon="upload" label="Kirim Bukti Tindak Lanjut" size="sm" />
+                                </form>
+                            @endcan
                         @endif
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">Belum ada tindakan terdaftar.</p>
                 @endforelse
+
+                @can('update', $capa)
+                    @if ($capa->status !== 'closed')
+                        <form method="POST" action="{{ route('capa.store-action', $capa) }}" class="space-y-2 border-t border-slate-100 pt-3">
+                            @csrf
+                            <h4 class="text-xs font-semibold uppercase text-slate-500">Tambah tindakan</h4>
+                            <select name="action_type" class="sim-form-select" required>
+                                <option value="corrective">Korektif</option>
+                                <option value="preventive">Pencegahan</option>
+                            </select>
+                            <textarea name="description" rows="2" required class="sim-form-textarea" placeholder="Rencana tindakan"></textarea>
+                            <select name="assigned_to" class="sim-form-select">
+                                <option value="">— PIC tindakan (default: penanggung jawab kasus) —</option>
+                                @foreach ($users as $assignee)
+                                    <option value="{{ $assignee->id }}" @selected($assignee->id === $capa->owner_id)>{{ $assignee->name }}</option>
+                                @endforeach
+                            </select>
+                            <input type="date" name="due_date" class="sim-form-input" value="{{ $capa->target_close_date?->format('Y-m-d') }}">
+                            <x-action icon="plus" label="Tambah Tindakan" size="sm" />
+                        </form>
+                    @endif
+                @endcan
             </div>
         </div>
     </div>
@@ -147,34 +196,45 @@
                     <div class="border-b border-slate-50 pb-3 last:border-0">
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-medium text-slate-800">{{ $verification->verification_date->format('d M Y') }}</span>
-                            <span class="simmak-badge {{ $verification->is_effective ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">{{ ucfirst(str_replace('_', ' ', $verification->result)) }}</span>
+                            <span class="simmak-badge {{ $verification->is_effective ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">{{ \App\Support\UiLabel::capaVerificationResult($verification->result) }}</span>
                         </div>
                         <p class="mt-1 text-sm text-slate-600">{{ $verification->notes ?? '—' }}</p>
                         <p class="text-xs text-slate-500">Verifier: {{ $verification->verifier?->name }}</p>
                     </div>
                 @endforeach
 
-                <form method="POST" action="{{ route('capa.store-verification', $capa) }}" class="space-y-3 border-t border-slate-100 pt-4">
-                    @csrf
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Tanggal Verifikasi</label>
-                        <input type="date" name="verification_date" value="{{ now()->toDateString() }}" required
-                               class="sim-form-input">
-                    </div>
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Hasil</label>
-                        <select name="result" required class="sim-form-select">
-                            <option value="pending">Pending</option>
-                            <option value="effective">Efektif</option>
-                            <option value="not_effective">Tidak Efektif</option>
-                        </select>
-                    </div>
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Catatan</label>
-                        <textarea name="notes" rows="2" class="sim-form-textarea"></textarea>
-                    </div>
-                    <x-action icon="check-circle" label="Catat Verifikasi" />
-                </form>
+                @can('verify', $capa)
+                    <form method="POST" action="{{ route('capa.store-verification', $capa) }}" class="space-y-3 border-t border-slate-100 pt-4">
+                        @csrf
+                        <p class="text-xs text-slate-500">Validasi oleh auditor yang ditugaskan, setelah klinik mengirim bukti. PIC/auditi tidak dapat menutup temuan sendiri.</p>
+                        <div class="sim-form-group">
+                            <label class="sim-form-label">Tanggal Verifikasi</label>
+                            <input type="date" name="verification_date" value="{{ now()->toDateString() }}" required
+                                   class="sim-form-input">
+                        </div>
+                        <div class="sim-form-group">
+                            <label class="sim-form-label">Hasil</label>
+                            <select name="result" required class="sim-form-select">
+                                <option value="effective">Efektif / diterima</option>
+                                <option value="needs_improvement">Perlu perbaikan</option>
+                                <option value="not_effective">Tidak efektif</option>
+                            </select>
+                        </div>
+                        <div class="sim-form-group">
+                            <label class="sim-form-label">Catatan (wajib)</label>
+                            <textarea name="notes" rows="2" required class="sim-form-textarea"></textarea>
+                        </div>
+                        <div class="sim-form-group">
+                            <label class="sim-form-label">Tenggat baru (jika belum efektif)</label>
+                            <input type="date" name="new_target_close_date" class="sim-form-input" min="{{ now()->toDateString() }}">
+                        </div>
+                        <x-action icon="check-circle" label="Catat Verifikasi" />
+                    </form>
+                @else
+                    @if ($capa->status !== 'closed')
+                        <p class="text-xs text-slate-500">Temuan belum tertutup. Auditor yang ditugaskan memvalidasi kesesuaian tindak lanjut setelah bukti dikirim.</p>
+                    @endif
+                @endcan
             </div>
         </div>
     </div>

@@ -23,9 +23,10 @@ class AuditStandardController extends Controller
 
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
-
-        $standards = $this->standardService->getStandardsForOrganization($orgId);
+        // organizationFilterId() = null untuk super admin → daftar lintas organisasi.
+        $standards = $this->standardService->getStandardsForOrganization(
+            $request->user()->organizationFilterId()
+        );
 
         return view('audit.standards.index', compact('standards'));
     }
@@ -72,8 +73,9 @@ class AuditStandardController extends Controller
 
     public function update(Request $request, AuditStandard $standard): RedirectResponse
     {
-        $orgId = $request->user()->organization_id;
-        abort_unless($standard->organization_id === $orgId, 403);
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
+
+        $orgId = $standard->organization_id;
 
         $validated = $request->validate([
             'source_document_id' => ['nullable', 'uuid', Rule::exists('regulatory_sources', 'id')],
@@ -88,8 +90,7 @@ class AuditStandardController extends Controller
 
     public function destroy(Request $request, AuditStandard $standard): RedirectResponse
     {
-        $orgId = $request->user()->organization_id;
-        abort_unless($standard->organization_id === $orgId, 403);
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
 
         if ($standard->instrumentVersions()->count() > 0) {
             return back()->with('error', 'Standar tidak dapat dihapus karena sudah memiliki versi instrumen.');

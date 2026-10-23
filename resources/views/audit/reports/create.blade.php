@@ -78,6 +78,54 @@
                     @endif
                 </div>
 
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Jenis Audit</label>
+                        <select name="audit_type" class="sim-form-select">
+                            <option value="">— Semua —</option>
+                            @foreach (['periodic' => 'Periodik', 'thematic' => 'Tematik', 'special' => 'Khusus', 'follow_up' => 'Ulang'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('audit_type') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Auditor (anggota tim)</label>
+                        <select name="auditor_id" class="sim-form-select">
+                            <option value="">— Semua —</option>
+                            @foreach ($auditors as $auditor)
+                                <option value="{{ $auditor->id }}" @selected(old('auditor_id') === $auditor->id)>{{ $auditor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Status temuan</label>
+                        <select name="finding_status" class="sim-form-select">
+                            <option value="">— Semua —</option>
+                            @foreach (['draft', 'under_review', 'confirmed', 'in_capa', 'pending_verification', 'closed'] as $status)
+                                <option value="{{ $status }}" @selected(old('finding_status') === $status)>{{ \App\Support\UiLabel::findingStatus($status) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Tingkat risiko</label>
+                        <select name="severity" class="sim-form-select">
+                            <option value="">— Semua —</option>
+                            @foreach (['critical', 'major', 'minor'] as $severity)
+                                <option value="{{ $severity }}" @selected(old('severity') === $severity)>{{ \App\Support\UiLabel::findingSeverity($severity) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="sim-form-group">
+                        <label class="sim-form-label">Status CAPA</label>
+                        <select name="capa_status" class="sim-form-select">
+                            <option value="">— Semua —</option>
+                            @foreach (['open', 'analysis', 'action', 'verification', 'closed'] as $status)
+                                <option value="{{ $status }}" @selected(old('capa_status') === $status)>{{ \App\Support\UiLabel::capaStatus($status) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
                 <div class="sim-form-group">
                     <label class="sim-form-label">Eksekusi Audit</label>
                     <select name="audit_execution_id" class="sim-form-select {{ $errors->has('audit_execution_id') ? 'border-sim-danger' : '' }}">

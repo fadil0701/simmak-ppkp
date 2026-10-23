@@ -1,7 +1,7 @@
 # CAPA (Corrective & Preventive Action)
 
 ## 1. Kegunaan
-Menindaklanjuti temuan dengan tindakan korektif/preventif, analisis akar masalah (RCA), dan verifikasi efektivitas.
+Klinik menindaklanjuti temuan audit: rencana tindakan, unggah bukti, lalu auditor memvalidasi kesesuaian tindak lanjut.
 
 ## 2. Route
 | Halaman | URL |
@@ -9,34 +9,38 @@ Menindaklanjuti temuan dengan tindakan korektif/preventif, analisis akar masalah
 | Daftar CAPA | `/capa` |
 | Detail CAPA | `/capa/{id}` |
 
-Permission: `capa.view` / `capa.manage`
+Permission: `capa.view` / `capa.manage` / `audit.action.update`; validasi: `audit.capa.verify`
 
 ## 3. Siapa yang Menggunakan
-| Role | Akses |
-|------|-------|
-| super-admin, admin-mutu, kepala-klinik, pj-mutu | View + Manage |
-| tim-akreditasi, auditor, staff | View |
+| Peran | Akses |
+|---------|-----|
+| Auditi, Kepala Klinik/Unit | Tindak lanjut dan unggah bukti kliniknya |
+| Auditor yang ditugaskan | Validasi kesesuaian tindak lanjut; bukan PIC klinik |
+| PIC kasus | Tidak dapat memvalidasi kasusnya sendiri |
+| Admin sistem | Tidak memvalidasi atau menutup hasil final |
 
 ## 4. Cara Pengisian & Penggunaan
 
-### 4.1 Membuka Kasus
-1. Dari temuan → **Buat CAPA**, atau buka daftar `/capa`.
-2. Isi deskripsi masalah, penanggung jawab, target tutup.
+### 4.1 Membuka kasus
+Kasus utama dibuat otomatis saat auditor menyimpan EP tidak sesuai. Buka dari **CAPA** atau tautan di temuan.
 
-### 4.2 Analisis Akar Masalah (RCA)
-1. Di detail CAPA, isi form **5 Why** dan/atau **Fishbone**.
-2. Simpan hasil analisis.
-3. Tentukan tindakan korektif & preventif.
+### 4.2 Analisis akar masalah (opsional)
+Di detail CAPA, isi **5 Why** dan/atau **Fishbone**, lalu simpan akar masalah.
 
-### 4.3 Pelaksanaan Tindakan
-1. Catat status aksi: belum mulai / berjalan / selesai.
-2. Perbarui tanggal dan bukti pendukung bila ada.
+### 4.3 Tindak lanjut klinik
+1. Tambah tindakan korektif/pencegahan dan PIC jika perlu.
+2. Isi **uraian tindak lanjut**.
+3. **Unggah bukti** (PDF, gambar, atau berkas Office, maksimal 10 MB).
+4. Kirim bukti. Status menjadi **Verifikasi**. Temuan **belum selesai**.
 
-### 4.4 Verifikasi Efektivitas
-1. Setelah aksi selesai, isi form **Verifikasi**.
-2. Catat hasil: efektif / tidak efektif.
-3. Jika efektif, CAPA dapat ditutup; jika tidak, lanjut perbaikan.
+### 4.4 Validasi auditor
+1. Auditor yang ditugaskan membuka kasus setelah bukti ada.
+2. Isi tanggal, hasil, dan catatan:
+   - **Efektif / diterima** → CAPA dan temuan **Selesai**
+   - **Perlu perbaikan** atau **Tidak efektif** → kembali ke tindakan; klinik mengunggah bukti baru
+3. Auditi tidak melihat tombol validasi.
 
 ## 5. Status Umum
-Open → Analysis → Action → Verification → Closed  
-Kasus melewati target tanpa selesai = **Terlambat** (tampil di dashboard).
+Tindakan → Verifikasi → Selesai  
+
+Melewati target tanpa selesai = **Terlambat** (indikator di daftar/dashboard, status tidak diubah otomatis).

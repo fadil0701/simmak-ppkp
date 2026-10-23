@@ -11,8 +11,10 @@ class FiscalYearController extends Controller
 {
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
-        $years = FiscalYear::where('organization_id', $orgId)->orderByDesc('code')->get();
+        // Super admin: seluruh tahun anggaran lintas organisasi.
+        $years = FiscalYear::forOrganization($request->user()->organizationFilterId())
+            ->orderByDesc('code')
+            ->get();
 
         return view('fiscal-years.index', compact('years'));
     }

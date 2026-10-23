@@ -136,7 +136,13 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
 
     Route::middleware('permission:audit.view')->group(function () {
         Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
+    });
+
+    // Temuan Audit adalah menu tersendiri (07_TEMUAN_AUDIT.md §2): akses daftar,
+    // ekspor, dan detail memakai izin audit.finding.view — bukan audit.view.
+    Route::middleware('permission:audit.finding.view')->group(function () {
         Route::get('/findings', [AuditFindingController::class, 'index'])->name('findings.index');
+        Route::get('/findings/export', [AuditFindingController::class, 'export'])->name('findings.export');
         Route::get('/findings/{finding}', [AuditFindingController::class, 'show'])->name('findings.show');
     });
 
@@ -176,7 +182,7 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/findings/{finding}/capa', [AuditFindingController::class, 'createCapa'])->name('findings.create-capa');
     });
 
-    Route::middleware('permission:audit.report.publish')->group(function () {
+    Route::middleware('permission:audit.report.export|audit.report.publish')->group(function () {
         Route::get('/reports/export', [ReportsController::class, 'export'])->name('audit.reports.export');
     });
 
@@ -266,10 +272,15 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
 
     Route::middleware('permission:capa.view')->group(function () {
         Route::get('/capa', [CapaController::class, 'index'])->name('capa.index');
+        Route::get('/capa/export', [CapaController::class, 'export'])->name('capa.export');
         Route::get('/capa/{capa}', [CapaController::class, 'show'])->name('capa.show');
     });
-    Route::middleware('permission:capa.manage')->group(function () {
+    Route::middleware('permission:audit.action.update|capa.manage')->group(function () {
         Route::post('/capa/{capa}/rca', [CapaController::class, 'storeRca'])->name('capa.store-rca');
+        Route::post('/capa/{capa}/actions', [CapaController::class, 'storeAction'])->name('capa.store-action');
+        Route::post('/capa/actions/{action}/evidence', [CapaController::class, 'submitEvidence'])->name('capa.submit-evidence');
+    });
+    Route::middleware('permission:audit.capa.verify')->group(function () {
         Route::post('/capa/{capa}/verification', [CapaController::class, 'storeVerification'])->name('capa.store-verification');
     });
 

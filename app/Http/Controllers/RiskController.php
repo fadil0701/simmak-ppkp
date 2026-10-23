@@ -18,7 +18,8 @@ class RiskController extends Controller
 
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
+        // Super admin: seluruh register risiko lintas organisasi.
+        $orgId = $request->user()->organizationFilterId();
 
         $registers = RiskRegister::forOrganization($orgId)
             ->with(['clinic', 'owner'])

@@ -2,38 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditProgram;
 use App\Models\AuditReport;
 use App\Models\AuditSchedule;
+use App\Support\SimmakMenu;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AuditController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): RedirectResponse
     {
-        $user = $request->user();
-        $orgId = $user->organization_id;
-
-        $programs = AuditProgram::forOrganization($orgId)
-            ->withCount('schedules')
-            ->orderByDesc('created_at')
-            ->get();
-
-        $schedules = AuditSchedule::forUserClinics($user)
-            ->with(['program', 'clinic', 'leadAuditor'])
-            ->withCount('findings')
-            ->orderBy('scheduled_start')
-            ->paginate(10);
-
-        $stats = [
-            'programs' => $programs->count(),
-            'scheduled' => AuditSchedule::forUserClinics($user)->where('status', 'scheduled')->count(),
-            'ongoing' => AuditSchedule::forUserClinics($user)->where('status', 'ongoing')->count(),
-            'completed' => AuditSchedule::forUserClinics($user)->where('status', 'completed')->count(),
-        ];
-
-        return view('audit.index', compact('programs', 'schedules', 'stats'));
+        return redirect()->to(SimmakMenu::homeRouteFor($request->user()));
     }
 
     public function checklist(Request $request, AuditSchedule $schedule): View
@@ -49,9 +29,8 @@ class AuditController extends Controller
 
     public function reports(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
-
-        $reports = AuditReport::forOrganization($orgId)
+        // Super admin: seluruh laporan lintas organisasi.
+        $reports = AuditReport::forOrganization($request->user()->organizationFilterId())
             ->with(['schedule.clinic', 'schedule.program', 'preparer'])
             ->orderByDesc('report_date')
             ->paginate(15);

@@ -18,9 +18,10 @@ class AuditProgramController extends Controller
 
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
-
-        $programs = $this->programService->getProgramsForOrganization($orgId);
+        // organizationFilterId() = null untuk super admin → daftar lintas organisasi.
+        $programs = $this->programService->getProgramsForOrganization(
+            $request->user()->organizationFilterId()
+        );
 
         return view('audit.programs.index', compact('programs'));
     }
@@ -74,7 +75,7 @@ class AuditProgramController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($program->organization_id), 403);
 
-        $fiscalYears = FiscalYear::where('organization_id', $request->user()->organization_id)
+        $fiscalYears = FiscalYear::where('organization_id', $program->organization_id)
             ->where('is_active', true)
             ->orderByDesc('code')
             ->get();
@@ -84,8 +85,9 @@ class AuditProgramController extends Controller
 
     public function update(Request $request, AuditProgram $program): RedirectResponse
     {
-        $orgId = $request->user()->organization_id;
         abort_unless($request->user()->belongsToOrganization($program->organization_id), 403);
+
+        $orgId = $program->organization_id;
 
         $validated = $request->validate([
             'program_code' => ['required', 'string', 'max:80', Rule::unique('audit_programs', 'program_code')->where('organization_id', $orgId)->ignore($program->id)],

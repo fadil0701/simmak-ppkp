@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditAssignment;
 use App\Models\AuditExecution;
 use App\Models\AuditFinding;
 use App\Models\ChecklistResponse;
@@ -9,6 +10,7 @@ use App\Models\InstrumentVersion;
 use App\Models\StandardCriterion;
 use App\Services\AuditCapaService;
 use App\Services\AuditExecutionService;
+use App\Support\AuditWorkScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -27,13 +29,64 @@ class AuditExecutionController extends Controller
         $user = $request->user();
         $orgId = $user->organization_id;
 
-        $executions = AuditExecution::forOrganization($orgId)
-            ->with(['clinic', 'program', 'assignment'])
-            ->orderByDesc('created_at')
-            ->paginate(15)
-            ->withQueryString();
+        $baseQuery = AuditWorkScope::executions(AuditExecution::query(), $user);
 
-        return view('audit.executions.index', compact('executions'));
+        // Ringkasan status untuk kartu statistik: dihitung dari seluruh eksekusi
+        // yang boleh dilihat pengguna, bukan hanya halaman yang sedang tampil.
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $executionsQuery = (clone $baseQuery)
+            ->with(['clinic', 'program', 'assignment', 'instrumentVersion.sections.criteria'])
+            ->withCount([
+                'findings',
+                'responses as assessed_responses_count' => fn ($query) => $query->whereNotNull('response_value'),
+            ])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $executionsQuery->where('status', $request->string('status'));
+        }
+
+        if ($request->filled('q')) {
+            $term = '%'.trim((string) $request->string('q')).'%';
+            $executionsQuery->where(function ($query) use ($term) {
+                $query->where('execution_code', 'like', $term)
+                    ->orWhere('title', 'like', $term);
+            });
+        }
+
+        $executions = $executionsQuery->paginate(15)->withQueryString();
+
+        $assignments = AuditWorkScope::assignments(AuditAssignment::query(), $user)
+            ->where('status', 'active')
+            ->with('clinic')
+            ->orderBy('assignment_code')
+            ->get();
+
+        // Super admin melihat instrumen lintas organisasi; peran lain dibatasi
+        // pada organisasinya sendiri.
+        $instrumentVersions = InstrumentVersion::query()
+            ->when(! $user->hasUnrestrictedAccess(), fn ($query) => $query->whereHas(
+                'standard',
+                fn ($standard) => $standard->where('organization_id', $orgId)
+            ))
+            ->with('standard')
+            ->whereIn('status', ['active', 'approved'])
+            ->orderBy('version_label')
+            ->get();
+
+        $executionTotal = (int) $statusCounts->sum();
+
+        return view('audit.executions.index', compact(
+            'executions',
+            'assignments',
+            'instrumentVersions',
+            'statusCounts',
+            'executionTotal'
+        ));
     }
 
     public function store(Request $request, AuditAssignment $assignment): RedirectResponse
@@ -60,6 +113,17 @@ class AuditExecutionController extends Controller
             ->exists();
 
         abort_unless($versionBelongsToOrg, 403, 'Versi instrumen tidak tersedia untuk organisasi ini.');
+        // Super admin boleh memulai pelaksanaan walau penugasan belum aktif.
+        abort_unless($assignment->status === 'active' || $request->user()->hasUnrestrictedAccess(), 422, 'Hanya penugasan aktif yang dapat memulai pelaksanaan.');
+        abort_unless($assignment->clinic_id, 422, 'Penugasan belum memiliki klinik sasaran.');
+
+        $canStart = $assignment->teamMembers()
+            ->where('user_id', $request->user()->id)
+            ->where('active', true)
+            ->exists();
+
+        // Super admin boleh memulai eksekusi untuk penugasan mana pun.
+        abort_unless($canStart || $request->user()->hasUnrestrictedAccess(), 403);
 
         $execution = AuditExecution::create([
             'organization_id' => $assignment->organization_id,
@@ -82,16 +146,21 @@ class AuditExecutionController extends Controller
      */
     public function storeFromSelection(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        $assignment = AuditAssignment::query()
+            ->when(! $user->hasUnrestrictedAccess(), fn ($query) => $query->where('organization_id', $user->organization_id))
+            ->where('id', $request->validate([
+                'audit_assignment_id' => ['required', 'uuid'],
+            ])['audit_assignment_id'])
+            ->firstOrFail();
+
         $validated = $request->validate([
             'audit_assignment_id' => ['required', 'uuid', Rule::exists('audit_assignments', 'id')],
             'instrument_version_id' => ['required', 'uuid', Rule::exists('instrument_versions', 'id')],
-            'execution_code' => ['required', 'string', 'max:80', Rule::unique('audit_executions', 'execution_code')->where('organization_id', $request->user()->organization_id)],
+            'execution_code' => ['required', 'string', 'max:80', Rule::unique('audit_executions', 'execution_code')->where('organization_id', $assignment->organization_id)],
             'title' => ['required', 'string', 'max:255'],
         ]);
-
-        $assignment = AuditAssignment::where('organization_id', $request->user()->organization_id)
-            ->where('id', $validated['audit_assignment_id'])
-            ->firstOrFail();
 
         return $this->createExecution($request, $assignment, $validated);
     }
@@ -153,14 +222,13 @@ class AuditExecutionController extends Controller
             'rows.*.facts_analysis' => ['nullable', 'string', 'max:5000'],
             'rows.*.recommendation' => ['nullable', 'string', 'max:5000'],
             'rows.*.response_value' => ['nullable', 'string', 'max:40', Rule::in(['compliant', 'non_compliant', 'partial', 'not_applicable', 'not_assessable'])],
-            'create_finding' => ['nullable', 'array'],
             'severity' => ['nullable', 'array'],
             'severity.*' => ['nullable', Rule::in(['minor', 'major', 'critical'])],
         ]);
 
         $saved = $this->executionService->saveTableRows($execution, $validated['rows'], $request->user());
 
-        $findings = $this->createFindingsFromTable($execution, $request, $validated);
+        $findings = $this->syncFindingsFromTable($execution, $request, $validated);
 
         $message = $saved > 0
             ? "Tabel pemeriksaan tersimpan ({$saved} baris diperbarui)."
@@ -174,24 +242,22 @@ class AuditExecutionController extends Controller
     }
 
     /**
-     * Membuat temuan audit langsung dari baris tabel pemeriksaan.
-     *
-     * Data kondisi, persyaratan, dan rekomendasi diambil dari baris EP yang
-     * sudah dinilai sehingga petugas tidak perlu mengetik ulang.
+     * Temuan dan CAPA dibuat otomatis dari EP yang dinilai tidak sesuai / sesuai sebagian.
+     * Temuan tidak ditutup sampai auditor memvalidasi tindak lanjut.
      */
-    private function createFindingsFromTable(AuditExecution $execution, Request $request, array $validated): int
+    private function syncFindingsFromTable(AuditExecution $execution, Request $request, array $validated): int
     {
-        $criterionIds = $validated['create_finding'] ?? [];
-        if (empty($criterionIds)) {
-            return 0;
-        }
-
         $this->authorize('create', AuditFinding::class);
 
         $created = 0;
 
-        foreach (array_keys($criterionIds) as $criterionId) {
+        foreach ($validated['rows'] as $row) {
+            $criterionId = $row['standard_criterion_id'] ?? null;
+            $responseValue = $row['response_value'] ?? null;
             if (! Str::isUuid((string) $criterionId)) {
+                continue;
+            }
+            if (! in_array($responseValue, ['non_compliant', 'partial'], true)) {
                 continue;
             }
 
@@ -204,12 +270,10 @@ class AuditExecutionController extends Controller
                 ->where('standard_criterion_id', $criterion->id)
                 ->first();
 
-            // Temuan hanya dibuat bila sudah ada fakta & analisis pada baris EP.
-            if (! $response || ! $response->facts_analysis) {
+            if (! $response || ! filled($response->recommendation)) {
                 continue;
             }
 
-            // Cegah temuan ganda untuk EP yang sama pada eksekusi ini.
             $exists = AuditFinding::where('audit_execution_id', $execution->id)
                 ->where('standard_criterion_id', $criterion->id)
                 ->where('status', '!=', 'closed')
@@ -218,17 +282,22 @@ class AuditExecutionController extends Controller
                 continue;
             }
 
-            $this->findingService->createFromCriterion(
+            $severity = $validated['severity'][$criterionId]
+                ?? ($responseValue === 'non_compliant' ? 'major' : 'minor');
+
+            $finding = $this->findingService->createFromCriterion(
                 $execution,
                 $criterion,
                 $response,
                 [
-                    'severity' => $validated['severity'][$criterionId] ?? 'minor',
+                    'severity' => $severity,
                     'finding_type' => 'non_conformity',
+                    'status' => 'in_capa',
                     'created_by' => $request->user()->id,
                 ]
             );
 
+            $this->findingService->createCapaFromFinding($finding, $request->user());
             $created++;
         }
 

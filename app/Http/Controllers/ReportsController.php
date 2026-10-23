@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditFinding;
 use App\Models\Clinic;
 use App\Services\DashboardService;
+use App\Support\SpreadsheetCell;
 use App\Support\UiLabel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -35,12 +36,11 @@ class ReportsController extends Controller
 
     public function export(Request $request)
     {
-        abort_unless($request->user()->can('audit.report.publish'), 403);
+        abort_unless($request->user()->can('audit.report.export') || $request->user()->can('audit.report.publish'), 403);
 
-        $orgId = $request->user()->organization_id;
         $format = $request->get('format', 'pdf');
 
-        $query = AuditFinding::forOrganization($orgId)
+        $query = AuditFinding::forUserClinics($request->user())
             ->with(['clinic', 'schedule.program', 'execution', 'owner'])
             ->orderBy('finding_code');
 
@@ -117,7 +117,7 @@ class ReportsController extends Controller
             fputcsv($handle, ['Kode Temuan', 'Klinik', 'Program', 'Tipe Temuan', 'Tingkat Risiko', 'Status', 'PIC', 'Tenggat', 'Ditemukan Pada', 'Judul', 'Kondisi', 'Kriteria', 'Rekomendasi'], ',', '"', '\\');
 
             foreach ($data['findings'] as $finding) {
-                fputcsv($handle, [
+                fputcsv($handle, array_map([SpreadsheetCell::class, 'sanitize'], [
                     $finding->finding_code,
                     $finding->clinic?->code.' — '.$finding->clinic?->name,
                     $finding->schedule?->program?->program_code ?? '—',
@@ -131,7 +131,7 @@ class ReportsController extends Controller
                     $finding->condition ?? '—',
                     $finding->requirement ?? '—',
                     $finding->recommendation ?? '—',
-                ], ',', '"', '\\');
+                ]), ',', '"', '\\');
             }
 
             fclose($handle);

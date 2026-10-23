@@ -13,13 +13,18 @@
     </div>
 
     <div class="simmak-card">
-        <form method="GET" class="border-b border-slate-100 px-5 py-4">
+        <form method="GET" class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-4">
             <select name="status" class="sim-form-select" onchange="this.form.submit()">
                 <option value="">Semua Status</option>
                 @foreach (['open' => 'Terbuka', 'analysis' => 'Analisis', 'action' => 'Tindakan', 'verification' => 'Verifikasi', 'closed' => 'Selesai'] as $val => $label)
                     <option value="{{ $val }}" @selected(request('status') === $val)>{{ $label }}</option>
                 @endforeach
             </select>
+            <label class="inline-flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" name="overdue" value="1" class="rounded border-slate-300" @checked(request()->boolean('overdue')) onchange="this.form.submit()">
+                Hanya terlambat
+            </label>
+            <a href="{{ route('capa.export', request()->query()) }}" class="text-sm font-medium text-teal-700 hover:underline">Ekspor CSV</a>
         </form>
 
         <div class="overflow-x-auto">

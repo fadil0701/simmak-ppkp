@@ -4,6 +4,16 @@
 @section('page-title', 'Detail Penugasan: ' . $assignment->assignment_code)
 
 @section('content')
+    @if ($assignment->conflict_check_status === 'blocked')
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Ada deklarasi konflik kepentingan. Penugasan tidak dapat diaktifkan sampai anggota yang berkonflik diganti atau konflik diselesaikan.
+        </div>
+    @elseif ($assignment->conflict_check_status === 'pending' && $assignment->teamMembers->isNotEmpty())
+        <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            Semua anggota tim harus menyatakan independensi (termasuk opsi tidak ada konflik) sebelum penugasan dapat diaktifkan.
+        </div>
+    @endif
+
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-slate-900">{{ $assignment->assignment_code }} — {{ $assignment->title }}</h2>
@@ -61,24 +71,28 @@
                         </div>
 
                         @can('audit.assignment.manage', $assignment)
+                            @unless ($member->independence_declared)
                             <form method="POST" action="{{ route('audit.team-members.conflict', $member) }}" class="mt-3" onsubmit="return confirm('Simpan deklarasi independensi dan konflik?');">
                                 @csrf
-                                <div class="flex gap-2">
-                                    <label class="flex items-center gap-1 text-xs">
-                                        <input type="checkbox" name="independence_declared" value="1" {{ $member->independence_declared ? 'checked' : '' }}>
-                                        Independence declared
+                                <fieldset class="space-y-1">
+                                    <legend class="text-xs font-medium text-slate-600">Deklarasi konflik kepentingan</legend>
+                                    <label class="flex items-center gap-2 text-xs">
+                                        <input type="radio" name="conflict_declared" value="0" {{ old('conflict_declared', '0') === '0' ? 'checked' : '' }} required>
+                                        Tidak ada konflik kepentingan
                                     </label>
-                                    <label class="flex items-center gap-1 text-xs">
-                                        <input type="checkbox" name="conflict_declared" value="1" {{ $member->conflict_declared ? 'checked' : '' }}>
-                                        Conflict declared
+                                    <label class="flex items-center gap-2 text-xs">
+                                        <input type="radio" name="conflict_declared" value="1" {{ old('conflict_declared') === '1' ? 'checked' : '' }}>
+                                        Ada konflik kepentingan
                                     </label>
-                                </div>
+                                </fieldset>
                                 <div class="mt-2">
-                                    <label class="sim-form-label">Catatan Konflik</label>
+                                    <label class="sim-form-label">Catatan (wajib jika ada konflik)</label>
                                     <textarea name="conflict_notes" rows="2" class="sim-form-textarea">{{ old('conflict_notes', $member->conflict_notes) }}</textarea>
+                                    @error('conflict_notes')<p class="sim-form-error">{{ $message }}</p>@enderror
                                 </div>
                                 <x-action icon="check-circle" label="Simpan Deklarasi" size="sm" class="mt-2" />
                             </form>
+                            @endunless
                         @endcan
                     </div>
                 @empty
@@ -95,7 +109,7 @@
                                     <label class="sim-form-label">Auditor</label>
                                     <select name="user_id" class="sim-form-select" required>
                                         <option value="">— Pilih auditor —</option>
-                                        @foreach (\App\Models\User::where('organization_id', auth()->user()->organization_id)->where('is_active', true)->get() as $auditor)
+                                        @foreach ($auditors as $auditor)
                                             <option value="{{ $auditor->id }}">{{ $auditor->name }}</option>
                                         @endforeach
                                     </select>
@@ -148,8 +162,7 @@
             </div>
         </div>
 
-        @can('audit.execution.execute', $assignment)
-            @if ($assignment->status === 'active')
+        @can('execute', $assignment)
                 <div class="simmak-card lg:col-span-1">
                     <div class="simmak-card-header">
                         <h3 class="font-semibold text-slate-800">Buat Eksekusi Audit</h3>
@@ -168,7 +181,7 @@
                             </div>
                             <div class="sim-form-group">
                                 <label class="sim-form-label">Kode Eksekusi<span class="sim-form-label-required"></span></label>
-                                <input type="text" name="execution_code" maxlength="80" value="{{ old('execution_code', 'EXEC-' . date('Ymd') . '-' . str_pad($assignment->id, 4, '0', STR_PAD_LEFT)) }}" class="sim-form-input">
+                                <input type="text" name="execution_code" maxlength="80" value="{{ old('execution_code', 'EXEC-' . date('Ymd') . '-' . substr(str_replace('-', '', $assignment->id), 0, 8)) }}" class="sim-form-input">
                             </div>
                             <div class="sim-form-group">
                                 <label class="sim-form-label">Judul Eksekusi<span class="sim-form-label-required"></span></label>
@@ -178,7 +191,6 @@
                         </form>
                     </div>
                 </div>
-            @endif
         @endcan
     </div>
 @endsection

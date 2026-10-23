@@ -4,14 +4,18 @@ namespace App\Policies;
 
 use App\Models\AuditFinding;
 use App\Models\User;
+use App\Support\AuditWorkScope;
+use App\Support\SimmakRoles;
 
 class AuditFindingPolicy
 {
     public function view(?User $user, AuditFinding $finding): bool
     {
-        return $user && $user->is_active
-            && $user->belongsToOrganization($finding->organization_id)
-            && $user->hasClinicAccess($finding->clinic_id);
+        if (! $user || ! $user->is_active || ! $user->belongsToOrganization($finding->organization_id)) {
+            return false;
+        }
+
+        return AuditWorkScope::canViewWork($user, $finding->clinic_id, $finding->execution?->assignment);
     }
 
     public function viewAny(?User $user): bool
@@ -48,11 +52,21 @@ class AuditFindingPolicy
 
     public function close(User $user, AuditFinding $finding): bool
     {
-        if (! $user->belongsToOrganization($finding->organization_id)) {
+        if (! $user->belongsToOrganization($finding->organization_id) || ! $user->is_active) {
             return false;
         }
+        if ($user->hasRole(SimmakRoles::ADMIN_SISTEM) && ! $user->hasRole(SimmakRoles::SUPER_ADMIN)) {
+            return false;
+        }
+        if (! $user->can('audit.finding.close')) {
+            return false;
+        }
+        if ($finding->status === 'closed') {
+            return false;
+        }
+        $capa = $finding->capaCase;
 
-        return $user->is_active && $user->can('audit.finding.close');
+        return $capa && $capa->hasEffectiveVerification();
     }
 
     public function reopen(User $user, AuditFinding $finding): bool
@@ -60,8 +74,13 @@ class AuditFindingPolicy
         if (! $user->belongsToOrganization($finding->organization_id)) {
             return false;
         }
+        if ($user->hasRole(SimmakRoles::ADMIN_SISTEM) && ! $user->hasRole(SimmakRoles::SUPER_ADMIN)) {
+            return false;
+        }
 
-        return $user->is_active && $user->can('audit.finding.reopen');
+        return $user->is_active
+            && $user->can('audit.finding.reopen')
+            && $finding->status === 'closed';
     }
 
     /**

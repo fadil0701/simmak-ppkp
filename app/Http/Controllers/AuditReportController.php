@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AuditExecution;
 use App\Models\AuditReport;
 use App\Models\Clinic;
+use App\Models\User;
 use App\Services\AuditReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class AuditReportController extends Controller
     {
         $orgId = $request->user()->organization_id;
 
-        $executions = AuditExecution::where('organization_id', $orgId)
+        $executions = AuditExecution::forUserClinics($request->user())
             ->with('clinic')
             ->orderByDesc('created_at')
             ->get();
@@ -40,7 +41,12 @@ class AuditReportController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('audit.reports.create', compact('executions', 'clinics'));
+        $auditors = User::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('audit.reports.create', compact('executions', 'clinics', 'auditors'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -52,6 +58,11 @@ class AuditReportController extends Controller
             'period_end' => ['nullable', 'date'],
             'clinic_id' => ['nullable', 'uuid'],
             'audit_execution_id' => ['nullable', 'uuid'],
+            'audit_type' => ['nullable', 'string', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
+            'auditor_id' => ['nullable', 'uuid'],
+            'finding_status' => ['nullable', 'string'],
+            'severity' => ['nullable', 'string', Rule::in(['minor', 'major', 'critical', 'observation'])],
+            'capa_status' => ['nullable', 'string'],
             'executive_summary' => ['nullable', 'string'],
         ]);
 

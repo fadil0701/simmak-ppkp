@@ -20,9 +20,10 @@ class AuditAssignmentController extends Controller
 
     public function index(Request $request): View
     {
-        $orgId = $request->user()->organization_id;
-
-        $assignments = $this->assignmentService->getAssignmentsForOrganization($orgId);
+        $assignments = $this->assignmentService->getAssignmentsForUser(
+            $request->user(),
+            $request->boolean('upcoming')
+        );
 
         return view('audit.assignments.index', compact('assignments'));
     }
@@ -42,10 +43,7 @@ class AuditAssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $auditors = User::where('organization_id', $orgId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $auditors = $this->auditorCandidates($orgId);
 
         return view('audit.assignments.create', compact('programs', 'clinics', 'auditors'));
     }
@@ -56,16 +54,28 @@ class AuditAssignmentController extends Controller
 
         $validated = $request->validate([
             'audit_program_id' => ['required', 'uuid', Rule::exists('audit_programs', 'id')->where('organization_id', $orgId)],
-            'clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
+            'clinic_id' => ['required', 'uuid', Rule::exists('clinics', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)->where('is_auditable', true))],
             'assignment_code' => ['required', 'string', 'max:80', Rule::unique('audit_assignments', 'assignment_code')->where('organization_id', $orgId)],
             'title' => ['required', 'string', 'max:255'],
             'scope_notes' => ['nullable', 'string'],
-            'lead_auditor_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
+            'lead_auditor_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
+            'member_ids' => ['nullable', 'array'],
+            'member_ids.*' => ['uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
             'scheduled_start' => ['required', 'date'],
             'scheduled_end' => ['required', 'date', 'after_or_equal:scheduled_start'],
         ]);
 
-        $this->assignmentService->createAssignment($validated, $request->user());
+        $assignment = $this->assignmentService->createAssignment($validated, $request->user());
+
+        foreach (array_unique($validated['member_ids'] ?? []) as $memberId) {
+            if ($memberId === $validated['lead_auditor_id']) {
+                continue;
+            }
+            $this->assignmentService->addTeamMember($assignment, [
+                'user_id' => $memberId,
+                'team_role' => 'auditor',
+            ], $request->user());
+        }
 
         return redirect()->route('audit.assignments.index')->with('status', 'Penugasan audit berhasil dibuat.');
     }
@@ -83,7 +93,10 @@ class AuditAssignmentController extends Controller
             ->orderBy('version_label')
             ->get();
 
-        return view('audit.assignments.show', compact('assignment', 'instrumentVersions'));
+        $auditors = $this->auditorCandidates($assignment->organization_id)
+            ->whereNotIn('id', $assignment->teamMembers->pluck('user_id'));
+
+        return view('audit.assignments.show', compact('assignment', 'instrumentVersions', 'auditors'));
     }
 
     public function edit(Request $request, AuditAssignment $assignment): View
@@ -97,10 +110,7 @@ class AuditAssignmentController extends Controller
             ->orderBy('name')
             ->get();
 
-        $auditors = User::where('organization_id', $orgId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $auditors = $this->auditorCandidates($orgId);
 
         return view('audit.assignments.edit', compact('assignment', 'clinics', 'auditors'));
     }
@@ -111,15 +121,15 @@ class AuditAssignmentController extends Controller
         abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
 
         $validated = $request->validate([
-            'clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
+            'clinic_id' => ['required', 'uuid', Rule::exists('clinics', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)->where('is_auditable', true))],
             'title' => ['required', 'string', 'max:255'],
             'scope_notes' => ['nullable', 'string'],
-            'lead_auditor_id' => ['nullable', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
+            'lead_auditor_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
             'scheduled_start' => ['required', 'date'],
             'scheduled_end' => ['required', 'date', 'after_or_equal:scheduled_start'],
         ]);
 
-        $assignment->update(array_merge($validated, ['updated_by' => $request->user()->id]));
+        $this->assignmentService->updateAssignment($assignment, $validated, $request->user());
 
         return redirect()->route('audit.assignments.show', $assignment)->with('status', 'Penugasan audit berhasil diperbarui.');
     }
@@ -146,9 +156,11 @@ class AuditAssignmentController extends Controller
         abort_unless($request->user()->belongsToOrganization($member->organization_id), 403);
 
         $validated = $request->validate([
-            'conflict_declared' => ['required', 'boolean'],
-            'conflict_notes' => ['nullable', 'string'],
+            'conflict_declared' => ['required', 'in:0,1'],
+            'conflict_notes' => ['required_if:conflict_declared,1', 'nullable', 'string'],
         ]);
+
+        $validated['conflict_declared'] = $validated['conflict_declared'] === '1';
 
         $this->assignmentService->declareConflict($member, $validated, $request->user());
 
@@ -181,5 +193,30 @@ class AuditAssignmentController extends Controller
         $assignment->delete();
 
         return redirect()->route('audit.assignments.index')->with('status', 'Penugasan audit berhasil dihapus.');
+    }
+
+    /**
+     * Pegawai yang dapat ditugaskan sebagai auditor (akun aktif + peran audit).
+     */
+    private function auditorCandidates(string $organizationId)
+    {
+        $candidates = User::query()
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->permission('audit.execution.execute')
+            ->with(['employee.unit', 'employee.clinic'])
+            ->orderBy('name')
+            ->get();
+
+        if ($candidates->isNotEmpty()) {
+            return $candidates;
+        }
+
+        return User::query()
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->with(['employee.unit', 'employee.clinic'])
+            ->orderBy('name')
+            ->get();
     }
 }

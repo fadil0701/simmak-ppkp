@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Audit Internal</a>
+        <a href="{{ route('audit.reports.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Laporan Audit</a>
     </div>
 
     <div class="simmak-card">

@@ -1,7 +1,7 @@
 # Temuan Audit
 
 ## 1. Kegunaan
-Mencatat, memfilter, dan menindaklanjuti temuan hasil audit internal (minor/mayor/kritis).
+Melihat dan menindaklanjuti temuan hasil form pemeriksaan (ketidaksesuaian terhadap elemen penilaian instrumen).
 
 ## 2. Route
 | Halaman | URL |
@@ -9,29 +9,33 @@ Mencatat, memfilter, dan menindaklanjuti temuan hasil audit internal (minor/mayo
 | Daftar temuan | `/findings` |
 | Detail temuan | `/findings/{id}` |
 
-Permission: `audit.view` / `audit.manage`
+Permission: `audit.finding.view` (buat dari form: `audit.finding.create`)
 
 ## 3. Siapa yang Menggunakan
-| Role | Akses |
-|------|-------|
-| super-admin, admin-mutu, pj-mutu, auditor | Lihat & kelola |
-| kepala-klinik | Lihat |
-| Lainnya | Tidak |
+| Peran | Akses |
+|---------|-----|
+| Auditor | Temuan dari penugasan yang diikutinya |
+| Kepala Klinik / Auditi | Hanya temuan kliniknya |
+| Ketua Tim Mutu / Ketua Tim Audit | Pantau sesuai wewenang |
+| Super Admin | Akses sistem; tidak menutup hasil final sebagai admin sistem |
 
 ## 4. Cara Pengisian & Penggunaan
 
-### 4.1 Melihat Temuan
-1. Buka menu **Temuan**.
-2. Filter status/severity bila tersedia.
-3. Klik baris untuk melihat detail.
+### 4.1 Asal temuan (jalur utama)
+1. Auditor mengisi **nilai kesesuaian** dan **rekomendasi** di form pelaksanaan.
+2. EP **tidak sesuai** atau **sesuai sebagian** otomatis muncul di **Temuan Audit**.
+3. Status awal: **Dalam CAPA**. Kasus CAPA sudah terhubung — klinik tidak menunggu tombol “buat temuan” di lapangan.
 
-### 4.2 Membuat CAPA dari Temuan
-1. Di detail temuan, pilih aksi **Buat CAPA**.
-2. Sistem membuat kasus CAPA yang terhubung ke temuan.
-3. Lanjutkan pengisian di modul **CAPA**.
+### 4.2 Melihat temuan
+1. Buka menu **Temuan Audit**.
+2. Filter status, keparahan, atau klinik (sesuai cakupan akun).
+3. Buka detail: kriteria (EP), rekomendasi, tautan CAPA.
 
-### 4.3 Status Temuan
-Umumnya: Terbuka → Dalam CAPA → Ditutup (setelah CAPA efektif).
+### 4.3 Penutupan
+Temuan **tidak tertutup** saat klinik mengunggah bukti.  
+Penutupan terjadi setelah auditor yang ditugaskan memvalidasi tindak lanjut sebagai efektif (di modul CAPA).
 
-## 5. Prioritas
-Temuan `major` / `critical` muncul sebagai **Prioritas Tinggi** di dashboard eksekutif.
+## 5. Status yang dipakai di layar
+Dalam CAPA → Menunggu verifikasi → Selesai.
+
+Temuan `major` / `critical` yang masih terbuka tampil sebagai prioritas di dashboard audit.

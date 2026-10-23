@@ -3,220 +3,460 @@
 @section('title', 'Form Pelaksanaan Audit — SIMMAK PPKP')
 @section('page-title', 'Form Pelaksanaan Audit')
 
+@section('breadcrumb')
+    <li class="flex items-center gap-1 text-sim-muted">
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        <span>Audit Internal</span>
+    </li>
+    <li class="flex items-center gap-1 text-sim-muted">
+        @include('partials.icons.chevron-right')
+        <a href="{{ route('audit.executions.index') }}" class="hover:text-sim-ink hover:underline">Pelaksanaan Audit</a>
+    </li>
+    <li class="flex items-center gap-1 text-sim-ink">
+        @include('partials.icons.chevron-right')
+        <span class="font-medium text-sim-mono">{{ $execution->execution_code }}</span>
+    </li>
+@endsection
+
 @section('content')
-    <div class="mb-4 flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-lg font-semibold text-slate-900">{{ $execution->execution_code }} — {{ $execution->title }}</h2>
-                <p class="text-sm text-slate-500">
-                    Klinik: {{ $execution->clinic?->name ?? '—' }} ·
-                    Instrumen: {{ $execution->instrumentVersion?->version_label ?? '—' }} ·
-                    Periode: {{ $execution->started_at?->format('d M Y') ?? '—' }}
-                </p>
+    @php
+        $statusTone = [
+            'preparation' => 'border-sim-neutral bg-sim-neutral-bg text-sim-neutral',
+            'in_progress' => 'border-sim-info bg-sim-info-bg text-sim-info',
+            'submitted_for_review' => 'border-sim-warning bg-sim-warning-bg text-sim-warning',
+            'finalized' => 'border-sim-success bg-sim-success-bg text-sim-success',
+        ];
+        $statusLabels = [
+            'preparation' => 'Persiapan',
+            'in_progress' => 'Berjalan',
+            'submitted_for_review' => 'Menunggu tinjauan',
+            'finalized' => 'Final',
+        ];
+        $conformityMeta = [
+            'compliant' => ['label' => 'Sesuai', 'class' => 'border-sim-success bg-sim-success-bg text-sim-success'],
+            'partial' => ['label' => 'Sesuai sebagian', 'class' => 'border-sim-warning bg-sim-warning-bg text-sim-warning'],
+            'non_compliant' => ['label' => 'Tidak sesuai', 'class' => 'border-sim-danger bg-sim-danger-bg text-sim-danger'],
+            'not_applicable' => ['label' => 'Tidak berlaku', 'class' => 'border-sim-neutral bg-sim-neutral-bg text-sim-neutral'],
+            'not_assessable' => ['label' => 'Belum dinilai', 'class' => 'border-sim-border bg-sim-surface text-sim-muted'],
+        ];
+
+        $canExecute = auth()->user()->can('execute', $execution);
+        $canSubmit = auth()->user()->can('submit', $execution);
+        $canFinalize = auth()->user()->can('finalize', $execution);
+        // Super admin (administrator sistem) boleh mengoreksi hasil audit yang
+        // sudah diserahkan/difinalisasi; peran lain tetap mengikuti status.
+        $superAdminOverride = auth()->user()->hasUnrestrictedAccess();
+        $editable = $canExecute && (
+            $execution->status === 'in_progress'
+            || ($superAdminOverride && in_array($execution->status, ['submitted_for_review', 'finalized'], true))
+        );
+
+        $criteriaIds = $sections->flatMap(fn ($section) => $section->criteria)->pluck('id');
+        $scopedResponses = $execution->responses->whereIn('standard_criterion_id', $criteriaIds->all());
+        $responsesByCriterion = $scopedResponses->keyBy('standard_criterion_id');
+        $assessedResponses = $scopedResponses->filter(fn ($response) => filled($response->response_value));
+
+        $distribution = [
+            'compliant' => $assessedResponses->where('response_value', 'compliant')->count(),
+            'partial' => $assessedResponses->where('response_value', 'partial')->count(),
+            'non_compliant' => $assessedResponses->where('response_value', 'non_compliant')->count(),
+            'not_applicable' => $assessedResponses->where('response_value', 'not_applicable')->count(),
+            'not_assessable' => $assessedResponses->where('response_value', 'not_assessable')->count(),
+            'unassessed' => max(0, $criteriaIds->count() - $assessedResponses->count()),
+        ];
+        $incomplete = $incompleteCriteria ?? collect();
+    @endphp
+
+    {{-- Kepala halaman: identitas eksekusi + aksi utama --}}
+    <div class="sim-page-header">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sim-mono text-xs text-sim-muted">{{ $execution->execution_code }}</span>
+                <span class="sim-badge sim-badge-status {{ $statusTone[$execution->status] ?? 'border-sim-border bg-sim-surface text-sim-muted' }}">
+                    {{ $statusLabels[$execution->status] ?? $execution->status }}
+                </span>
             </div>
-            <a href="{{ route('audit.executions.index') }}" class="sim-btn sim-btn-outline sim-btn-sm">Kembali</a>
+            <h2 class="sim-page-title mt-1">{{ $execution->title }}</h2>
+            <p class="sim-page-subtitle">
+                {{ $execution->clinic?->name ?? 'Klinik belum ditetapkan' }}
+                · Instrumen {{ $execution->instrumentVersion?->version_label ?? '—' }}
+            </p>
         </div>
 
-        @if (session('status'))
-            <div class="sim-alert sim-alert-success">{{ session('status') }}</div>
-        @endif
-        @if (session('error'))
-            <div class="sim-alert sim-alert-error">{{ session('error') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="sim-alert sim-alert-error">
-                <ul class="list-disc pl-5">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+        <div class="flex flex-wrap gap-2">
+            <x-action href="{{ route('audit.executions.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
+
+            @if ($execution->status === 'preparation' && $canExecute)
+                <x-action href="{{ route('audit.executions.start', $execution) }}" method="POST" icon="play-circle"
+                          label="Mulai Audit" confirm="Mulai eksekusi audit ini sekarang?" />
+            @endif
+
+            @if ($execution->status === 'in_progress' && $canSubmit)
+                <x-action href="{{ route('audit.executions.submit', $execution) }}" method="POST" icon="check-circle"
+                          label="Serahkan untuk Tinjauan" variant="secondary"
+                          confirm="Serahkan hasil audit untuk tinjauan? Pastikan seluruh EP sudah dinilai." />
+            @endif
+
+            @if ($execution->status === 'submitted_for_review' && $canFinalize)
+                <x-action href="{{ route('audit.executions.finalize', $execution) }}" method="POST" icon="check-circle"
+                          label="Finalisasi" confirm="Finalisasi hasil audit ini?" />
+            @endif
+        </div>
     </div>
 
-    {{-- Ringkasan: petugas cukup mengisi kolom SKOR, FAKTA DAN ANALISIS, REKOMENDASI --}}
-    <div class="simmak-card mb-4">
-        <div class="simmak-card-body p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
+    @if ($errors->any())
+        <div class="sim-alert sim-alert-error mb-6">
+            <p class="font-semibold">Periksa kembali isian berikut:</p>
+            <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Identitas singkat eksekusi --}}
+    <div class="sim-card mb-6">
+        <div class="sim-card-body">
+            <div class="sim-meta-grid">
                 <div>
-                    <h3 class="font-semibold text-slate-800">Progres Pengisian Tabel</h3>
-                    <p class="text-sm text-slate-500">
-                        {{ $stats['completed'] }} dari {{ $stats['total'] }} EP telah dinilai
-                        ({{ $stats['percentage'] }}%). Angka ini hanya indikator kelengkapan pengisian, bukan persentase kepatuhan.
+                    <div class="sim-meta-label">Klinik / Unit</div>
+                    <div class="sim-meta-value">{{ $execution->clinic?->code ?? '—' }} — {{ $execution->clinic?->name ?? 'Belum ditetapkan' }}</div>
+                </div>
+                <div>
+                    <div class="sim-meta-label">Penugasan</div>
+                    <div class="sim-meta-value text-sim-mono">{{ $execution->assignment?->assignment_code ?? '—' }}</div>
+                </div>
+                <div>
+                    <div class="sim-meta-label">Versi Instrumen</div>
+                    <div class="sim-meta-value">{{ $execution->instrumentVersion?->version_label ?? '—' }}</div>
+                </div>
+                <div>
+                    <div class="sim-meta-label">Mulai Audit</div>
+                    <div class="sim-meta-value">{{ $execution->started_at?->format('d M Y') ?? 'Belum dimulai' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Progres pengisian instrumen --}}
+    <div class="sim-card mb-6">
+        <div class="sim-card-body">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h3 class="sim-card-title">Progres Pengisian Tabel</h3>
+                    <p class="mt-1 text-sm text-sim-muted">
+                        <strong class="text-sim-ink">{{ $stats['completed'] }} dari {{ $stats['total'] }} EP</strong> telah dinilai.
+                        Angka ini kelengkapan pengisian, bukan persentase kepatuhan Kemenkes.
                     </p>
                 </div>
-                <div class="w-full sm:w-64">
-                    <div class="w-full bg-slate-200 rounded-full h-2">
-                        <div class="bg-teal-700 h-2 rounded-full" style="width: {{ $stats['percentage'] }}%"></div>
-                    </div>
+                <div class="text-right">
+                    <div class="text-2xl font-semibold text-sim-ink" id="progress-persentase">{{ $stats['percentage'] }}%</div>
+                    <div class="text-xs text-sim-muted">terisi</div>
                 </div>
             </div>
+
+            <div class="sim-progress mt-4">
+                <div class="sim-progress-bar {{ $stats['percentage'] >= 100 ? 'sim-progress-bar-success' : '' }}"
+                     id="progress-pengisian" style="width: {{ $stats['percentage'] }}%"></div>
+            </div>
+
+            <dl class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                @foreach ([
+                    ['key' => 'compliant', 'label' => 'Sesuai', 'dot' => 'bg-sim-success'],
+                    ['key' => 'partial', 'label' => 'Sesuai sebagian', 'dot' => 'bg-sim-warning'],
+                    ['key' => 'non_compliant', 'label' => 'Tidak sesuai', 'dot' => 'bg-sim-danger'],
+                    ['key' => 'not_applicable', 'label' => 'Tidak berlaku', 'dot' => 'bg-sim-neutral'],
+                    ['key' => 'not_assessable', 'label' => 'Belum dinilai', 'dot' => 'bg-sim-border'],
+                    ['key' => 'unassessed', 'label' => 'Belum diisi', 'dot' => 'bg-sim-border-light'],
+                ] as $item)
+                    <div class="rounded-md border border-sim-border-light bg-sim-surface-alt px-3 py-2">
+                        <dt class="flex items-center gap-1.5 text-xs text-sim-muted">
+                            <span class="inline-block h-2 w-2 rounded-full {{ $item['dot'] }}"></span>{{ $item['label'] }}
+                        </dt>
+                        <dd class="mt-0.5 text-lg font-semibold text-sim-ink" data-counter="{{ $item['key'] }}">
+                            {{ $distribution[$item['key']] }}
+                        </dd>
+                    </div>
+                @endforeach
+            </dl>
+
+            @if ($incomplete->isNotEmpty())
+                <details class="mt-4 rounded-md border border-sim-warning/30 bg-sim-warning-bg px-3 py-2">
+                    <summary class="cursor-pointer text-sm font-medium text-sim-warning">
+                        {{ $incomplete->count() }} EP belum dinilai — lihat daftar
+                    </summary>
+                    <ul class="mt-2 grid gap-1 text-xs text-sim-muted sm:grid-cols-2">
+                        @foreach ($incomplete as $criterion)
+                            <li>
+                                <span class="text-sim-mono">{{ $criterion->code }}</span> —
+                                {{ \Illuminate\Support\Str::limit($criterion->title, 70) }}
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-2 text-xs text-sim-muted">
+                        Seluruh EP wajib dinilai sebelum eksekusi dapat diserahkan untuk tinjauan.
+                    </p>
+                </details>
+            @endif
         </div>
     </div>
 
-    @can('execute', $execution)
-        @if ($execution->status === 'preparation')
-            <div class="simmak-card mb-4">
-                <div class="simmak-card-body flex items-center justify-between">
-                    <p class="text-sm text-slate-600">Eksekusi belum dimulai. Mulai audit sebelum mengisi tabel.</p>
-                    <form method="POST" action="{{ route('audit.executions.start', $execution) }}" onsubmit="return confirm('Mulai eksekusi audit?');">
-                        @csrf
-                        <x-action icon="play-circle" label="Mulai Audit" size="sm" />
-                    </form>
-                </div>
-            </div>
-        @elseif ($execution->status === 'in_progress')
-            <form method="POST" action="{{ route('audit.executions.table', $execution) }}" id="form-tabel-audit">
-                @csrf
-                @foreach ($sections as $section)
-                    <div class="simmak-card mb-4">
-                        <div class="simmak-card-header flex items-center justify-between">
-                            <div>
-                                <h3 class="font-semibold text-slate-800">{{ $section->code }} — {{ $section->title }}</h3>
-                                @if ($section->description)
-                                    <p class="text-xs text-slate-500 mt-1">{{ $section->description }}</p>
-                                @endif
-                            </div>
-                            @php $sectionResponses = $execution->responses->where('criterion.section_id', $section->id); @endphp
-                            <span class="simmak-badge bg-blue-100 text-blue-800 text-xs">
-                                {{ $sectionResponses->whereNotNull('response_value')->count() }}/{{ $section->criteria->count() }} terisi
-                            </span>
-                        </div>
-                        <div class="simmak-card-body p-0 overflow-x-auto">
-                            <table class="sim-table text-sm">
-                                <thead class="bg-slate-50">
-                                    <tr>
-                                        <th class="w-16 px-3 py-2">EP</th>
-                                        <th class="px-3 py-2 min-w-[280px]">Elemen Penilaian</th>
-                                        <th class="px-3 py-2 min-w-[220px]">Kelengkapan Bukti</th>
-                                        <th class="px-3 py-2 w-24 text-center">SKOR</th>
-                                        <th class="px-3 py-2 w-20 text-center">SKOR Maks</th>
-                                        <th class="px-3 py-2 min-w-[240px]">Fakta dan Analisis</th>
-                                        <th class="px-3 py-2 min-w-[220px]">Rekomendasi</th>
-                                        <th class="px-3 py-2 w-32 text-center">Temuan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($section->criteria as $criterion)
-                                        @php $response = $execution->responses->firstWhere('standard_criterion_id', $criterion->id); @endphp
-                                        @php $maxScore = $criterion->max_score ?: 10; @endphp
-                                        <tr class="border-t border-slate-100 align-top">
-                                            <td class="px-3 py-2 font-mono text-xs text-slate-500">{{ $criterion->code }}</td>
-                                            <td class="px-3 py-2 text-slate-800">{{ $criterion->title }}</td>
-                                            <td class="px-3 py-2 text-xs text-slate-600">
-                                                @if ($criterion->evidence_guidance)
-                                                    <ul class="list-disc pl-4 space-y-0.5">
-                                                        @foreach (preg_split('/\r\n|\r|\n/', $criterion->evidence_guidance) as $line)
-                                                            @if (trim($line) !== '')
-                                                                <li>{{ trim($line) }}</li>
-                                                            @endif
-                                                        @endforeach
-                                                    </ul>
-                                                @else
-                                                    <span class="text-slate-400">—</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-3 py-2 text-center">
-                                                <input type="number" min="0" max="{{ $maxScore }}"
-                                                       name="rows[{{ $criterion->id }}][score]"
-                                                       value="{{ old("rows.{$criterion->id}.score", $response?->score) }}"
-                                                       class="sim-form-input text-center px-2 py-1 text-sm">
-                                                <input type="hidden" name="rows[{{ $criterion->id }}][standard_criterion_id]" value="{{ $criterion->id }}">
-                                            </td>
-                                            <td class="px-3 py-2 text-center text-slate-500">{{ $maxScore }}</td>
-                                            <td class="px-3 py-2">
-                                                <textarea name="rows[{{ $criterion->id }}][facts_analysis]" rows="2"
-                                                          class="sim-form-textarea text-sm"
-                                                          placeholder="Fakta dan analisis">{{ old("rows.{$criterion->id}.facts_analysis", $response?->facts_analysis) }}</textarea>
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <textarea name="rows[{{ $criterion->id }}][recommendation]" rows="2"
-                                                          class="sim-form-textarea text-sm"
-                                                          placeholder="Rekomendasi">{{ old("rows.{$criterion->id}.recommendation", $response?->recommendation) }}</textarea>
-                                            </td>
-                                            <td class="px-3 py-2 text-center space-y-1">
-                                                <select name="severity[{{ $criterion->id }}]" class="sim-form-input text-xs px-2 py-1">
-                                                    <option value="minor">Ringan</option>
-                                                    <option value="major">Major</option>
-                                                    <option value="critical">Kritikal</option>
-                                                </select>
-                                                <button type="submit" name="create_finding[{{ $criterion->id }}]" value="1"
-                                                        class="sim-btn sim-btn-secondary sim-btn-sm w-full"
-                                                        onclick="return confirm('Simpan baris ini dan buat temuan audit?')">Catat Temuan</button>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+    {{-- Keterangan mode halaman --}}
+    @if ($execution->status === 'preparation')
+        <div class="sim-alert sim-alert-info mb-6">
+            <p class="font-semibold">Eksekusi belum dimulai</p>
+            <p class="text-sim-muted">
+                Tabel baru dapat diisi setelah audit dimulai.
+                {{ $canExecute ? 'Gunakan tombol Mulai Audit di atas.' : 'Auditor penanggung jawab yang memulai audit ini.' }}
+            </p>
+        </div>
+    @elseif ($execution->status === 'submitted_for_review')
+        <div class="sim-alert sim-alert-info mb-6">
+            <p class="font-semibold">Menunggu tinjauan</p>
+            <p class="text-sim-muted">
+                {{ $superAdminOverride
+                    ? 'Anda masuk sebagai super admin sehingga tabel tetap dapat dikoreksi; setiap perubahan terekam pada riwayat revisi.'
+                    : 'Tabel bersifat baca. Perubahan hanya dapat dilakukan melalui pengembalian oleh peninjau.' }}
+            </p>
+        </div>
+    @elseif ($execution->status === 'finalized')
+        <div class="sim-alert sim-alert-success mb-6">
+            <p class="font-semibold">Hasil audit final</p>
+            <p class="text-sim-muted">
+                Ditetapkan {{ $execution->finalized_at?->format('d M Y') ?? '—' }}. {{ $superAdminOverride ? 'Tabel tetap dapat dikoreksi sebagai super admin; perubahan terekam pada riwayat revisi.' : 'Tabel bersifat baca.' }}
+            </p>
+        </div>
+    @elseif (! $canExecute)
+        <div class="sim-alert sim-alert-info mb-6">
+            <p class="font-semibold">Mode baca</p>
+            <p class="text-sim-muted">Anda bukan anggota tim penugasan ini, sehingga nilai kesesuaian hanya dapat dilihat.</p>
+        </div>
+    @endif
+
+    @if ($sections->isEmpty())
+        <div class="sim-card">
+            <div class="sim-card-body">
+                <div class="sim-empty-state">
+                    <div class="sim-empty-icon">
+                        <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                     </div>
-                @endforeach
-
-                <div class="sticky bottom-0 bg-white border-t border-slate-200 py-3 flex items-center justify-end gap-2 shadow-sm">
-                    <span class="text-xs text-slate-500 mr-auto">Isi kolom SKOR, FAKTA DAN ANALISIS, lalu REKOMENDASI bila diperlukan.</span>
-                    <x-action icon="check-circle" label="Simpan Tabel" />
-                </div>
-            </form>
-
-        @elseif ($execution->status === 'submitted_for_review')
-            <div class="simmak-card mb-4">
-                <div class="simmak-card-body flex items-center justify-between">
-                    <p class="text-sm text-slate-600">Eksekusi sedang dalam tinjauan. Tabel bersifat baca.</p>
-                    @can('finalize', $execution)
-                        <form method="POST" action="{{ route('audit.executions.finalize', $execution) }}" onsubmit="return confirm('Finalisasi hasil audit?');">
-                            @csrf
-                            <x-action icon="check-circle" label="Finalisasi" size="sm" />
-                        </form>
-                    @endcan
-                </div>
-            </div>
-        @endif
-    @endcan
-
-    @if ($sections->isNotEmpty())
-        @if (! auth()->user()->can('execute', $execution) || $execution->status !== 'in_progress')
-            <div class="space-y-4">
-                @foreach ($sections as $section)
-                    <div class="simmak-card">
-                        <div class="simmak-card-header">
-                            <h3 class="font-semibold text-slate-800">{{ $section->code }} — {{ $section->title }}</h3>
-                        </div>
-                        <div class="simmak-card-body p-0 overflow-x-auto">
-                            <table class="sim-table text-sm">
-                                <thead class="bg-slate-50">
-                                    <tr>
-                                        <th class="w-16 px-3 py-2">EP</th>
-                                        <th class="px-3 py-2 min-w-[280px]">Elemen Penilaian</th>
-                                        <th class="px-3 py-2 w-24 text-center">SKOR</th>
-                                        <th class="px-3 py-2 w-20 text-center">SKOR Maks</th>
-                                        <th class="px-3 py-2 min-w-[240px]">Fakta dan Analisis</th>
-                                        <th class="px-3 py-2 min-w-[220px]">Rekomendasi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($section->criteria as $criterion)
-                                        @php $response = $execution->responses->firstWhere('standard_criterion_id', $criterion->id); @endphp
-                                        <tr class="border-t border-slate-100 align-top">
-                                            <td class="px-3 py-2 font-mono text-xs text-slate-500">{{ $criterion->code }}</td>
-                                            <td class="px-3 py-2 text-slate-800">{{ $criterion->title }}</td>
-                                            <td class="px-3 py-2 text-center font-medium">{{ $response?->score ?? '—' }}</td>
-                                            <td class="px-3 py-2 text-center text-slate-500">{{ $criterion->max_score ?: 10 }}</td>
-                                            <td class="px-3 py-2 text-slate-700">{{ $response?->facts_analysis ?? '—' }}</td>
-                                            <td class="px-3 py-2 text-slate-700">{{ $response?->recommendation ?? '—' }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                    <p class="sim-empty-title">Instrumen belum memiliki EP</p>
+                    <p class="sim-empty-description">
+                        Versi instrumen ini belum memuat elemen penilaian. Tambahkan EP pada menu Standar &amp; Instrumen
+                        sebelum audit dilaksanakan.
+                    </p>
+                    <div class="mt-4">
+                        @can('audit.standard.view')
+                            <x-action href="{{ route('audit.standards.index') }}" icon="book-open" label="Buka Standar & Instrumen" variant="secondary" size="sm" />
+                        @endcan
                     </div>
-                @endforeach
-            </div>
-        @endif
-    @else
-        <div class="simmak-card">
-            <div class="simmak-card-body text-center py-12">
-                <p class="text-sm text-slate-500">Versi instrumen ini belum memiliki EP. Tambahkan EP pada Standar &amp; Instrumen terlebih dahulu.</p>
+                </div>
             </div>
         </div>
+    @else
+        @if ($editable)
+            <form method="POST" action="{{ route('audit.executions.table', $execution) }}" id="form-tabel-audit">
+                @csrf
+        @endif
+
+        <div class="space-y-4">
+            @foreach ($sections as $section)
+                @php
+                    $sectionTotal = $section->criteria->count();
+                    $sectionAssessed = $section->criteria
+                        ->filter(fn ($criterion) => filled($responsesByCriterion->get($criterion->id)?->response_value))
+                        ->count();
+                    $sectionPercent = $sectionTotal > 0 ? (int) round(($sectionAssessed / $sectionTotal) * 100) : 0;
+                @endphp
+
+                <div class="sim-card">
+                    <div class="sim-card-header flex flex-wrap items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h3 class="sim-card-title">{{ $section->code }} — {{ $section->title }}</h3>
+                            @if ($section->description)
+                                <p class="mt-1 text-sm text-sim-muted">{{ $section->description }}</p>
+                            @endif
+                        </div>
+                        <div class="flex flex-shrink-0 items-center gap-2">
+                            <div class="sim-progress w-24">
+                                <div class="sim-progress-bar {{ $sectionPercent >= 100 ? 'sim-progress-bar-success' : '' }}"
+                                     style="width: {{ $sectionPercent }}%"></div>
+                            </div>
+                            <span class="text-xs text-sim-muted">{{ $sectionAssessed }}/{{ $sectionTotal }} terisi</span>
+                        </div>
+                    </div>
+
+                    <div class="sim-card-body overflow-x-auto p-0">
+                        <table class="sim-table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="w-24">EP</th>
+                                    <th class="min-w-[260px]">Elemen Penilaian</th>
+                                    <th class="min-w-[220px]">Kelengkapan Bukti</th>
+                                    <th class="w-52">Nilai Kesesuaian</th>
+                                    <th class="min-w-[240px]">Rekomendasi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($section->criteria as $criterion)
+                                    @php
+                                        $response = $responsesByCriterion->get($criterion->id);
+                                        $selectedValue = (string) old("rows.{$criterion->id}.response_value", $response?->response_value ?? '');
+                                        $recommendationValue = old("rows.{$criterion->id}.recommendation", $response?->recommendation);
+                                        $needsRecommendation = in_array($selectedValue, ['non_compliant', 'partial'], true);
+                                        $lastRevision = $response?->revisions->first();
+                                    @endphp
+                                    <tr data-criterion-row
+                                        @class([
+                                            'align-top',
+                                            'bg-sim-danger-bg/50' => $selectedValue === 'non_compliant',
+                                            'bg-sim-warning-bg/50' => $selectedValue === 'partial',
+                                        ])>
+                                        <td class="text-sim-mono text-xs text-sim-muted">{{ $criterion->code }}</td>
+                                        <td class="text-sm text-sim-ink">{{ $criterion->title }}</td>
+                                        <td class="text-xs text-sim-muted">
+                                            @if ($criterion->evidence_guidance)
+                                                <ul class="list-disc space-y-0.5 pl-4">
+                                                    @foreach (preg_split('/\r\n|\r|\n/', $criterion->evidence_guidance) as $line)
+                                                        @if (trim($line) !== '')
+                                                            <li>{{ trim($line) }}</li>
+                                                        @endif
+                                                    @endforeach
+                                                </ul>
+                                            @else
+                                                <span>—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($editable)
+                                                <input type="hidden" name="rows[{{ $criterion->id }}][standard_criterion_id]" value="{{ $criterion->id }}">
+                                                <select name="rows[{{ $criterion->id }}][response_value]" class="sim-form-select text-sm"
+                                                        data-conformity-select aria-label="Nilai kesesuaian {{ $criterion->code }}">
+                                                    <option value="">— Pilih —</option>
+                                                    <option value="compliant" @selected($selectedValue === 'compliant')>Sesuai</option>
+                                                    <option value="partial" @selected($selectedValue === 'partial')>Sesuai sebagian</option>
+                                                    <option value="non_compliant" @selected($selectedValue === 'non_compliant')>Tidak sesuai</option>
+                                                    <option value="not_applicable" @selected($selectedValue === 'not_applicable')>Tidak berlaku</option>
+                                                </select>
+                                            @else
+                                                <span class="sim-badge sim-badge-status {{ $conformityMeta[$selectedValue]['class'] ?? 'border-sim-border bg-sim-surface text-sim-muted' }}">
+                                                    {{ $conformityMeta[$selectedValue]['label'] ?? 'Belum dinilai' }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($editable)
+                                                <textarea name="rows[{{ $criterion->id }}][recommendation]" rows="2"
+                                                          class="sim-form-textarea text-sm" data-recommendation
+                                                          aria-label="Rekomendasi {{ $criterion->code }}"
+                                                          placeholder="Wajib diisi jika tidak sesuai atau sesuai sebagian">{{ $recommendationValue }}</textarea>
+                                                <p class="sim-form-hint {{ $needsRecommendation ? '' : 'hidden' }}" data-recommendation-hint>
+                                                    Rekomendasi wajib diisi agar temuan otomatis dibuat.
+                                                </p>
+                                            @else
+                                                <div class="text-sm text-sim-ink">{{ filled($recommendationValue) ? $recommendationValue : '—' }}</div>
+                                            @endif
+
+                                            @if ($lastRevision)
+                                                <p class="mt-1 text-xs text-sim-muted">
+                                                    Riwayat perubahan: {{ $response->revisions->count() }}× · terakhir
+                                                    {{ $lastRevision->created_at?->format('d M Y H:i') }}
+                                                    @if ($lastRevision->assessedBy)
+                                                        oleh {{ $lastRevision->assessedBy->name }}
+                                                    @endif
+                                                </p>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        @if ($editable)
+                <div class="sim-save-bar">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-sim-muted">
+                        <span class="font-medium text-sim-ink">
+                            <span data-counter="assessed">{{ $stats['completed'] }}</span> dari {{ $stats['total'] }} EP dinilai
+                        </span>
+                        <span class="hidden sm:inline">
+                            EP tidak sesuai / sesuai sebagian yang disertai rekomendasi otomatis menjadi temuan &amp; CAPA.
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="hidden text-xs text-sim-muted lg:inline">
+                            Temuan tidak tertutup sebelum auditor memvalidasi tindak lanjut klinik.
+                        </span>
+                        <x-action icon="check-circle" label="Simpan Tabel" />
+                    </div>
+                </div>
+            </form>
+        @endif
+    @endif
+
+    @if ($editable)
+        <script>
+            (function () {
+                var form = document.getElementById('form-tabel-audit');
+                if (!form) return;
+
+                var bar = document.getElementById('progress-pengisian');
+                var percentLabel = document.getElementById('progress-persentase');
+
+                function refresh() {
+                    var rows = Array.prototype.slice.call(form.querySelectorAll('[data-criterion-row]'));
+                    var tally = { compliant: 0, partial: 0, non_compliant: 0, not_applicable: 0, not_assessable: 0, unassessed: 0 };
+
+                    rows.forEach(function (row) {
+                        var select = row.querySelector('[data-conformity-select]');
+                        var textarea = row.querySelector('[data-recommendation]');
+                        var hint = row.querySelector('[data-recommendation-hint]');
+                        var value = select ? select.value : '';
+                        var needsRecommendation = value === 'non_compliant' || value === 'partial';
+
+                        if (value) {
+                            tally[value] = (tally[value] || 0) + 1;
+                        } else {
+                            tally.unassessed += 1;
+                        }
+
+                        row.classList.toggle('bg-sim-danger-bg/50', value === 'non_compliant');
+                        row.classList.toggle('bg-sim-warning-bg/50', value === 'partial');
+
+                        if (hint) {
+                            hint.classList.toggle('hidden', !needsRecommendation);
+                        }
+                        if (textarea) {
+                            textarea.classList.toggle('border-sim-danger', needsRecommendation && textarea.value.trim() === '');
+                        }
+                    });
+
+                    var assessed = rows.length - tally.unassessed;
+
+                    document.querySelectorAll('[data-counter]').forEach(function (element) {
+                        var key = element.getAttribute('data-counter');
+                        element.textContent = String(key === 'assessed' ? assessed : (tally[key] || 0));
+                    });
+
+                    var percent = rows.length > 0 ? Math.round((assessed / rows.length) * 100) : 0;
+                    if (bar) bar.style.width = percent + '%';
+                    if (percentLabel) percentLabel.textContent = percent + '%';
+                }
+
+                form.addEventListener('change', function (event) {
+                    if (event.target.matches('[data-conformity-select]')) refresh();
+                });
+
+                form.addEventListener('input', function (event) {
+                    if (event.target.matches('[data-recommendation]')) refresh();
+                });
+
+                refresh();
+            })();
+        </script>
     @endif
 @endsection

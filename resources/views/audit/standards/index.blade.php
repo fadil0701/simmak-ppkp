@@ -10,7 +10,7 @@
             <p class="sim-page-subtitle">Kelola standar acuan dan versi instrumen yang digunakan dalam audit internal.</p>
         </div>
 
-        @can('audit.standard.create')
+        @can('audit.standard.manage')
             <a href="{{ route('audit.standards.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                 Tambah Standar

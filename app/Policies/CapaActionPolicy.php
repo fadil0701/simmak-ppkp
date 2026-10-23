@@ -21,7 +21,7 @@ class CapaActionPolicy
 
     public function create(User $user): bool
     {
-        return $user->is_active && $user->can('audit.action.update');
+        return $user->is_active && ($user->can('audit.action.update') || $user->can('capa.manage'));
     }
 
     public function update(User $user, CapaAction $action): bool
@@ -30,12 +30,23 @@ class CapaActionPolicy
         if (! $capa || ! $user->belongsToOrganization($capa->organization_id)) {
             return false;
         }
-        if (! $user->is_active || ! $user->can('audit.action.update')) {
+        if (! $user->is_active) {
+            return false;
+        }
+        if ($capa->status === 'closed') {
             return false;
         }
 
-        return $action->assigned_to === $user->id
-            && $capa->status !== 'closed';
+        $canAct = $user->can('audit.action.update') || $user->can('capa.manage');
+        if (! $canAct) {
+            return false;
+        }
+
+        if ($action->assigned_to === $user->id || $capa->owner_id === $user->id) {
+            return true;
+        }
+
+        return $user->can('capa.manage') && $user->hasClinicAccess($capa->clinic_id);
     }
 
     public function delete(User $user, CapaAction $action): bool

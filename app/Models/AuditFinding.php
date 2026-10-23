@@ -14,6 +14,18 @@ class AuditFinding extends BaseModel
     use BelongsToOrganization;
     use ClinicScope;
 
+    /** @var list<string> */
+    public const OPEN_STATUSES = [
+        'draft',
+        'under_review',
+        'returned_for_revision',
+        'confirmed',
+        'action_required',
+        'pending_verification',
+        'in_capa',
+        'open',
+    ];
+
     protected $fillable = [
         'organization_id', 'audit_schedule_id', 'audit_execution_id', 'clinic_id', 'finding_code', 'title',
         'severity', 'is_escalated', 'escalated_at', 'escalated_by', 'escalation_reason',
