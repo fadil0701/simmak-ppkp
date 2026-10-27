@@ -45,7 +45,7 @@ class ChecklistResponse extends BaseModel
 
     public function evidence(): HasMany
     {
-        return $this->hasMany(ResponseEvidence::class);
+        return $this->hasMany(ResponseEvidence::class, 'checklist_response_id');
     }
 
     public function revisions(): HasMany

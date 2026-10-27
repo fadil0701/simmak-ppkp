@@ -116,6 +116,6 @@ class AuditFinding extends BaseModel
 
     public function evidenceLinks(): HasMany
     {
-        return $this->hasMany(FindingEvidence::class);
+        return $this->hasMany(FindingEvidence::class, 'finding_id');
     }
 }

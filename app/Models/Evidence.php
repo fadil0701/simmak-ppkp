@@ -44,16 +44,16 @@ class Evidence extends BaseModel
 
     public function responseLinks(): HasMany
     {
-        return $this->hasMany(ResponseEvidence::class);
+        return $this->hasMany(ResponseEvidence::class, 'evidence_id');
     }
 
     public function findingLinks(): HasMany
     {
-        return $this->hasMany(FindingEvidence::class);
+        return $this->hasMany(FindingEvidence::class, 'evidence_id');
     }
 
     public function actionLinks(): HasMany
     {
-        return $this->hasMany(ActionEvidence::class);
+        return $this->hasMany(ActionEvidence::class, 'evidence_id');
     }
 }
