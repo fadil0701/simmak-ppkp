@@ -21,7 +21,8 @@ php artisan serve                 # or: composer app
 - Laravel Pint (style) is installed but has no script: run `vendor/bin/pint`.
 - RBAC cache after changing roles/permissions: `php artisan permission:cache-reset`.
 - After changing Scope Sistem bundles (`app/Support/SimmakScopes.php`) or backfilling scopes: `php artisan simmak:sync-user-scopes` (re-applies direct permissions per scope for every account).
-- Demo accounts (password `password`): `admin@…`, `mutu@…`, `kepala@…`, `pjmutu@…`, `akreditasi@…`, `auditor@…`, `staff@…` `@simmak.ppkp.local`.
+- Demo accounts come from `RoleUsersSeeder` and take credentials from `.env`: `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` for the super admin, `DEFAULT_USER_PASSWORD` for the rest (fallback `DEMO_ACCOUNT_PASSWORD`; a random password is generated and printed once if all are empty). Role accounts are `<role>@simmak.ppkp.local` (`sistem@`, `mutu@`, `kepala@`, `kepalapusat@`, `tu@`, `ketuaaudit@`, `akreditasi@`, `auditor@`, `staff@`).
+- Live HTTP smoke test for the access model: `php artisan serve --port=8130` then `php scripts/smoke_access_model.php` (env: `SMOKE_BASE`, `SMOKE_EMAIL`, `SMOKE_PASSWORD`, optional `SMOKE_USER_ID` / `SMOKE_EMPLOYEE_ID` for the detail pages).
 
 ## Environment / database gotchas
 
