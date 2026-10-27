@@ -40,15 +40,19 @@ Output tersimpan di folder `pdf/manual/`.
 ## Akun Demo
 
 Password akun demo tidak ada di codebase — diambil dari environment
-`DEMO_ACCOUNT_PASSWORD`, atau dibuat acak oleh seeder dan dicetak sekali
-ke console saat seeding.
+`DEFAULT_USER_PASSWORD` (fallback lama `DEMO_ACCOUNT_PASSWORD`), atau dibuat acak
+oleh seeder dan dicetak sekali ke console saat seeding. Akun super admin dibuat
+terpisah lewat `php artisan simmak:create-superadmin`.
 
-| Email | Role |
-|-------|------|
-| admin@simmak.ppkp.local | super-admin |
-| mutu@simmak.ppkp.local | admin-mutu |
-| kepala@simmak.ppkp.local | kepala-klinik |
-| pjmutu@simmak.ppkp.local | pj-mutu |
-| akreditasi@simmak.ppkp.local | tim-akreditasi |
-| auditor@simmak.ppkp.local | auditor |
-| staff@simmak.ppkp.local | staff |
+| Email | Username | Role |
+|-------|----------|------|
+| `$SUPERADMIN_EMAIL` (default `admin@simmak.ppkp.local`) | `admin` | super-admin |
+| sistem@simmak.ppkp.local | adminsistem | admin-sistem |
+| kepalapusat@simmak.ppkp.local | kepalapusat | kepala-pusat |
+| tu@simmak.ppkp.local | kasubbagtu | kasubbag-tu |
+| mutu@simmak.ppkp.local | ketuamutu | ketua-tim-mutu (legacy) |
+| ketuaaudit@simmak.ppkp.local | ketuaaudit | ketua-tim-audit (legacy) |
+| akreditasi@simmak.ppkp.local | akreditasi | ketua-tim-akreditasi (legacy) |
+| auditor@simmak.ppkp.local | auditor | auditor (legacy) |
+| kepala@simmak.ppkp.local | kepala | kepala-klinik |
+| staff@simmak.ppkp.local | auditi | auditi (legacy) |

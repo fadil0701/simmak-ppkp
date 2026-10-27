@@ -86,9 +86,14 @@ SESSION_SECURE_COOKIE=true   # wajib untuk HTTPS
 
 ## Akun Demo
 
-`RoleUsersSeeder` membaca password dari `DEMO_ACCOUNT_PASSWORD` (tidak ditulis di
-codebase). Jika kosong, seeder membuat password acak dan mencetaknya sekali ke
-console. Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
+`RoleUsersSeeder` membaca password dari `DEFAULT_USER_PASSWORD` (fallback lama
+`DEMO_ACCOUNT_PASSWORD`) — tidak ditulis di codebase. Jika kosong, seeder membuat
+password acak dan mencetaknya sekali ke console. Di `APP_ENV=production` tanpa
+password tersebut, seeder dilewati.
+
+Akun **super admin** dibuat terpisah oleh `php artisan simmak:create-superadmin`
+(kredensial dari `SUPERADMIN_NAME`, `SUPERADMIN_USERNAME`, `SUPERADMIN_EMAIL`,
+`SUPERADMIN_PASSWORD`); seeder tidak membuatnya.
 
 ---
 

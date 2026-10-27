@@ -85,17 +85,21 @@ MAIL_MAILER=log
 
 ### 2.3 Akun Demo (Seeder)
 
-Password tidak tertulis di codebase. Diambil dari environment `DEMO_ACCOUNT_PASSWORD`;
+Password tidak tertulis di codebase. Diambil dari `DEFAULT_USER_PASSWORD` (fallback `DEMO_ACCOUNT_PASSWORD`);
 jika kosong, seeder membuat password acak dan mencetaknya sekali ke console saat seeding.
 
 | Username | Email | Role |
 |----------|-------|------|
-| admin | admin@simmak.ppkp.local | super-admin |
-| mutu | mutu@simmak.ppkp.local | admin-mutu |
+| admin | `$SUPERADMIN_EMAIL` | super-admin |
+| adminsistem | sistem@simmak.ppkp.local | admin-sistem |
+| kepalapusat | kepalapusat@simmak.ppkp.local | kepala-pusat |
+| kasubbagtu | tu@simmak.ppkp.local | kasubbag-tu |
+| ketuamutu | mutu@simmak.ppkp.local | ketua-tim-mutu (legacy) |
+| ketuaaudit | ketuaaudit@simmak.ppkp.local | ketua-tim-audit (legacy) |
+| akreditasi | akreditasi@simmak.ppkp.local | ketua-tim-akreditasi (legacy) |
+| auditor | auditor@simmak.ppkp.local | auditor (legacy) |
 | kepala | kepala@simmak.ppkp.local | kepala-klinik |
-| pjmutu | pjmutu@simmak.ppkp.local | pj-mutu |
-| auditor | auditor@simmak.ppkp.local | auditor |
-| staff | staff@simmak.ppkp.local | staff |
+| auditi | staff@simmak.ppkp.local | auditi (legacy) |
 
 ---
 

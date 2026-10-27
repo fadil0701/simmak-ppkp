@@ -147,7 +147,14 @@ class AuditCapaService
             ->where('organization_id', $finding->organization_id)
             ->where('is_active', true)
             ->whereHas('roles', function ($query) {
-                $query->whereIn('name', [SimmakRoles::AUDITI, SimmakRoles::KEPALA_KLINIK, 'staff']);
+                // 'staff' = alias lama auditi (SimmakRoles::legacyMap()); tetap
+                // disertakan agar akun existing tidak kehilangan penanggung jawab.
+                $query->whereIn('name', [
+                    SimmakRoles::AUDITI,
+                    SimmakRoles::ADMIN_KLINIK,
+                    SimmakRoles::KEPALA_KLINIK,
+                    'staff',
+                ]);
             })
             ->whereHas('clinics', function ($query) use ($finding) {
                 $query->where('clinics.id', $finding->clinic_id);

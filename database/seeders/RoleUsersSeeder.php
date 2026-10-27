@@ -83,6 +83,22 @@ class RoleUsersSeeder extends Seeder
                 'default_clinic' => 'MP',
             ],
             [
+                'role' => SimmakRoles::KASATPEL_UKP,
+                'name' => 'Kasatpel UKP',
+                'username' => 'kasatpelukp',
+                'email' => 'ukp@simmak.ppkp.local',
+                'clinic_codes' => ['KU', 'KP06'],
+                'default_clinic' => 'KU',
+            ],
+            [
+                'role' => SimmakRoles::KASATPEL_UKM,
+                'name' => 'Kasatpel UKM',
+                'username' => 'kasatpelukm',
+                'email' => 'ukm@simmak.ppkp.local',
+                'clinic_codes' => ['KP06'],
+                'default_clinic' => 'KP06',
+            ],
+            [
                 'role' => SimmakRoles::KETUA_TIM_MUTU,
                 'name' => 'Ketua Tim Mutu PPKP',
                 'username' => 'ketuamutu',
@@ -113,6 +129,14 @@ class RoleUsersSeeder extends Seeder
                 'email' => 'auditor@simmak.ppkp.local',
                 'clinic_codes' => ['KU', 'KP06'],
                 'default_clinic' => 'KU',
+            ],
+            [
+                'role' => SimmakRoles::ADMIN_KLINIK,
+                'name' => 'Admin Klinik Pratama',
+                'username' => 'adminklinik',
+                'email' => 'klinik@simmak.ppkp.local',
+                'clinic_codes' => ['KP06'],
+                'default_clinic' => 'KP06',
             ],
             [
                 'role' => SimmakRoles::KEPALA_KLINIK,

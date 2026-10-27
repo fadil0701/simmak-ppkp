@@ -32,6 +32,8 @@
 ```bash
 php artisan db:seed --class=RoleUsersSeeder --force
 ```
-Password akun demo: dari environment `DEMO_ACCOUNT_PASSWORD` atau hasil acak
-seeder (dicetak sekali di console) — tidak ada di codebase.
+Password akun demo: dari environment `DEFAULT_USER_PASSWORD` (fallback
+`DEMO_ACCOUNT_PASSWORD`) atau hasil acak seeder (dicetak sekali di console) —
+tidak ada di codebase. Akun super admin dibuat terpisah:
+`php artisan simmak:create-superadmin` (kredensial `SUPERADMIN_*` di `.env`).
 ```

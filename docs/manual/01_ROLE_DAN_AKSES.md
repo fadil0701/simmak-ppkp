@@ -5,15 +5,30 @@ Dokumen ini menjelaskan peran (role) pengguna SIMMAK PPKP, permission yang dimil
 
 ## 2. Daftar Role
 
+Katalog resmi berisi 8 peran yang boleh dipilih pada form pengguna
+(`SimmakRoles::catalog()`):
+
 | Kode Role | Label UI | Fungsi utama |
 |-----------|----------|--------------|
-| `super-admin` | Direktur Utama | Akses penuh seluruh modul termasuk pengguna |
-| `admin-mutu` | Admin Mutu PPKP | Kelola mutu lintas klinik (tanpa users.manage) |
-| `kepala-klinik` | Kepala Klinik | Pantau mutu & CAPA di klinik masing-masing |
-| `pj-mutu` | Penanggung Jawab Mutu | Operasional mutu, audit, CAPA, risiko, akreditasi klinik |
-| `tim-akreditasi` | Tim Akreditasi | Fokus self assessment, gap, bukti, mock survey |
-| `auditor` | Auditor Internal | Program audit, checklist, temuan |
-| `staff` | Staff Klinik | Lihat dokumen, CAPA, akreditasi (terbatas) |
+| `super-admin` | Super Admin (Akses Penuh Sistem) | Akses penuh seluruh modul termasuk pengguna; lintas klinik |
+| `admin-sistem` | Admin Sistem | Administrasi teknis: pengguna, pengaturan, master klinik/pegawai/jabatan |
+| `kepala-pusat` | Kepala Pusat | Monitoring lintas klinik (audit, mutu, akreditasi) |
+| `kasubbag-tu` | Kasubbag TU | Administrasi umum, kepegawaian, pengguna, DMS |
+| `kasatpel-ukp` | Kasatpel UKP | Pengawas lingkup UKP: menyiapkan & mengawal audit lingkupnya |
+| `kasatpel-ukm` | Kasatpel UKM | Pengawas lingkup UKM (izin sama dengan Kasatpel UKP) |
+| `kepala-klinik` | Kepala Klinik/Unit | Pantau mutu & CAPA, tindak lanjut temuan di kliniknya |
+| `admin-klinik` | Admin Klinik/Unit | Operasional klinik: DMS, bukti audit, CAPA |
+
+**Peran legacy** (tetap ada di database untuk akun existing, **tidak** dapat dipilih
+untuk akun baru — `SimmakRoles::legacyRoleLabels()`):
+
+| Kode Role | Label UI | Catatan |
+|-----------|----------|---------|
+| `ketua-tim-mutu` | Ketua Tim Mutu (lama) | Alias lama `pj-mutu`; bundel izin pemimpin mutu |
+| `ketua-tim-audit` | Ketua Tim Audit (lama) | Bundel izin pemimpin audit internal |
+| `ketua-tim-akreditasi` | Ketua Tim Akreditasi (lama) | Alias lama `tim-akreditasi` |
+| `auditor` | Auditor (lama) | Fungsi audit kini juga dapat diberikan lewat Scope Sistem `auditor` |
+| `auditi` | Auditi (lama) | Alias lama `staff`; fungsi auditi lewat Scope Sistem `auditi` |
 
 ## 3. Permission Sistem
 
@@ -36,41 +51,47 @@ Dokumen ini menjelaskan peran (role) pengguna SIMMAK PPKP, permission yang dimil
 
 Keterangan: **V** = view (lihat), **M** = manage (ubah/buat), **—** = tidak ada akses.
 
-| Modul / Menu | super-admin | admin-mutu | kepala-klinik | pj-mutu | tim-akreditasi | auditor | staff |
-|--------------|:-----------:|:----------:|:-------------:|:-------:|:--------------:|:-------:|:-----:|
-| Dashboard Eksekutif | V | V | — | — | — | — | — |
-| Dashboard Klinik | V | V | V | V | V | — | — |
-| Audit Internal | M | M | V | M | — | M | — |
-| Temuan | M | M | V | M | — | M | — |
-| CAPA | M | M | M | M | V | V | V |
-| Risiko | M | M | V | M | — | — | — |
-| Program Mutu | M | M | V | M | V | — | — |
-| Akreditasi | M | M | V | M | M | — | V |
-| Dokumen (DMS) | M | M | V | M | V | — | V |
-| Pelaporan | V | V | — | — | — | — | — |
-| Pengguna | M | — | — | — | — | — | — |
-| Pengaturan | M | M | — | — | — | — | — |
+| Modul / Menu | super-admin | admin-sistem | kepala-pusat | kasubbag-tu | kasatpel-ukp/ukm | kepala-klinik | admin-klinik |
+|--------------|:-----------:|:------------:|:------------:|:-----------:|:----------------:|:-------------:|:------------:|
+| Dashboard Eksekutif | V | — | V | — | V | — | — |
+| Dashboard Klinik | V | — | V | — | V | V | V |
+| Audit Internal | M | — | V | — | M | V | V |
+| Temuan | M | — | V | — | M | V | V |
+| CAPA | M | — | V | — | M | M | M |
+| Risiko | M | — | V | — | M | V | — |
+| Program Mutu | M | — | V | — | M | V | — |
+| Akreditasi | M | — | V | — | V | V | V |
+| Dokumen (DMS) | M | M | V | M | M | V | M |
+| Pelaporan | M | — | M | — | M | M | — |
+| Pengguna | M | M | — | M | — | — | — |
+| Pengaturan | M | M | — | V | — | — | — |
 
 ## 5. Halaman Utama Setelah Login
 
 | Role | Redirect |
 |------|----------|
-| super-admin, admin-mutu | `/dashboard` |
-| tim-akreditasi | `/accreditation` |
-| kepala-klinik, pj-mutu | `/clinic/dashboard` |
-| auditor | `/audit` |
-| staff | `/dms` |
+| super-admin, kepala-pusat, kasatpel-ukp, kasatpel-ukm, ketua-tim-mutu (lama), ketua-tim-audit (lama), auditor (lama) | `/dashboard` |
+| kepala-klinik, admin-klinik, ketua-tim-akreditasi (lama), auditi (lama) | `/clinic/dashboard` |
+| admin-sistem, kasubbag-tu | `/dms` |
+
+Urutan ini mengikuti `SimmakMenu::homeRouteFor()`: `dashboard.executive` →
+`dashboard.clinic` → `audit.program.view` → `audit.execution.view` → `dms.view`.
 
 ## 6. Akun Demo
 
-Password semua akun demo: lihat output seeder (dari `DEMO_ACCOUNT_PASSWORD` atau acak) — tidak ada di codebase.
+Password 9 akun demo diambil dari `DEFAULT_USER_PASSWORD` (fallback
+`DEMO_ACCOUNT_PASSWORD`) — lihat `config/simmak.php`. Super admin **tidak** dibuat
+seeder; jalankan `php artisan simmak:create-superadmin`.
 
 | Email | Username | Role | Klinik default |
 |-------|----------|------|----------------|
-| admin@simmak.ppkp.local | admin | super-admin | KU |
-| mutu@simmak.ppkp.local | adminmutu | admin-mutu | KU |
+| `$SUPERADMIN_EMAIL` (default `admin@simmak.ppkp.local`) | `admin` | super-admin | KU |
+| `sistem@simmak.ppkp.local` | `adminsistem` | admin-sistem | MP |
 | kepala@simmak.ppkp.local | kepala | kepala-klinik | KP06 |
-| pjmutu@simmak.ppkp.local | pjmutu | pj-mutu | KP06 |
+| `kepalapusat@simmak.ppkp.local` | `kepalapusat` | kepala-pusat | MP |
+| `tu@simmak.ppkp.local` | `kasubbagtu` | kasubbag-tu | MP |
+| `ukp@simmak.ppkp.local` | `kasatpelukp` | kasatpel-ukp | Sesuai penugasan |
+| `ukm@simmak.ppkp.local` | `kasatpelukm` | kasatpel-ukm | Sesuai penugasan |
 | akreditasi@simmak.ppkp.local | akreditasi | tim-akreditasi | KP06 |
 | auditor@simmak.ppkp.local | auditor | auditor | KU |
 | staff@simmak.ppkp.local | staff | staff | KP06 |

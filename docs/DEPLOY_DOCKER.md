@@ -26,20 +26,37 @@ docker compose exec app gosu www-data php artisan db:seed --force
 
 Akses aplikasi di <http://localhost:8080>.
 
-Akun demo dibuat oleh seeder. Password diambil dari environment `DEMO_ACCOUNT_PASSWORD`
-(tidak ada di codebase); jika kosong, seeder membuat password acak dan mencetaknya
-sekali ke console saat seeding. Set `DEMO_ACCOUNT_PASSWORD` di `.env` untuk
-password yang deterministik di lingkungan Docker.
+Akun demo dibuat oleh seeder. Password diambil dari `DEFAULT_USER_PASSWORD`
+(fallback lama `DEMO_ACCOUNT_PASSWORD`) — tidak ada di codebase; jika kosong,
+seeder membuat password acak dan mencetaknya sekali ke console saat seeding.
+Set `DEFAULT_USER_PASSWORD` di `.env` untuk password yang deterministik di
+lingkungan Docker.
 
-| Username | Role |
-| --- | --- |
-| `admin` | super-admin |
-| `adminmutu` | admin-mutu |
-| `kepala` | kepala-klinik |
-| `pjmutu` | pj-mutu |
-| `akreditasi` | tim-akreditasi |
-| `auditor` | auditor |
-| `staff` | staff |
+Super admin dibuat terpisah (bukan seeder), dijalankan di dalam container:
+
+```bash
+docker compose exec app gosu www-data php artisan simmak:create-superadmin
+```
+
+Akun demo dibuat `RoleUsersSeeder`. Kolom role di bawah adalah role **setelah** `migrateLegacyRoles()`
+menjalankan `SimmakRoles::legacyMap()`, jadi beberapa akun tetap memakai peran legacy
+(`ketua-tim-*`, `auditor`, `auditi`) yang memang tidak assignable untuk akun baru.
+
+| Username | Email | Role |
+| --- | --- | --- |
+| `$SUPERADMIN_USERNAME` (default `admin`) | `$SUPERADMIN_EMAIL` | super-admin |
+| `adminsistem` | `sistem@simmak.ppkp.local` | admin-sistem |
+| `kepalapusat` | `kepalapusat@simmak.ppkp.local` | kepala-pusat |
+| `kasubbagtu` | `tu@simmak.ppkp.local` | kasubbag-tu |
+| `ketuamutu` | `mutu@simmak.ppkp.local` | ketua-tim-mutu (legacy) |
+| `ketuaaudit` | `ketuaaudit@simmak.ppkp.local` | ketua-tim-audit (legacy) |
+| `akreditasi` | `akreditasi@simmak.ppkp.local` | ketua-tim-akreditasi (legacy) |
+| `auditor` | `auditor@simmak.ppkp.local` | auditor (legacy) |
+| `kepala` | `kepala@simmak.ppkp.local` | kepala-klinik |
+| `auditi` | `staff@simmak.ppkp.local` | auditi (legacy) |
+
+Akun super admin tidak ada di daftar `$accounts` seeder; ia dibuat `php artisan simmak:create-superadmin`
+dari `SUPERADMIN_EMAIL` / `SUPERADMIN_USERNAME` / `SUPERADMIN_PASSWORD` di `.env`.
 
 ## Perintah harian
 

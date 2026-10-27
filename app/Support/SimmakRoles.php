@@ -75,6 +75,40 @@ class SimmakRoles
     }
 
     /**
+     * Ringkasan kewenangan tiap peran resmi — dipakai sebagai keterangan pada
+     * form pengguna agar pemilih peran tidak menebak dari nama saja.
+     *
+     * @return array<string, string>
+     */
+    public static function descriptions(): array
+    {
+        return [
+            self::SUPER_ADMIN => 'Akses penuh ke seluruh modul dan organisasi, termasuk melewati pembatasan kebijakan. Hanya untuk pengelola sistem.',
+            self::ADMIN_SISTEM => 'Mengelola akun, peran, master klinik/pegawai/jabatan, dan konfigurasi audit. Tidak menjalankan alur program, temuan, atau laporan.',
+            self::KEPALA_PUSAT => 'Memantau audit seluruh klinik dan memberi persetujuan akhir program. Tidak dapat menyetujui program buatannya sendiri.',
+            self::KASUBBAG_TU => 'Mengelola dokumen, arsip, kepegawaian, dan administrasi umum tingkat pusat.',
+            self::KASATPEL_UKP => 'Menyiapkan dan mengawal audit lingkup UKP: program, penugasan, bukti, temuan, dan tindak lanjut. Tidak menyetujui program atau menutup temuan.',
+            self::KASATPEL_UKM => 'Menyiapkan dan mengawal audit lingkup UKM: program, penugasan, bukti, temuan, dan tindak lanjut. Tidak menyetujui program atau menutup temuan.',
+            self::KEPALA_KLINIK => 'Memantau temuan di kliniknya, menjalankan tindak lanjut, dan mengajukan eskalasi. Penutupan temuan tetap di auditor/pengawas.',
+            self::ADMIN_KLINIK => 'Operasional klinik: kelola dokumen, unggah bukti audit, dan jalankan tindak lanjut temuan di kliniknya.',
+        ];
+    }
+
+    /**
+     * Keterangan satu peran; peran lama memakai keterangan peran penggantinya.
+     */
+    public static function description(?string $role): ?string
+    {
+        if ($role === null || $role === '') {
+            return null;
+        }
+
+        $resolved = self::legacyMap()[$role] ?? $role;
+
+        return self::descriptions()[$resolved] ?? null;
+    }
+
+    /**
      * Peran lama yang tetap ada di database (akun existing) tetapi tidak lagi
      * dapat dipilih untuk akun baru. Fungsi audit dipindahkan ke Scope Sistem.
      *
@@ -289,6 +323,10 @@ class SimmakRoles
             ],
             self::KEPALA_PUSAT => array_values(array_unique(array_merge($monitorAudit, [
                 'dashboard.clinic', 'clinics.manage',
+                // Persetujuan akhir program audit (matriks kewenangan: monitoring
+                // lintas klinik + approve program). Policy tetap menjaga
+                // segregasi tugas: tidak boleh menyetujui program buatannya sendiri.
+                'audit.program.approve',
             ]))),
             self::KASUBBAG_TU => [
                 'dashboard.view',

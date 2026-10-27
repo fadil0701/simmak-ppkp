@@ -138,17 +138,36 @@ python scripts/generate_manual_pdfs.py
 ## 6. Akun Demonstrasi
 
 Setelah menjalankan seeder, akun berikut tersedia. Password tidak tertulis di
-codebase — diambil dari environment `DEMO_ACCOUNT_PASSWORD`; jika kosong,
+codebase — diambil dari `DEFAULT_USER_PASSWORD` (fallback lama `DEMO_ACCOUNT_PASSWORD`); jika kosong,
 seeder membuat password acak dan mencetaknya sekali ke console saat seeding:
 
-| Email | Role | Keterangan |
-|-------|------|------------|
-| admin@simmak.ppkp.local | super-admin | Akses penuh sistem |
-| mutu@simmak.ppkp.local | admin-mutu | Manajemen mutu dan audit |
-| kepala@simmak.ppkp.local | kepala-klinik | Akses klinik sendiri |
-| pjmutu@simmak.ppkp.local | pj-mutu | Penanggung jawab mutu |
-| auditor@simmak.ppkp.local | auditor | Auditor internal |
-| staff@simmak.ppkp.local | staff | Staff klinik |
+| Email | Username | Role | Keterangan |
+|-------|----------|------|------------|
+| `$SUPERADMIN_EMAIL` (default `admin@simmak.ppkp.local`) | `admin` | super-admin | Akses penuh; dibuat `php artisan simmak:create-superadmin` |
+| sistem@simmak.ppkp.local | adminsistem | admin-sistem | Administrasi teknis sistem |
+| kepalapusat@simmak.ppkp.local | kepalapusat | kepala-pusat | Monitoring lintas klinik |
+| tu@simmak.ppkp.local | kasubbagtu | kasubbag-tu | Administrasi umum & kepegawaian |
+| mutu@simmak.ppkp.local | ketuamutu | ketua-tim-mutu (legacy) | Manajemen mutu dan audit |
+| ketuaaudit@simmak.ppkp.local | ketuaaudit | ketua-tim-audit (legacy) | Ketua tim audit internal |
+| akreditasi@simmak.ppkp.local | akreditasi | ketua-tim-akreditasi (legacy) | Akreditasi |
+| auditor@simmak.ppkp.local | auditor | auditor (legacy) | Auditor internal |
+| kepala@simmak.ppkp.local | kepala | kepala-klinik | Akses klinik sendiri (KP06) |
+| staff@simmak.ppkp.local | auditi | auditi (legacy) | Auditi klinik (KP06) |
+
+Peran legacy tetap ada di database tetapi tidak dapat dipilih untuk akun baru
+(`SimmakRoles::legacyRoleLabels()`); fungsi audit kini ditandai lewat Scope Sistem
+(`auditor` / `auditi`).
+
+Akun super admin **tidak** dibuat oleh seeder. Jalankan sekali setelah seeding:
+
+```bash
+php artisan simmak:create-superadmin
+```
+
+Perintah membaca `SUPERADMIN_NAME`, `SUPERADMIN_USERNAME`, `SUPERADMIN_EMAIL`, dan
+`SUPERADMIN_PASSWORD` dari `.env`; bila password kosong, perintah membuat password
+acak dan mencetaknya sekali. Akun ini tidak terikat klinik (lintas klinik) dan
+memperoleh seluruh permission yang ada.
 
 **Peringatan**: Akun demonstrasi tidak boleh dibiarkan aktif tanpa pengamanan di produksi. Ganti password dan nonaktifkan akun yang tidak diperlukan.
 

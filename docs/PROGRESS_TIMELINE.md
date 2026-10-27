@@ -182,7 +182,7 @@ gantt
 | Migration RBAC (Spatie) + Sanctum tokens | ✅ | 100% | UUID morph key |
 | Seeder 17 entitas PPKP | ✅ | 100% | MP + KU + 15 KP |
 | Seeder roles & permissions | ✅ | 100% | 7 role, 20+ permission |
-| **RoleUsersSeeder — akun demo** | ✅ | 100% | 7 akun per role (password dari `DEMO_ACCOUNT_PASSWORD` / acak — tidak di codebase) |
+| **RoleUsersSeeder — akun demo** | ✅ | 100% | 9 akun per role + super admin terpisah (`simmak:create-superadmin`); password dari `DEFAULT_USER_PASSWORD` / acak — tidak di codebase |
 | **SimmakMenu + redirect per role** | ✅ | 100% | Menu & landing page sesuai permission |
 | **RoleLabel & UiLabel** | ✅ | 100% | Label role & status UI bahasa Indonesia |
 | **MySQL dev database** | ✅ | 100% | `scripts/create_mysql_db.php` |
@@ -328,20 +328,33 @@ Dashboard Akreditasi FKTP sudah diselaraskan dengan `mockups/accreditation-dashb
 
 ### Akun Demo per Role
 
-Password semua akun berasal dari environment `DEMO_ACCOUNT_PASSWORD` (tidak ditulis
-di codebase). Jalankan `php artisan db:seed --class=RoleUsersSeeder`; jika variabel
-tersebut kosong, seeder membuat password acak dan mencetaknya sekali ke console.
-Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
+Password semua akun berasal dari environment `DEFAULT_USER_PASSWORD` (fallback lama
+`DEMO_ACCOUNT_PASSWORD`) — tidak ditulis di codebase. Jalankan
+`php artisan db:seed --class=RoleUsersSeeder`; jika variabel tersebut kosong, seeder
+membuat password acak dan mencetaknya sekali ke console.
+Di `APP_ENV=production` tanpa password tersebut, seeder dilewati.
 
-| Email | Role | Halaman utama |
-|-------|------|---------------|
-| `admin@simmak.ppkp.local` | super-admin | `/dashboard` |
-| `mutu@simmak.ppkp.local` | admin-mutu | `/dashboard` |
-| `kepala@simmak.ppkp.local` | kepala-klinik (KP06) | `/clinic/dashboard` |
-| `pjmutu@simmak.ppkp.local` | pj-mutu (KP06) | `/clinic/dashboard` |
-| `akreditasi@simmak.ppkp.local` | tim-akreditasi | `/accreditation` |
-| `auditor@simmak.ppkp.local` | auditor | `/audit` |
-| `staff@simmak.ppkp.local` | staff | `/dms` |
+Akun **super admin** tidak dibuat seeder; jalankan `php artisan simmak:create-superadmin`
+(kredensial dari `SUPERADMIN_NAME` / `SUPERADMIN_USERNAME` / `SUPERADMIN_EMAIL` /
+`SUPERADMIN_PASSWORD`).
+
+| Email | Username | Role | Halaman utama |
+|-------|----------|------|---------------|
+| `$SUPERADMIN_EMAIL` (default `admin@simmak.ppkp.local`) | `admin` | super-admin | `/dashboard` |
+| `sistem@simmak.ppkp.local` | `adminsistem` | admin-sistem | `/dms` |
+| `kepalapusat@simmak.ppkp.local` | `kepalapusat` | kepala-pusat | `/dashboard` |
+| `tu@simmak.ppkp.local` | `kasubbagtu` | kasubbag-tu | `/dms` |
+| `mutu@simmak.ppkp.local` | `ketuamutu` | ketua-tim-mutu (legacy) | `/dashboard` |
+| `ketuaaudit@simmak.ppkp.local` | `ketuaaudit` | ketua-tim-audit (legacy) | `/dashboard` |
+| `akreditasi@simmak.ppkp.local` | `akreditasi` | ketua-tim-akreditasi (legacy) | `/clinic/dashboard` |
+| `auditor@simmak.ppkp.local` | `auditor` | auditor (legacy) | `/dashboard` |
+| `kepala@simmak.ppkp.local` | `kepala` | kepala-klinik | `/clinic/dashboard` |
+| `staff@simmak.ppkp.local` | `auditi` | auditi (legacy) | `/clinic/dashboard` |
+
+Halaman utama mengikuti `SimmakMenu::homeRouteFor()`: pemegang `dashboard.executive`
+ke `/dashboard`, pemegang `dashboard.clinic` ke `/clinic/dashboard`. Peran legacy
+(`ketua-tim-*`, `auditor`, `auditi`) tetap ada di DB tetapi tidak assignable untuk akun
+baru; fungsi audit kini ditandai lewat Scope Sistem.
 
 ---
 
@@ -404,7 +417,7 @@ Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
 - [x] Deploy guide PostgreSQL: `docs/DEPLOY_POSTGRESQL.md`
 - [x] **QR verifikasi dokumen:** route publik `/verify/document/{token}`, render SVG di detail DMS
 - [x] **Role `tim-akreditasi`** + permission fokus akreditasi
-- [x] **RoleUsersSeeder** — 7 akun demo per role
+- [x] **RoleUsersSeeder** — 9 akun demo per role + super admin via `simmak:create-superadmin`
 - [x] **SimmakMenu** — filter sidebar by permission + redirect login per role
 - [x] **Lokalisasi UI** — label Indonesia (`RoleLabel`, `UiLabel`, istilah modul)
 - [x] **Dashboard Eksekutif** — penyelarasan mockup: gauge, CAPA bar chart, heatmap, footer sejajar
@@ -472,7 +485,7 @@ TOTAL PROYEK (MVP)     ████████████████░░░
 | Tabel database (target 104) | 59 / 104 (57%) |
 | Modul fungsional MVP (target 8) | 8 / 8 (100%) |
 | Halaman web (Blade) | 40+ halaman aktif |
-| Akun demo per role | 7 akun (`RoleUsersSeeder`) |
+| Akun demo per role | 9 akun (`RoleUsersSeeder`) + super admin via `simmak:create-superadmin` |
 | Mockup dashboard selesai | 3 / 3 (eksekutif ✅, klinik ✅, akreditasi ✅) |
 | UAT checklist | `docs/UAT_CHECKLIST.md` |
 

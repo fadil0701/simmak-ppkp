@@ -20,7 +20,7 @@ Semua role.
 
 ### 3.3 Tips
 - Pada environment lokal, tabel akun demo tampil di halaman login.
-- Password akun demo dihasilkan seeder (dari `DEMO_ACCOUNT_PASSWORD` atau acak) dan dicetak sekali di console saat seeding — tidak ada di codebase.
+- Password akun demo dihasilkan seeder (dari `DEFAULT_USER_PASSWORD`, fallback `DEMO_ACCOUNT_PASSWORD`, atau acak) dan dicetak sekali di console saat seeding — tidak ada di codebase.
 - Jika gagal login, pastikan email benar dan user `is_active = true`.
 
 ## 4. Akses per Role

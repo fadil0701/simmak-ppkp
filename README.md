@@ -41,18 +41,25 @@ python scripts/generate_manual_pdfs.py
 ## Akun Demo
 
 Akun demo dibuat oleh seeder. Password **tidak tertulis di codebase** — diambil dari
-environment `DEMO_ACCOUNT_PASSWORD`. Jika tidak di-set, seeder membuat password acak
-dan mencetaknya sekali ke console saat `php artisan db:seed` dijalankan.
+environment `DEFAULT_USER_PASSWORD` (fallback lama `DEMO_ACCOUNT_PASSWORD`). Jika tidak
+di-set, seeder membuat password acak dan mencetaknya sekali ke console saat
+`php artisan db:seed` dijalankan.
 
-| Email | Role | Halaman utama |
-|-------|------|---------------|
-| `admin@simmak.ppkp.local` | super-admin | `/dashboard` |
-| `mutu@simmak.ppkp.local` | admin-mutu | `/dashboard` |
-| `kepala@simmak.ppkp.local` | kepala-klinik | `/clinic/dashboard` |
-| `pjmutu@simmak.ppkp.local` | pj-mutu | `/clinic/dashboard` |
-| `akreditasi@simmak.ppkp.local` | tim-akreditasi | `/accreditation` |
-| `auditor@simmak.ppkp.local` | auditor | `/audit` |
-| `staff@simmak.ppkp.local` | staff | `/dms` |
+| Email | Username | Role | Halaman utama |
+|-------|----------|------|---------------|
+| `$SUPERADMIN_EMAIL` (default `admin@simmak.ppkp.local`) | `admin` | super-admin | `/dashboard` |
+| `sistem@simmak.ppkp.local` | `adminsistem` | admin-sistem | `/dms` |
+| `kepalapusat@simmak.ppkp.local` | `kepalapusat` | kepala-pusat | `/dashboard` |
+| `tu@simmak.ppkp.local` | `kasubbagtu` | kasubbag-tu | `/dms` |
+| `mutu@simmak.ppkp.local` | `ketuamutu` | ketua-tim-mutu (legacy) | `/dashboard` |
+| `ketuaaudit@simmak.ppkp.local` | `ketuaaudit` | ketua-tim-audit (legacy) | `/dashboard` |
+| `akreditasi@simmak.ppkp.local` | `akreditasi` | ketua-tim-akreditasi (legacy) | `/clinic/dashboard` |
+| `auditor@simmak.ppkp.local` | `auditor` | auditor (legacy) | `/dashboard` |
+| `kepala@simmak.ppkp.local` | `kepala` | kepala-klinik | `/clinic/dashboard` |
+| `staff@simmak.ppkp.local` | `auditi` | auditi (legacy) | `/clinic/dashboard` |
+
+Akun super admin tidak dibuat seeder; jalankan `php artisan simmak:create-superadmin`
+setelah seeding (kredensial dari `SUPERADMIN_*` di `.env`).
 
 ```bash
 php artisan db:seed --class=RoleUsersSeeder --force
@@ -83,7 +90,7 @@ php artisan serve
 # Buka http://127.0.0.1:8000/login
 ```
 
-**Login default:** `admin@simmak.ppkp.local` / password dari `DEMO_ACCOUNT_PASSWORD` (lihat output seeder)
+**Login default:** `admin@simmak.ppkp.local` / password dari `SUPERADMIN_PASSWORD` (jalankan `php artisan simmak:create-superadmin`; lihat output perintah)
 
 ### API Endpoints
 

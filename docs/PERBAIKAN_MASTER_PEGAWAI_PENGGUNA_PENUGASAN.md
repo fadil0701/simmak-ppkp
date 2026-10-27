@@ -3,7 +3,7 @@
 | Atribut | Nilai |
 |---------|-------|
 | Tanggal | 23 Oktober 2026 |
-| Status | **Rencana / spesifikasi** — belum ada perubahan kode atau migrasi yang dijalankan |
+| Status | **Diimplementasikan** (26 Oktober 2026) — lihat §0 untuk status per langkah; ADR-0014…ADR-0018 masih *Proposed* |
 | Pemilik | Tim Pengembangan SIMMAK PPKP |
 | Acuan | `docs/PRD.md`, `docs/DDD.md`, `docs/ROLE_MATRIX.md`, `docs/decisions/ADR-0013-unit-klinik-dan-peran.md`, `docs/STRUKTUR_MENU_AUDIT_INTERNAL.md`, `docs/manual/01_ROLE_DAN_AKSES.md` |
 
@@ -148,8 +148,10 @@ direpresentasikan pada master.
 
 ## 3. Form Pengguna — multi peran, akses klinik, dan scope sistem
 
-### 3.1 Kondisi implementasi saat ini
+### 3.1 Kondisi sebelum perubahan (23 Oktober 2026)
 
+> Snapshot historis — dipertahankan sebagai catatan asal-usul. Kondisi **berlaku sekarang**
+> ada pada §3.2–§3.5 dan pada kode (`UserController`, `resources/views/users/`).
 - `resources/views/users/create.blade.php:102` dan `resources/views/users/edit.blade.php`
   memakai satu `select name="role"` (wajib, satu pilihan).
 - `app/Http/Controllers/UserController.php`:
@@ -196,17 +198,28 @@ direpresentasikan pada master.
 Pemetaan dari katalog lama (dijalankan sekali lewat seeder/migrasi data; peran lama tidak
 dihapus agar akun dan test lama tetap berjalan):
 
+Sumber kebenaran tabel ini adalah kode, bukan dokumen: `SimmakRoles::legacyMap()` untuk alias,
+`SimmakRoles::legacyRoleLabels()` untuk peran lama yang tidak assignable, dan
+`SimmakRoles::permissionsFor()` untuk bundel izinnya.
+
 | Peran lama | Peran baru | Catatan |
 |------------|-----------|---------|
 | `super-admin` | `super-admin` | Tetap |
-| `admin-sistem`, alias `admin-mutu` | `admin-sistem` | `legacyMap()` dipertahankan |
+| `admin-mutu` | `admin-sistem` | Alias di `legacyMap()`; izin disamakan dengan bundel `admin-sistem` |
+| `pj-mutu` | `ketua-tim-mutu` (legacy, bundel `$qualityLead`) | Alias di `legacyMap()`; **bukan** `kasatpel-ukp` |
+| `tim-akreditasi` | `ketua-tim-akreditasi` (legacy) | Alias di `legacyMap()` |
+| `staff` | `auditi` (legacy, bundel `auditi`) | Alias di `legacyMap()` |
 | `kepala-pusat` | `kepala-pusat` | Tetap |
 | `kasubbag-tu` | `kasubbag-tu` | Tetap |
-| `ketua-tim-mutu`, `ketua-tim-audit`, `ketua-tim-akreditasi`, alias `pj-mutu` | `kasatpel-ukp` / `kasatpel-ukm` | Perlu keputusan pemetaan per akun (lihat §7) |
 | `kepala-klinik` | `kepala-klinik` | Tetap |
-| `auditor` | — menjadi **Scope Sistem: Auditor** | Peran struktural tidak lagi menandai fungsi audit |
-| `auditi`, alias `staff` | — menjadi **Scope Sistem: Auditi** | Idem |
+| `ketua-tim-mutu`, `ketua-tim-audit`, `ketua-tim-akreditasi` | belum dipetakan otomatis | Tidak assignable; izin mengikuti bundel legacy masing-masing (`$qualityLead`, `$auditLead`, bundel akreditasi). Pemetaan ke `kasatpel-ukp`/`kasatpel-ukm` butuh keputusan per akun (ADR-0015) |
+| `auditor` | — menjadi **Scope Sistem: Auditor** | Peran legacy tetap ada di DB dengan bundel `auditor`; fungsi audit kini ditandai lewat scope |
+| `auditi` | — menjadi **Scope Sistem: Auditi** | Idem |
 | — | `admin-klinik` | Peran baru |
+
+Yang **tidak** boleh dibaca dari tabel ini: `pj-mutu` bukan alias `kasatpel-ukp`, dan `staff`
+bukan alias `auditi` versi scope — keduanya tetap peran Spatie terpisah yang hanya mewarisi
+bundel izin, sehingga pencabutan scope tidak otomatis mencabut izin peran legacy tersebut.
 
 `SimmakRoles::assignableNames()` menentukan daftar peran yang muncul di form, sehingga
 peran legacy tetap ada di database namun tidak lagi dapat dipilih untuk akun baru.

@@ -270,6 +270,7 @@ class UserController extends Controller
                 }),
             'employees' => Employee::where('organization_id', $actor->organization_id)
                 ->where('is_active', true)
+                ->with('clinicAssignments')
                 ->orderBy('full_name')
                 ->get(),
             'scopes' => SimmakScopes::labels(),
