@@ -57,7 +57,7 @@
                         <th class="px-3 py-2">NIP</th>
                         <th class="px-3 py-2">Nama Pegawai</th>
                         <th class="px-3 py-2">Jabatan</th>
-                        <th class="px-3 py-2">Unit Kerja</th>
+                        <th class="px-3 py-2">Klinik</th>
                         <th class="px-3 py-2">Email</th>
                         <th class="px-3 py-2 text-center">Status</th>
                         <th class="px-3 py-2 text-center">Aksi</th>
@@ -85,9 +85,6 @@
                                     @if ($heldClinics->count() > 1)
                                         <div class="text-xs">+{{ $heldClinics->count() - 1 }} klinik lain</div>
                                     @endif
-                                @endif
-                                @if ($employee->unit)
-                                    <div class="text-xs">{{ $employee->unit->name }}</div>
                                 @endif
                             </td>
                             <td class="px-3 py-2 text-xs">{{ $employee->email ?? '—' }}</td>

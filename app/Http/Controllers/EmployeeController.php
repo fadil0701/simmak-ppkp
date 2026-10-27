@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Clinic;
 use App\Models\Employee;
 use App\Models\Position;
-use App\Models\Unit;
 use App\Services\UserClinicScopeSynchronizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,7 +62,6 @@ class EmployeeController extends Controller
         return view('employees.form', [
             'employee' => null,
             'clinics' => Clinic::forUserClinics($request->user())->orderBy('code')->get(),
-            'units' => $this->units($request),
             'positions' => $this->positions($request),
             'scopedClinicIds' => array_values(array_filter((array) old('clinic_ids', []))),
         ]);
@@ -82,7 +80,6 @@ class EmployeeController extends Controller
         $employee->syncClinicAssignments(
             $validated['clinic_ids'],
             $validated['primary_clinic_id'],
-            $validated['unit_id'],
         );
 
         $this->clinicScopes->syncForEmployee($employee);
@@ -97,7 +94,6 @@ class EmployeeController extends Controller
         return view('employees.form', [
             'employee' => $employee,
             'clinics' => Clinic::forUserClinics($request->user())->orderBy('code')->get(),
-            'units' => $this->units($request),
             'positions' => $this->positions($request),
             'scopedClinicIds' => $request->old('clinic_ids') !== null
                 ? array_values(array_filter((array) $request->old('clinic_ids')))
@@ -128,7 +124,6 @@ class EmployeeController extends Controller
         $employee->syncClinicAssignments(
             $validated['clinic_ids'],
             $validated['primary_clinic_id'],
-            $validated['unit_id'],
         );
 
         $this->clinicScopes->syncForEmployee($employee);
@@ -167,40 +162,21 @@ class EmployeeController extends Controller
             // Kompatibilitas form/API lama: satu klinik tunggal.
             'clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
             'primary_clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
-            'unit_id' => ['nullable', 'uuid', Rule::exists('units', 'id')->where('organization_id', $orgId)],
             'is_active' => ['nullable', 'boolean'],
         ], [], [
             'clinic_ids' => 'klinik yang dipegang',
             'primary_clinic_id' => 'klinik utama',
-            'unit_id' => 'subunit',
         ]);
 
         $clinicIds = array_values(array_unique(array_filter((array) ($validated['clinic_ids'] ?? []))));
         $primaryClinicId = $validated['primary_clinic_id'] ?? $validated['clinic_id'] ?? null;
-        $unitId = $validated['unit_id'] ?? null;
 
-        // Subunit mengikuti klinik utama: tanpa klinik utama, unit diturunkan dari unit itu sendiri.
-        $unit = $unitId !== null ? Unit::where('organization_id', $orgId)->find($unitId) : null;
-
-        if ($unitId !== null && $unit === null) {
-            $unitId = null;
-        }
-
-        if ($primaryClinicId === null && $unit !== null) {
-            $primaryClinicId = $unit->clinic_id;
-        }
-
+        // Subunit tidak lagi dipilih pada form pegawai; klinik adalah satuan
+        // kerja terkecil yang dipegang. Kolom lama `employees.unit_id` tetap
+        // ada sebagai cermin dan dibiarkan kosong.
         if ($primaryClinicId !== null && ! in_array($primaryClinicId, $clinicIds, true)) {
             array_unshift($clinicIds, $primaryClinicId);
             $clinicIds = array_values(array_unique($clinicIds));
-        }
-
-        if ($unit !== null && $primaryClinicId !== null && $unit->clinic_id !== $primaryClinicId) {
-            $unitId = null;
-        }
-
-        if ($primaryClinicId === null) {
-            $unitId = null;
         }
 
         $positionName = isset($validated['position_id'])
@@ -217,22 +193,11 @@ class EmployeeController extends Controller
                 // Disalin ke kolom teks lama agar data historis tetap terbaca.
                 'position' => $positionName,
                 'clinic_id' => $primaryClinicId,
-                'unit_id' => $unitId,
+                'unit_id' => null,
                 'is_active' => (bool) ($validated['is_active'] ?? true),
             ],
             'clinic_ids' => $clinicIds,
             'primary_clinic_id' => $primaryClinicId,
-            'unit_id' => $unitId,
         ];
-    }
-
-    /**
-     * Seluruh subunit organisasi; disaring di sisi tampilan menurut klinik utama.
-     */
-    private function units(Request $request)
-    {
-        return Unit::where('organization_id', $request->user()->organization_id)
-            ->orderBy('name')
-            ->get();
     }
 }

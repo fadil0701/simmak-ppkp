@@ -101,27 +101,12 @@
                     </p>
                 </div>
 
-                <div class="grid gap-5 sm:grid-cols-2">
-                    <div class="sim-form-group">
-                        <label class="sim-form-label" for="unit_id">Subunit pada Klinik Utama (opsional)</label>
-                        <select id="unit_id" name="unit_id" class="sim-form-select">
-                            <option value="">— Tidak ada —</option>
-                            @foreach ($units as $unit)
-                                <option value="{{ $unit->id }}" data-clinic="{{ $unit->clinic_id }}"
-                                        @selected(old('unit_id', $employee?->unit_id) === $unit->id)>
-                                    {{ $unit->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('unit_id')<p class="sim-form-error">{{ $message }}</p>@enderror
-                    </div>
-                    <div class="sim-form-group">
-                        <label class="sim-form-label" for="phone">No. Telepon</label>
-                        <input type="text" id="phone" name="phone" maxlength="50"
-                               value="{{ old('phone', $employee?->phone) }}"
-                               class="sim-form-input {{ $errors->has('phone') ? 'border-sim-danger' : '' }}">
-                        @error('phone')<p class="sim-form-error">{{ $message }}</p>@enderror
-                    </div>
+                <div class="sim-form-group">
+                    <label class="sim-form-label" for="phone">No. Telepon</label>
+                    <input type="text" id="phone" name="phone" maxlength="50"
+                           value="{{ old('phone', $employee?->phone) }}"
+                           class="sim-form-input {{ $errors->has('phone') ? 'border-sim-danger' : '' }}">
+                    @error('phone')<p class="sim-form-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="sim-form-group">
@@ -140,40 +125,4 @@
             </form>
         </div>
     </div>
-
-    <script>
-        (function () {
-            const unitSelect = document.getElementById('unit_id');
-            if (!unitSelect) {
-                return;
-            }
-
-            const primaryRadios = document.querySelectorAll('input[name="primary_clinic_id"]');
-
-            const filterUnits = function () {
-                const selected = document.querySelector('input[name="primary_clinic_id"]:checked');
-                const clinicId = selected ? selected.value : '';
-
-                Array.from(unitSelect.options).forEach(function (option) {
-                    if (option.value === '') {
-                        return;
-                    }
-
-                    const matches = clinicId !== '' && option.dataset.clinic === clinicId;
-                    option.hidden = !matches;
-                    option.disabled = !matches;
-
-                    if (!matches && option.selected) {
-                        unitSelect.value = '';
-                    }
-                });
-            };
-
-            primaryRadios.forEach(function (radio) {
-                radio.addEventListener('change', filterUnits);
-            });
-
-            filterUnits();
-        })();
-    </script>
 @endsection

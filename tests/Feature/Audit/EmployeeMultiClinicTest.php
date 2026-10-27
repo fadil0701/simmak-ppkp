@@ -153,40 +153,33 @@ class EmployeeMultiClinicTest extends TestCase
     }
 
     /** @test */
-    public function unit_must_belong_to_the_primary_clinic(): void
+    public function employee_form_no_longer_offers_a_subunit_field(): void
+    {
+        $response = $this->actingAs($this->user)->get('/employees/create');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('name="unit_id"', false);
+        $response->assertDontSee('Subunit');
+    }
+
+    /** @test */
+    public function subunit_value_submitted_by_legacy_clients_is_ignored(): void
     {
         $this->actingAs($this->user)->post('/employees', [
             'employee_number' => 'NIP-7003',
-            'full_name' => 'Citra Unit Salah',
+            'full_name' => 'Citra Unit Lama',
             'clinic_ids' => [$this->clinicA->id],
             'primary_clinic_id' => $this->clinicA->id,
-            'unit_id' => $this->unitB->id,
+            'unit_id' => $this->unitA->id,
         ]);
 
         $employee = Employee::where('employee_number', 'NIP-7003')->firstOrFail();
 
         $this->assertNull($employee->unit_id);
         $this->assertSame($this->clinicA->id, $employee->clinic_id);
-    }
-
-    /** @test */
-    public function unit_is_kept_when_it_belongs_to_the_primary_clinic(): void
-    {
-        $this->actingAs($this->user)->post('/employees', [
-            'employee_number' => 'NIP-7004',
-            'full_name' => 'Dewi Unit Sesuai',
-            'clinic_ids' => [$this->clinicA->id],
-            'primary_clinic_id' => $this->clinicA->id,
-            'unit_id' => $this->unitA->id,
-        ]);
-
-        $employee = Employee::where('employee_number', 'NIP-7004')->firstOrFail();
-
-        $this->assertSame($this->unitA->id, $employee->unit_id);
-        $this->assertTrue(
+        $this->assertFalse(
             $employee->clinicAssignments()
-                ->where('clinic_id', $this->clinicA->id)
-                ->where('unit_id', $this->unitA->id)
+                ->whereNotNull('unit_id')
                 ->exists(),
         );
     }
