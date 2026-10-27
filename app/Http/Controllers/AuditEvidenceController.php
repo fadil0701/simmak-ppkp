@@ -9,10 +9,12 @@ use App\Services\AuditEvidenceService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\StreamedResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class AuditEvidenceController extends Controller
 {
@@ -23,7 +25,14 @@ class AuditEvidenceController extends Controller
         $user = $request->user();
         $evidences = $this->evidenceService->getEvidenceForUser($user);
 
-        return view('audit.evidence.index', compact('evidences'));
+        // Berkas bisa hilang dari disk (volume storage tidak ter-mount, purge, dsb).
+        // Tandai lebih awal supaya UI tidak menawarkan unduhan yang pasti gagal.
+        $unavailableIds = $evidences->getCollection()
+            ->reject(fn (Evidence $evidence) => $this->evidenceService->fileExists($evidence))
+            ->pluck('id')
+            ->all();
+
+        return view('audit.evidence.index', compact('evidences', 'unavailableIds'));
     }
 
     public function create(Request $request): View
@@ -76,19 +85,49 @@ class AuditEvidenceController extends Controller
 
         $evidence->load(['clinic', 'execution', 'uploader']);
 
-        return view('audit.evidence.show', compact('evidence'));
+        $fileAvailable = $this->evidenceService->fileExists($evidence);
+
+        return view('audit.evidence.show', compact('evidence', 'fileAvailable'));
     }
 
-    public function download(Request $request, Evidence $evidence): StreamedResponse
+    public function download(Request $request, Evidence $evidence): StreamedResponse|RedirectResponse
     {
         $this->authorize('download', $evidence);
 
-        $path = $this->evidenceService->download($evidence);
+        if (! $this->evidenceService->fileExists($evidence)) {
+            return $this->storageMiss($evidence, 'Berkas tidak ditemukan pada disk penyimpanan.');
+        }
 
-        return Storage::disk($evidence->storage_disk)->download(
-            $path,
-            $evidence->original_filename
-        );
+        try {
+            return Storage::disk($evidence->storage_disk)->download(
+                $this->evidenceService->download($evidence),
+                $evidence->original_filename
+            );
+        } catch (Throwable $e) {
+            // Metadata tidak terbaca, permission ditolak, atau berkas terhapus
+            // tepat setelah pemeriksaan. Jangan sampai pengguna melihat 500.
+            return $this->storageMiss($evidence, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Berkas hilang tidak boleh menjadi 500 — catat ke log dan kembalikan
+     * pengguna ke halaman asal dengan pesan yang bisa ditindaklanjuti.
+     */
+    private function storageMiss(Evidence $evidence, string $reason, ?Throwable $error = null): RedirectResponse
+    {
+        Log::warning('Bukti audit tidak dapat diunduh: berkas tidak tersedia di penyimpanan.', [
+            'evidence_id' => $evidence->id,
+            'storage_disk' => $evidence->storage_disk,
+            'storage_path' => $evidence->storage_path,
+            'original_filename' => $evidence->original_filename,
+            'reason' => $reason,
+            'exception' => $error?->getMessage(),
+        ]);
+
+        return redirect()
+            ->back(fallback: route('audit.evidence.index'))
+            ->with('error', 'Berkas "'.$evidence->original_filename.'" tidak tersedia di penyimpanan. Unggah ulang bukti ini agar dapat diunduh dan diaudit kembali.');
     }
 
     public function destroy(Request $request, Evidence $evidence): RedirectResponse

@@ -44,9 +44,28 @@
         </div>
     </div>
 
+    @if (! $fileAvailable)
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <div class="flex items-start gap-2">
+                <span class="inline-flex">@include('partials.icons.alert-triangle')</span>
+                <div>
+                    <p class="font-semibold">Berkas tidak ditemukan di penyimpanan</p>
+                    <p class="mt-1">Catatan bukti masih ada di basis data, tetapi berkas fisiknya tidak tersedia pada disk <code class="font-mono">{{ $evidence->storage_disk }}</code> ({{ $evidence->storage_path }}). Unggah ulang berkas agar bukti ini dapat diunduh dan diaudit kembali.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="flex gap-2">
         @can('download', $evidence)
-            <x-action href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" />
+            @if ($fileAvailable)
+                <x-action href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" />
+            @else
+                <span class="sim-btn sim-btn-outline cursor-not-allowed opacity-50" title="Berkas tidak ditemukan di penyimpanan">
+                    <span class="inline-flex">@include('partials.icons.download')</span>
+                    <span>Unduh</span>
+                </span>
+            @endif
         @endcan
         @can('delete', $evidence)
             <x-action href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" variant="danger" method="DELETE" confirm="Hapus bukti ini?" />

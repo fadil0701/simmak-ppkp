@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AuditEvidenceService
 {
@@ -189,7 +190,7 @@ class AuditEvidenceService
 
             // Hapus dari local
             Storage::disk('local')->delete($tempPath);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Jika gagal pindahkan ke quarantine, setidaknya hapus dari local
             Storage::disk('local')->delete($tempPath);
         }
@@ -209,13 +210,38 @@ class AuditEvidenceService
         );
     }
 
+    /**
+     * Path berkas bukti yang siap dipakai `Storage::disk()->download()`.
+     *
+     * PENTING: harus path relatif terhadap root disk, BUKAN path absolut hasil
+     * `->path()`. Flysystem menambahkan prefix root disk sendiri, sehingga path
+     * absolut akan menghasilkan root ganda
+     * (`storage/app/private/var/www/html/storage/app/private/...`) dan
+     * `Storage::download()` gagal membaca metadata berkas
+     * (League\Flysystem\UnableToRetrieveMetadata — file_size).
+     *
+     * @throws ModelNotFoundException
+     */
     public function download(Evidence $evidence): string
     {
-        if (! Storage::disk($evidence->storage_disk)->exists($evidence->storage_path)) {
+        if (! $this->fileExists($evidence)) {
             throw new ModelNotFoundException('Berkas bukti tidak tersedia di penyimpanan.');
         }
 
-        return Storage::disk($evidence->storage_disk)->path($evidence->storage_path);
+        return $evidence->storage_path;
+    }
+
+    /**
+     * Cek keberadaan berkas tanpa melempar exception (disk bisa saja tidak
+     * terpasang, mis. volume storage container belum di-mount).
+     */
+    public function fileExists(Evidence $evidence): bool
+    {
+        try {
+            return Storage::disk($evidence->storage_disk)->exists($evidence->storage_path);
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     public function delete(Evidence $evidence, User $user): void
