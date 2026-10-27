@@ -46,14 +46,11 @@ class AuditAssignmentController extends Controller
 
         $auditors = $this->auditorCandidates($orgId);
 
-        $instrumentVersions = InstrumentVersion::whereHas('standard', function ($query) use ($orgId) {
-            $query->where('organization_id', $orgId);
-        })
-            ->whereIn('status', ['active', 'approved'])
-            ->orderBy('version_label')
-            ->get();
+        $instrumentVersions = $this->availableInstrumentVersions($orgId);
 
-        return view('audit.assignments.create', compact('programs', 'clinics', 'auditors', 'instrumentVersions'));
+        $suggestedCode = $this->suggestAssignmentCode($orgId);
+
+        return view('audit.assignments.create', compact('programs', 'clinics', 'auditors', 'instrumentVersions', 'suggestedCode'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -102,12 +99,7 @@ class AuditAssignmentController extends Controller
             'executions.instrumentVersion.standard',
         ]);
 
-        $instrumentVersions = InstrumentVersion::whereHas('standard', function ($query) use ($assignment) {
-            $query->where('organization_id', $assignment->organization_id);
-        })
-            ->whereIn('status', ['active', 'approved'])
-            ->orderBy('version_label')
-            ->get();
+        $instrumentVersions = $this->availableInstrumentVersions($assignment->organization_id);
 
         $auditors = $this->auditorCandidates($assignment->organization_id)
             ->whereNotIn('id', $assignment->teamMembers->pluck('user_id'));
@@ -128,7 +120,11 @@ class AuditAssignmentController extends Controller
 
         $auditors = $this->auditorCandidates($orgId);
 
-        return view('audit.assignments.edit', compact('assignment', 'clinics', 'auditors'));
+        $instrumentVersions = $this->availableInstrumentVersions($orgId);
+
+        $assignment->loadMissing(['program', 'teamMembers.user.employee.unit', 'teamMembers.user.employee.clinic']);
+
+        return view('audit.assignments.edit', compact('assignment', 'clinics', 'auditors', 'instrumentVersions'));
     }
 
     public function update(Request $request, AuditAssignment $assignment): RedirectResponse
@@ -143,6 +139,7 @@ class AuditAssignmentController extends Controller
             'lead_auditor_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
             'scheduled_start' => ['required', 'date'],
             'scheduled_end' => ['required', 'date', 'after_or_equal:scheduled_start'],
+            'instrument_version_id' => ['nullable', 'uuid', Rule::exists('instrument_versions', 'id')],
         ]);
 
         $this->assignmentService->updateAssignment($assignment, $validated, $request->user());
@@ -209,6 +206,42 @@ class AuditAssignmentController extends Controller
         $assignment->delete();
 
         return redirect()->route('audit.assignments.index')->with('status', 'Penugasan audit berhasil dihapus.');
+    }
+
+    /**
+     * Usulan kode tugas berikutnya: TUGAS-{tahun}-{urut}, mengikuti kode terakhir
+     * pada tahun berjalan di organisasi ini.
+     */
+    private function suggestAssignmentCode(string $organizationId): string
+    {
+        $prefix = 'TUGAS-'.now()->format('Y').'-';
+
+        $lastCode = AuditAssignment::withTrashed()
+            ->where('organization_id', $organizationId)
+            ->where('assignment_code', 'like', $prefix.'%')
+            ->orderByDesc('assignment_code')
+            ->value('assignment_code');
+
+        $sequence = 1;
+        if ($lastCode && preg_match('/-(\d+)$/', $lastCode, $matches)) {
+            $sequence = (int) $matches[1] + 1;
+        }
+
+        return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Versi instrumen yang boleh direncanakan pada penugasan.
+     */
+    private function availableInstrumentVersions(string $organizationId)
+    {
+        return InstrumentVersion::whereHas('standard', function ($query) use ($organizationId) {
+            $query->where('organization_id', $organizationId);
+        })
+            ->with('standard:id,title')
+            ->whereIn('status', ['active', 'approved'])
+            ->orderBy('version_label')
+            ->get();
     }
 
     /**

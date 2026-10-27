@@ -2,118 +2,43 @@
 
 @section('title', 'Sunting Penugasan — SIMMAK PPKP')
 @section('page-title', 'Sunting Penugasan')
+@section('page-subtitle', $assignment->assignment_code . ' — ' . $assignment->title)
+
+@section('breadcrumb')
+    <li class="flex items-center gap-1 text-sim-muted">
+        <a href="{{ route('audit.assignments.index') }}">Penugasan Auditor</a>
+        <svg class="h-3.5 w-3.5 text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <a href="{{ route('audit.assignments.show', $assignment) }}">{{ $assignment->assignment_code }}</a>
+        <svg class="h-3.5 w-3.5 text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        <span>Sunting</span>
+    </li>
+@endsection
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="chevron-left" label="Kembali ke detail" variant="ghost" size="sm" />
     </div>
 
-    <div class="simmak-card max-w-3xl">
-        <div class="simmak-card-header">
-            <h3 class="font-semibold text-slate-800">Sunting Penugasan</h3>
+    <div class="mb-4 sim-alert sim-alert-info">
+        <span class="sim-alert-icon">i</span>
+        <span>
+            Kode tugas dan program audit terkunci setelah penugasan dibuat. Perubahan program berarti
+            membuat penugasan baru agar jejak audit tetap utuh.
+        </span>
+    </div>
+
+    <div class="sim-card max-w-3xl">
+        <div class="sim-card-header">
+            <h3 class="sim-card-title">Formulir Penugasan Auditor</h3>
         </div>
-        <div class="simmak-card-body space-y-4">
-            <form method="POST" action="{{ route('audit.assignments.update', $assignment) }}" class="space-y-4">
-                @csrf
-                @method('PUT')
-
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Kode Tugas<span class="sim-form-label-required"></span></label>
-                    <input type="text" name="assignment_code" maxlength="80"
-                           value="{{ old('assignment_code', $assignment->assignment_code) }}"
-                           class="sim-form-input {{ $errors->has('assignment_code') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: TUGAS-2026-001" required>
-                    @if ($errors->has('assignment_code'))
-                        <p class="sim-form-error">{{ $errors->first('assignment_code') }}</p>
-                    @endif
-                </div>
-
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Judul Tugas<span class="sim-form-label-required"></span></label>
-                    <input type="text" name="title" maxlength="255"
-                           value="{{ old('title', $assignment->title) }}"
-                           class="sim-form-input {{ $errors->has('title') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: Audit Tahunan Klinik Pratama Tebet" required>
-                    @if ($errors->has('title'))
-                        <p class="sim-form-error">{{ $errors->first('title') }}</p>
-                    @endif
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Klinik / Unit yang Diaudit<span class="sim-form-label-required"></span></label>
-                        <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}" required>
-                            <option value="">— Pilih klinik —</option>
-                            @foreach ($clinics as $clinic)
-                                <option value="{{ $clinic->id }}" {{ old('clinic_id', $assignment->clinic_id) === $clinic->id ? 'selected' : '' }}>
-                                    {{ $clinic->code }} — {{ $clinic->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @if ($errors->has('clinic_id'))
-                            <p class="sim-form-error">{{ $errors->first('clinic_id') }}</p>
-                        @endif
-                    </div>
-
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Ketua Tim Auditor<span class="sim-form-label-required"></span></label>
-                        <select name="lead_auditor_id" class="sim-form-select {{ $errors->has('lead_auditor_id') ? 'border-sim-danger' : '' }}" required>
-                            <option value="">— Pilih ketua tim —</option>
-                            @foreach ($auditors as $auditor)
-                                <option value="{{ $auditor->id }}" {{ old('lead_auditor_id', $assignment->lead_auditor_id) === $auditor->id ? 'selected' : '' }}>
-                                    {{ $auditor->employee?->full_name ?? $auditor->name }}
-                                    @if ($auditor->employee?->unit?->name)
-                                        — {{ $auditor->employee->unit->name }}
-                                    @elseif ($auditor->employee?->clinic?->name)
-                                        — {{ $auditor->employee->clinic->name }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @if ($errors->has('lead_auditor_id'))
-                            <p class="sim-form-error">{{ $errors->first('lead_auditor_id') }}</p>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Tanggal Mulai<span class="sim-form-label-required"></span></label>
-                        <input type="date" name="scheduled_start"
-                               value="{{ old('scheduled_start', $assignment->scheduled_start?->format('Y-m-d')) }}"
-                               class="sim-form-input {{ $errors->has('scheduled_start') ? 'border-sim-danger' : '' }}"
-                               required>
-                        @if ($errors->has('scheduled_start'))
-                            <p class="sim-form-error">{{ $errors->first('scheduled_start') }}</p>
-                        @endif
-                    </div>
-
-                    <div class="sim-form-group">
-                        <label class="sim-form-label">Tanggal Selesai<span class="sim-form-label-required"></span></label>
-                        <input type="date" name="scheduled_end"
-                               value="{{ old('scheduled_end', $assignment->scheduled_end?->format('Y-m-d')) }}"
-                               class="sim-form-input {{ $errors->has('scheduled_end') ? 'border-sim-danger' : '' }}"
-                               required>
-                        @if ($errors->has('scheduled_end'))
-                            <p class="sim-form-error">{{ $errors->first('scheduled_end') }}</p>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Catatan Ruang Lingkup</label>
-                    <textarea name="scope_notes" rows="3"
-                              class="sim-form-textarea {{ $errors->has('scope_notes') ? 'border-sim-danger' : '' }}"
-                              placeholder="Catatan ruang lingkup penugasan">{{ old('scope_notes', $assignment->scope_notes) }}</textarea>
-                    @if ($errors->has('scope_notes'))
-                        <p class="sim-form-error">{{ $errors->first('scope_notes') }}</p>
-                    @endif
-                </div>
-
-                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                    <x-action icon="check-circle" label="Simpan Perubahan" />
-                </div>
-            </form>
+        <div class="sim-card-body">
+            @include('audit.assignments._form', [
+                'action' => route('audit.assignments.update', $assignment),
+                'method' => 'PUT',
+                'submitLabel' => 'Simpan Perubahan',
+                'cancelUrl' => route('audit.assignments.show', $assignment),
+                'assignment' => $assignment,
+            ])
         </div>
     </div>
 @endsection
