@@ -337,6 +337,17 @@ class UserMultiRoleAndScopeTest extends TestCase
         $create->assertSee('id="clinic-source-note"', false);
         $create->assertSee('id="clinic-manual-note"', false);
 
+        // Kerangka formulir yang ramah pengguna: satu wadah, tombol tampil sandi,
+        // aturan sandi, dan penghitung pilihan harus selalu ada.
+        $createHtml = $create->getContent();
+        $this->assertStringContainsString('id="user-form"', $createHtml);
+        $this->assertStringContainsString('data-pw-toggle="password"', $createHtml);
+        $this->assertStringContainsString('id="password-rules"', $createHtml);
+        $this->assertStringContainsString('data-role-count', $createHtml);
+        $this->assertStringContainsString('data-clinic-count', $createHtml);
+        // Mekanisme Alpine lama (applyEmployee) sudah diganti satu skrip vanilla.
+        $this->assertStringNotContainsString('applyEmployee', $createHtml);
+
         foreach (SimmakRoles::assignableNames() as $roleName) {
             $create->assertSee('value="'.$roleName.'"', false);
         }

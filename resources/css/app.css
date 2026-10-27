@@ -575,6 +575,70 @@
         @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
     }
 
+    /* Pilihan berbentuk kartu — peran, scope, klinik, status akun */
+    .sim-check-card {
+        @apply flex cursor-pointer items-start gap-3 rounded-lg border border-sim-border bg-sim-white p-3 transition-colors;
+    }
+
+    .sim-check-card:hover {
+        @apply border-sim-navy-700/35 bg-sim-hover;
+    }
+
+    .sim-check-card:has(input:checked) {
+        @apply border-sim-teal-600 bg-sim-teal-50;
+    }
+
+    .sim-check-card:has(input:focus-visible) {
+        @apply ring-2 ring-sim-navy-800 ring-offset-1;
+    }
+
+    .sim-check-card-warning:has(input:checked) {
+        @apply border-sim-warning bg-sim-warning-bg;
+    }
+
+    .sim-check-card-off {
+        @apply cursor-not-allowed opacity-60;
+    }
+
+    .sim-check-card-off:hover {
+        @apply border-sim-border bg-sim-white;
+    }
+
+    .sim-check-grid {
+        @apply grid gap-2.5 sm:grid-cols-2;
+    }
+
+    /* Bar aksi yang tetap terlihat pada formulir panjang */
+    .sim-form-actions {
+        @apply sticky bottom-0 z-10 -mx-5 -mb-5 mt-1 flex flex-wrap items-center justify-between gap-3 border-t border-sim-border-light bg-sim-white/95 px-5 py-3 backdrop-blur;
+    }
+
+    /* Input dengan tombol di dalam (mis. tampil/sembunyikan kata sandi) */
+    .sim-input-affix {
+        @apply relative;
+    }
+
+    .sim-input-affix .sim-form-input {
+        @apply pr-11;
+    }
+
+    .sim-input-affix-btn {
+        @apply absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-sim-muted transition-colors hover:text-sim-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-sim-navy-800;
+    }
+
+    /* Daftar aturan kata sandi — berubah hijau saat terpenuhi */
+    .sim-rule-list {
+        @apply mt-2 grid gap-1 text-xs text-sim-muted;
+    }
+
+    .sim-rule {
+        @apply flex items-center gap-1.5;
+    }
+
+    .sim-rule[data-ok='1'] {
+        @apply text-sim-success;
+    }
+
     /* Skip link */
     .sim-skip-link {
         @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-sim-navy-800 text-white rounded-md;
