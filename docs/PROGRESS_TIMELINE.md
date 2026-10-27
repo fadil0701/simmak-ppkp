@@ -442,7 +442,11 @@ Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
       aksi "Detail Tim", paginasi 15 baris (`audit_assignments.instrument_version_id`)
 - [x] Test: `EmployeeMultiClinicTest`, `UserMultiRoleAndScopeTest` (termasuk render form
       create/edit/show: centang peran & scope, catatan sumber klinik), `AssignmentIndexViewTest`
+      (termasuk form penugasan: select instrumen + kandidat ketua tim)
       — total suite 108 test / 337 assertion lulus
+- [x] Smoke test HTTP nyata: `scripts/smoke_access_model.php` — login lalu periksa
+      `users/create`, `users/{id}`, `users/{id}/edit`, `employees`, `employees/{id}/edit`,
+      `audit/assignments`, `audit/assignments/create` (semua 200, elemen kunci terdeteksi)
 
 ---
 
