@@ -32,13 +32,10 @@
             'submitted_for_review' => 'Menunggu tinjauan',
             'finalized' => 'Final',
         ];
-        $conformityMeta = [
-            'compliant' => ['label' => 'Sesuai', 'class' => 'border-sim-success bg-sim-success-bg text-sim-success'],
-            'partial' => ['label' => 'Sesuai sebagian', 'class' => 'border-sim-warning bg-sim-warning-bg text-sim-warning'],
-            'non_compliant' => ['label' => 'Tidak sesuai', 'class' => 'border-sim-danger bg-sim-danger-bg text-sim-danger'],
-            'not_applicable' => ['label' => 'Tidak berlaku', 'class' => 'border-sim-neutral bg-sim-neutral-bg text-sim-neutral'],
-            'not_assessable' => ['label' => 'Belum dinilai', 'class' => 'border-sim-border bg-sim-surface text-sim-muted'],
-        ];
+        // Skala nilai kesesuaian: 10 = sesuai, 5 = sesuai sebagian, 0 = tidak
+        // sesuai. `not_applicable` tetap tersedia untuk EP yang tidak relevan.
+        $scoreOptions = \App\Support\AuditScoreScale::options();
+        $notApplicableMeta = ['label' => 'Tidak berlaku', 'class' => 'border-sim-neutral bg-sim-neutral-bg text-sim-neutral'];
 
         $canExecute = auth()->user()->can('execute', $execution);
         $canSubmit = auth()->user()->can('submit', $execution);
@@ -302,16 +299,21 @@
                                 @foreach ($section->criteria as $criterion)
                                     @php
                                         $response = $responsesByCriterion->get($criterion->id);
-                                        $selectedValue = (string) old("rows.{$criterion->id}.response_value", $response?->response_value ?? '');
+                                        $storedValue = (string) old("rows.{$criterion->id}.response_value", $response?->response_value ?? '');
+                                        $scoreValue = \App\Support\AuditScoreScale::toScore($storedValue);
+                                        $isNotApplicable = $storedValue === \App\Support\AuditScoreScale::NOT_APPLICABLE;
+                                        $selectedValue = $scoreValue !== null
+                                            ? (string) $scoreValue
+                                            : ($isNotApplicable ? \App\Support\AuditScoreScale::NOT_APPLICABLE : '');
                                         $recommendationValue = old("rows.{$criterion->id}.recommendation", $response?->recommendation);
-                                        $needsRecommendation = in_array($selectedValue, ['non_compliant', 'partial'], true);
+                                        $needsRecommendation = \App\Support\AuditScoreScale::requiresRecommendation($scoreValue);
                                         $lastRevision = $response?->revisions->first();
                                     @endphp
                                     <tr data-criterion-row
                                         @class([
                                             'align-top',
-                                            'bg-sim-danger-bg/50' => $selectedValue === 'non_compliant',
-                                            'bg-sim-warning-bg/50' => $selectedValue === 'partial',
+                                            'bg-sim-danger-bg/50' => $scoreValue === \App\Support\AuditScoreScale::NONE,
+                                            'bg-sim-warning-bg/50' => $scoreValue === \App\Support\AuditScoreScale::PARTIAL,
                                         ])>
                                         <td class="text-sim-mono text-xs text-sim-muted">{{ $criterion->code }}</td>
                                         <td class="text-sm text-sim-ink">{{ $criterion->title }}</td>
@@ -334,15 +336,27 @@
                                                 <select name="rows[{{ $criterion->id }}][response_value]" class="sim-form-select text-sm"
                                                         data-conformity-select aria-label="Nilai kesesuaian {{ $criterion->code }}">
                                                     <option value="">— Pilih —</option>
-                                                    <option value="compliant" @selected($selectedValue === 'compliant')>Sesuai</option>
-                                                    <option value="partial" @selected($selectedValue === 'partial')>Sesuai sebagian</option>
-                                                    <option value="non_compliant" @selected($selectedValue === 'non_compliant')>Tidak sesuai</option>
-                                                    <option value="not_applicable" @selected($selectedValue === 'not_applicable')>Tidak berlaku</option>
+                                                    @foreach ($scoreOptions as $optionValue => $optionLabel)
+                                                        <option value="{{ $optionValue }}" @selected($selectedValue === (string) $optionValue)>
+                                                            {{ $optionValue }} — {{ $optionLabel }}
+                                                        </option>
+                                                    @endforeach
+                                                    <option value="{{ \App\Support\AuditScoreScale::NOT_APPLICABLE }}" @selected($selectedValue === \App\Support\AuditScoreScale::NOT_APPLICABLE)>
+                                                        NA — Tidak berlaku
+                                                    </option>
                                                 </select>
                                             @else
-                                                <span class="sim-badge sim-badge-status {{ $conformityMeta[$selectedValue]['class'] ?? 'border-sim-border bg-sim-surface text-sim-muted' }}">
-                                                    {{ $conformityMeta[$selectedValue]['label'] ?? 'Belum dinilai' }}
-                                                </span>
+                                                @if ($scoreValue !== null)
+                                                    <span class="sim-badge sim-badge-status {{ \App\Support\AuditScoreScale::badgeClassFor($scoreValue) }}">
+                                                        {{ \App\Support\AuditScoreScale::displayFor($scoreValue) }}
+                                                    </span>
+                                                @elseif ($isNotApplicable)
+                                                    <span class="sim-badge sim-badge-status {{ $notApplicableMeta['class'] }}">
+                                                        {{ $notApplicableMeta['label'] }}
+                                                    </span>
+                                                @else
+                                                    <span class="sim-badge sim-badge-status border-sim-border bg-sim-surface text-sim-muted">Belum dinilai</span>
+                                                @endif
                                             @endif
                                         </td>
                                         <td>
@@ -407,6 +421,16 @@
                 var bar = document.getElementById('progress-pengisian');
                 var percentLabel = document.getElementById('progress-persentase');
 
+                function bucketOf(value) {
+                    if (!value) return 'unassessed';
+                    if (value === 'not_applicable') return 'not_applicable';
+                    var score = parseInt(value, 10);
+                    if (isNaN(score)) return 'not_assessable';
+                    if (score >= 10) return 'compliant';
+                    if (score > 0) return 'partial';
+                    return 'non_compliant';
+                }
+
                 function refresh() {
                     var rows = Array.prototype.slice.call(form.querySelectorAll('[data-criterion-row]'));
                     var tally = { compliant: 0, partial: 0, non_compliant: 0, not_applicable: 0, not_assessable: 0, unassessed: 0 };
@@ -416,16 +440,14 @@
                         var textarea = row.querySelector('[data-recommendation]');
                         var hint = row.querySelector('[data-recommendation-hint]');
                         var value = select ? select.value : '';
-                        var needsRecommendation = value === 'non_compliant' || value === 'partial';
+                        var score = value === '' || value === 'not_applicable' ? null : parseInt(value, 10);
+                        var bucket = bucketOf(value);
+                        var needsRecommendation = score !== null && score < 10;
 
-                        if (value) {
-                            tally[value] = (tally[value] || 0) + 1;
-                        } else {
-                            tally.unassessed += 1;
-                        }
+                        tally[bucket] = (tally[bucket] || 0) + 1;
 
-                        row.classList.toggle('bg-sim-danger-bg/50', value === 'non_compliant');
-                        row.classList.toggle('bg-sim-warning-bg/50', value === 'partial');
+                        row.classList.toggle('bg-sim-danger-bg/50', bucket === 'non_compliant');
+                        row.classList.toggle('bg-sim-warning-bg/50', bucket === 'partial');
 
                         if (hint) {
                             hint.classList.toggle('hidden', !needsRecommendation);

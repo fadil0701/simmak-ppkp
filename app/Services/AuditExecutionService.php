@@ -7,6 +7,7 @@ use App\Models\ChecklistResponse;
 use App\Models\ChecklistResponseRevision;
 use App\Models\StandardCriterion;
 use App\Models\User;
+use App\Support\AuditScoreScale;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -153,14 +154,28 @@ class AuditExecutionService
                 continue;
             }
 
+            // Form tabel mengirim nilai kesesuaian sebagai angka 0/5/10.
+            // Angka itulah yang menjadi skor; `response_value` diturunkan darinya.
+            $notApplicable = $responseValue === AuditScoreScale::NOT_APPLICABLE;
+
+            if (! $notApplicable) {
+                $scaleScore = AuditScoreScale::toScore($responseValue);
+
+                if ($scaleScore !== null) {
+                    $score = $scaleScore;
+                }
+            }
+
             $criterion = StandardCriterion::find($criterionId);
-            $maxScore = $criterion?->max_score ?: 10;
+            $maxScore = $criterion?->max_score ?: AuditScoreScale::FULL;
 
             $this->saveResponse([
                 'audit_execution_id' => $execution->id,
                 'standard_criterion_id' => $criterionId,
-                'response_value' => $responseValue ?? $this->deriveResponseValue($score, $maxScore),
-                'score' => $score,
+                'response_value' => $notApplicable
+                    ? 'not_applicable'
+                    : AuditScoreScale::responseValueFor($score),
+                'score' => $notApplicable ? null : $score,
                 'max_score' => $maxScore,
                 'facts_analysis' => $facts,
                 'recommendation' => $recommendation,
@@ -172,31 +187,6 @@ class AuditExecutionService
         }
 
         return $saved;
-    }
-
-    /**
-     * Menurunkan status JH/EP dari skor yang diinput petugas.
-     *
-     * - Skor = skor maksimal  → Terpenuhi
-     * - Skor > 0 (< maksimal)  → Terpenuhi Sebagian
-     * - Skor = 0              → Tidak Terpenuhi
-     * - Skor kosong           → Tidak Dapat Dinilai (bukan otomatis "tidak terpenuhi")
-     */
-    private function deriveResponseValue(?int $score, int $maxScore): ?string
-    {
-        if ($score === null) {
-            return 'not_assessable';
-        }
-
-        if ($score >= $maxScore) {
-            return 'compliant';
-        }
-
-        if ($score > 0) {
-            return 'partial';
-        }
-
-        return 'non_compliant';
     }
 
     private function trimOrNull($value): ?string

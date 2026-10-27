@@ -170,7 +170,7 @@ class ChecklistTableTest extends TestCase
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'response_value' => 'compliant',
+                    'response_value' => '10',
                     'recommendation' => 'Pertahankan praktik yang ada.',
                 ],
             ],
@@ -182,6 +182,7 @@ class ChecklistTableTest extends TestCase
             'audit_execution_id' => $this->execution->id,
             'standard_criterion_id' => $this->criterion->id,
             'response_value' => 'compliant',
+            'score' => 10,
             'recommendation' => 'Pertahankan praktik yang ada.',
         ]);
 
@@ -198,7 +199,7 @@ class ChecklistTableTest extends TestCase
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'response_value' => 'non_compliant',
+                    'response_value' => '0',
                     'recommendation' => 'Tetapkan SK penetapan.',
                 ],
             ],
@@ -206,6 +207,11 @@ class ChecklistTableTest extends TestCase
 
         $response->assertStatus(302);
 
+        $this->assertDatabaseHas('checklist_responses', [
+            'standard_criterion_id' => $this->criterion->id,
+            'response_value' => 'non_compliant',
+            'score' => 0,
+        ]);
         $this->assertDatabaseHas('audit_findings', [
             'audit_execution_id' => $this->execution->id,
             'standard_criterion_id' => $this->criterion->id,
@@ -220,13 +226,38 @@ class ChecklistTableTest extends TestCase
     }
 
     /** @test */
+    public function partial_score_creates_minor_finding(): void
+    {
+        $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
+            'rows' => [
+                $this->criterion->id => [
+                    'standard_criterion_id' => $this->criterion->id,
+                    'response_value' => '5',
+                    'recommendation' => 'Lengkapi SK kepemilikan.',
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('checklist_responses', [
+            'standard_criterion_id' => $this->criterion->id,
+            'response_value' => 'partial',
+            'score' => 5,
+        ]);
+        $this->assertDatabaseHas('audit_findings', [
+            'audit_execution_id' => $this->execution->id,
+            'standard_criterion_id' => $this->criterion->id,
+            'severity' => 'minor',
+        ]);
+    }
+
+    /** @test */
     public function score_equals_max_marks_compliant(): void
     {
         $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
             'rows' => [
                 $this->criterion->id => [
                     'standard_criterion_id' => $this->criterion->id,
-                    'response_value' => 'compliant',
+                    'response_value' => '10',
                 ],
             ],
         ]);
@@ -234,6 +265,68 @@ class ChecklistTableTest extends TestCase
         $this->assertDatabaseHas('checklist_responses', [
             'standard_criterion_id' => $this->criterion->id,
             'response_value' => 'compliant',
+            'score' => 10,
+        ]);
+    }
+
+    /** @test */
+    public function not_applicable_option_is_preserved(): void
+    {
+        $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
+            'rows' => [
+                $this->criterion->id => [
+                    'standard_criterion_id' => $this->criterion->id,
+                    'response_value' => 'not_applicable',
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('checklist_responses', [
+            'standard_criterion_id' => $this->criterion->id,
+            'response_value' => 'not_applicable',
+            'score' => null,
+        ]);
+        $this->assertDatabaseMissing('audit_findings', [
+            'audit_execution_id' => $this->execution->id,
+            'standard_criterion_id' => $this->criterion->id,
+        ]);
+    }
+
+    /** @test */
+    public function legacy_text_value_is_still_accepted_and_normalised(): void
+    {
+        $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
+            'rows' => [
+                $this->criterion->id => [
+                    'standard_criterion_id' => $this->criterion->id,
+                    'response_value' => 'partial',
+                    'recommendation' => 'Rapikan bukti.',
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('checklist_responses', [
+            'standard_criterion_id' => $this->criterion->id,
+            'response_value' => 'partial',
+            'score' => 5,
+        ]);
+    }
+
+    /** @test */
+    public function off_scale_value_is_rejected(): void
+    {
+        $response = $this->actingAs($this->user)->post('/audit/executions/'.$this->execution->id.'/table', [
+            'rows' => [
+                $this->criterion->id => [
+                    'standard_criterion_id' => $this->criterion->id,
+                    'response_value' => '7',
+                ],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('rows.'.$this->criterion->id.'.response_value');
+        $this->assertDatabaseMissing('checklist_responses', [
+            'standard_criterion_id' => $this->criterion->id,
         ]);
     }
 }

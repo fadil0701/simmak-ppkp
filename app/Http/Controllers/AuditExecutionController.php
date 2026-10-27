@@ -10,6 +10,7 @@ use App\Models\InstrumentVersion;
 use App\Models\StandardCriterion;
 use App\Services\AuditCapaService;
 use App\Services\AuditExecutionService;
+use App\Support\AuditScoreScale;
 use App\Support\AuditWorkScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -218,10 +219,12 @@ class AuditExecutionController extends Controller
         $validated = $request->validate([
             'rows' => ['required', 'array'],
             'rows.*.standard_criterion_id' => ['required', 'uuid'],
-            'rows.*.score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'rows.*.facts_analysis' => ['nullable', 'string', 'max:5000'],
             'rows.*.recommendation' => ['nullable', 'string', 'max:5000'],
-            'rows.*.response_value' => ['nullable', 'string', 'max:40', Rule::in(['compliant', 'non_compliant', 'partial', 'not_applicable', 'not_assessable'])],
+            // Nilai kesesuaian dikirim sebagai angka skala 0/5/10 (atau
+            // 'not_applicable'); nilai teks lama tetap diterima agar data
+            // historis dan klien lama tidak rusak.
+            'rows.*.response_value' => ['nullable', Rule::in(AuditScoreScale::allowedResponseValues())],
             'severity' => ['nullable', 'array'],
             'severity.*' => ['nullable', Rule::in(['minor', 'major', 'critical'])],
         ]);
@@ -257,7 +260,11 @@ class AuditExecutionController extends Controller
             if (! Str::isUuid((string) $criterionId)) {
                 continue;
             }
-            if (! in_array($responseValue, ['non_compliant', 'partial'], true)) {
+
+            // Skala 0/5/10: hanya nilai di bawah 10 (sesuai sebagian / tidak
+            // sesuai) yang menghasilkan temuan. Nilai teks lama tetap dipetakan.
+            $rowScore = AuditScoreScale::toScore($responseValue);
+            if (! AuditScoreScale::triggersFinding($rowScore)) {
                 continue;
             }
 
@@ -282,8 +289,9 @@ class AuditExecutionController extends Controller
                 continue;
             }
 
+            // Skor 0 (tidak sesuai) = mayor; skor 5 (sesuai sebagian) = minor.
             $severity = $validated['severity'][$criterionId]
-                ?? ($responseValue === 'non_compliant' ? 'major' : 'minor');
+                ?? ($rowScore === AuditScoreScale::NONE ? 'major' : 'minor');
 
             $finding = $this->findingService->createFromCriterion(
                 $execution,
