@@ -34,6 +34,7 @@ class SimmakMenu
                 'label' => 'Audit Internal',
                 'items' => [
                     ['route' => 'audit.standards.index', 'label' => 'Standar & Instrumen', 'icon' => 'book-open', 'permission' => 'audit.standard.view'],
+                    ['route' => 'audit.regulatory.index', 'label' => 'Sumber Regulasi', 'icon' => 'file-text', 'permission' => 'audit.standard.view'],
                     ['route' => 'audit.programs.index', 'label' => 'Program Audit', 'icon' => 'clipboard-list', 'permission' => 'audit.program.view'],
                     ['route' => 'audit.assignments.index', 'label' => 'Penugasan Auditor', 'icon' => 'user-group', 'permission' => 'audit.assignment.view'],
                     ['route' => 'audit.executions.index', 'label' => 'Pelaksanaan Audit', 'icon' => 'clipboard-check', 'permission' => 'audit.execution.view'],

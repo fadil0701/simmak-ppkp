@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RegulatorySource extends BaseModel
 {
@@ -34,5 +35,13 @@ class RegulatorySource extends BaseModel
     public function verifier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    /**
+     * Standar audit yang memakai dokumen ini sebagai acuan.
+     */
+    public function standards(): HasMany
+    {
+        return $this->hasMany(AuditStandard::class, 'source_document_id');
     }
 }

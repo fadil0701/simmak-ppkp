@@ -32,10 +32,14 @@ class AuditStandardService
 
     public function verifyRegulatorySource(RegulatorySource $source, array $data, User $user): RegulatorySource
     {
+        $status = strtoupper(trim((string) ($data['verification_status'] ?? 'VERIFIED_IN_FORCE')));
+        $unverified = $status === 'UNVERIFIED';
+
+        // Kembali ke UNVERIFIED berarti mencabut klaim: jejak verifikasi dibersihkan.
         $source->update([
-            'verification_status' => $data['verification_status'] ?? 'VERIFIED_IN_FORCE',
-            'verified_at' => now(),
-            'verified_by' => $user->id,
+            'verification_status' => $status,
+            'verified_at' => $unverified ? null : now(),
+            'verified_by' => $unverified ? null : $user->id,
             'verification_notes' => $data['verification_notes'] ?? null,
         ]);
 

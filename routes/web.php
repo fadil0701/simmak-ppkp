@@ -22,6 +22,7 @@ use App\Http\Controllers\InstrumentVersionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QualityController;
+use App\Http\Controllers\RegulatorySourceController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RiskController;
 use App\Http\Controllers\SettingsController;
@@ -184,6 +185,22 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
 
     Route::middleware('permission:audit.report.export|audit.report.publish')->group(function () {
         Route::get('/reports/export', [ReportsController::class, 'export'])->name('audit.reports.export');
+    });
+
+    Route::middleware('permission:audit.standard.view')->group(function () {
+        Route::get('/audit/regulatory-sources', [RegulatorySourceController::class, 'index'])->name('audit.regulatory.index');
+    });
+
+    Route::middleware('permission:audit.standard.manage')->group(function () {
+        Route::get('/audit/regulatory-sources/create', [RegulatorySourceController::class, 'create'])->name('audit.regulatory.create');
+        Route::post('/audit/regulatory-sources', [RegulatorySourceController::class, 'store'])->name('audit.regulatory.store');
+        Route::get('/audit/regulatory-sources/{source}/edit', [RegulatorySourceController::class, 'edit'])->name('audit.regulatory.edit');
+        Route::put('/audit/regulatory-sources/{source}', [RegulatorySourceController::class, 'update'])->name('audit.regulatory.update');
+        Route::delete('/audit/regulatory-sources/{source}', [RegulatorySourceController::class, 'destroy'])->name('audit.regulatory.destroy');
+    });
+
+    Route::middleware('permission:audit.standard.manage|audit.standard.review')->group(function () {
+        Route::post('/audit/regulatory-sources/{source}/verify', [RegulatorySourceController::class, 'verify'])->name('audit.regulatory.verify');
     });
 
     Route::middleware('permission:audit.standard.view')->group(function () {
