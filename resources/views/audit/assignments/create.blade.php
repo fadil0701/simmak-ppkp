@@ -70,6 +70,25 @@
                     </div>
                 </div>
 
+                <div class="sim-form-group">
+                    <label class="sim-form-label">Standar / Instrumen (opsional)</label>
+                    <select name="instrument_version_id" class="sim-form-select {{ $errors->has('instrument_version_id') ? 'border-sim-danger' : '' }}">
+                        <option value="">— Belum ditentukan —</option>
+                        @foreach ($instrumentVersions as $version)
+                            <option value="{{ $version->id }}" @selected(old('instrument_version_id') === $version->id)>
+                                {{ $version->standard?->title ?? 'Standar' }} ({{ $version->version_label }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @if ($errors->has('instrument_version_id'))
+                        <p class="sim-form-error">{{ $errors->first('instrument_version_id') }}</p>
+                    @endif
+                    <p class="form-hint text-xs text-slate-500">
+                        Instrumen yang direncanakan. Bila dikosongkan, kolom indeks menampilkan
+                        instrumen dari eksekusi audit yang lahir dari penugasan ini.
+                    </p>
+                </div>
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sim-form-group">
                         <label class="sim-form-label">Ketua Tim (nama pegawai)<span class="sim-form-label-required"></span></label>

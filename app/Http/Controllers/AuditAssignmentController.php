@@ -45,7 +45,14 @@ class AuditAssignmentController extends Controller
 
         $auditors = $this->auditorCandidates($orgId);
 
-        return view('audit.assignments.create', compact('programs', 'clinics', 'auditors'));
+        $instrumentVersions = InstrumentVersion::whereHas('standard', function ($query) use ($orgId) {
+            $query->where('organization_id', $orgId);
+        })
+            ->whereIn('status', ['active', 'approved'])
+            ->orderBy('version_label')
+            ->get();
+
+        return view('audit.assignments.create', compact('programs', 'clinics', 'auditors', 'instrumentVersions'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -63,6 +70,7 @@ class AuditAssignmentController extends Controller
             'member_ids.*' => ['uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
             'scheduled_start' => ['required', 'date'],
             'scheduled_end' => ['required', 'date', 'after_or_equal:scheduled_start'],
+            'instrument_version_id' => ['nullable', 'uuid', Rule::exists('instrument_versions', 'id')],
         ]);
 
         $assignment = $this->assignmentService->createAssignment($validated, $request->user());
@@ -84,7 +92,14 @@ class AuditAssignmentController extends Controller
     {
         $this->authorize('view', $assignment);
 
-        $assignment->load(['program', 'clinic', 'leadAuditor', 'teamMembers.user']);
+        $assignment->load([
+            'program',
+            'clinic',
+            'leadAuditor.employee',
+            'teamMembers.user.employee',
+            'instrumentVersion.standard',
+            'executions.instrumentVersion.standard',
+        ]);
 
         $instrumentVersions = InstrumentVersion::whereHas('standard', function ($query) use ($assignment) {
             $query->where('organization_id', $assignment->organization_id);

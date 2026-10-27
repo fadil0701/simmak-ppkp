@@ -45,6 +45,22 @@ Setiap entri berikut mengikuti `DECISION_LOG_TEMPLATE.md` (ID, judul, status, ta
 - Selama status **Proposed**, kode akan menggunakan asumsi terkecil yang dapat dibalik (add-only, nullable, default aman).
 - Tidak ada klaim bahwa regulasi Kemenkes atau instrumen audit telah terverifikasi; semua sumber regulasi tetap **UNVERIFIED** sampai dokumen resmi diperiksa melalui JDIH Kemenkes / sumber resmi (lihat `REGULATORY_REGISTER.md`).
 
+### Status per 26 Oktober 2026 — ADR-0014…ADR-0018 sudah diimplementasikan dengan opsi usulan
+
+Kelima entri tetap **Proposed** (belum disetujui product owner), tetapi implementasi teknisnya
+sudah berjalan memakai opsi usulan yang tercatat, karena semuanya aditif dan dapat dibalik:
+
+| ADR | Opsi yang dipakai kode | Artefak |
+|-----|------------------------|---------|
+| ADR-0014 | (a) banyak klinik per pegawai tanpa batas, tepat satu klinik utama | `employee_clinic_assignments`, `Employee::syncClinicAssignments()` |
+| ADR-0015 | (b) `legacyMap()` dipertahankan + pemetaan per akun saat migrasi; peran lama tidak assignable | `SimmakRoles::catalog()` / `legacyRoleLabels()` |
+| ADR-0016 | (b) kolom `audit_assignments.instrument_version_id` + fallback turunan eksekusi | migrasi `2026_10_26_100003_*`, `AuditAssignment::instrumentTitle()` |
+| ADR-0017 | (b) scope hanya hak kelola; approve/close/reopen/verify tetap butuh peran pengawas | `SimmakScopes` (tanpa `audit.program.approve`, `audit.finding.close/reopen`) |
+| ADR-0018 | (a) `user_clinic_scopes` dipertahankan sebagai cermin tersinkronisasi | `UserClinicScopeSynchronizer` |
+
+Bila product owner memilih opsi berbeda, perubahan terbatas pada berkas di kolom "Artefak" —
+tidak ada perubahan pada `SetClinicContext`, `ClinicScope`, atau `AuditWorkScope`.
+
 ---
 
 ## Tindak lanjut

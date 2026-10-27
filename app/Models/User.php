@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Http\Request;
@@ -85,6 +86,26 @@ class User extends Authenticatable
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    /**
+     * Scope Sistem yang diberikan pada akun ini.
+     */
+    public function scopeAssignments(): HasMany
+    {
+        return $this->hasMany(UserScopeAssignment::class);
+    }
+
+    /**
+     * Nama scope yang aktif pada akun.
+     *
+     * @return array<int, string>
+     */
+    public function scopeNames(): array
+    {
+        return $this->relationLoaded('scopeAssignments')
+            ? $this->scopeAssignments->pluck('scope')->all()
+            : $this->scopeAssignments()->pluck('scope')->all();
     }
 
     public function isLocalAuth(): bool

@@ -1,4 +1,4 @@
-# SIMMAK PPKP — Dokumentasi Progres & Timeline Pembangunan
+﻿# SIMMAK PPKP — Dokumentasi Progres & Timeline Pembangunan
 
 | Atribut | Nilai |
 |---------|-------|
@@ -427,9 +427,22 @@ Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
 - [x] Eksekusi audit: checklist respons, bukti, temuan, eskalasi, laporan
 - [x] Super admin full access: bypass status-lock lintas modul + `SuperAdminFullAccessTest`
 - [x] ADR-0013 — unit/klinik sasaran audit dan katalog peran
-- [ ] **Rencana** — master pegawai multi klinik/unit, form pengguna multi peran + scope sistem,
-      dan indeks penugasan (kolom auditor, lokasi, tanggal, standar/instrumen, detail tim).
-      Spesifikasi lengkap: `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md`
+
+### 26 Oktober 2026 — Master pegawai multi klinik, multi peran, dan scope sistem
+- [x] `employee_clinic_assignments` — pegawai memegang banyak klinik/unit, satu klinik utama
+      (`Employee::syncClinicAssignments()`, backfill idempoten; `EmployeeMultiClinicTest`)
+- [x] Form pegawai: centang klinik ganda + radio klinik utama + subunit terfilter
+- [x] Katalog peran resmi 8 peran (`SimmakRoles::catalog()`), peran lama tetap ada sebagai legacy
+- [x] Form pengguna multi peran (`role_ids[]`) + `syncRoles()` pada store/update
+- [x] Scope Sistem (`user_scope_assignments`, `App\Support\SimmakScopes`,
+      `UserScopeSynchronizer`, `simmak:sync-user-scopes`) — izin efektif = peran ∪ scope
+- [x] Akses klinik diturunkan dari master pegawai (`UserClinicScopeSynchronizer`),
+      `user_clinic_scopes` menjadi cermin tersinkronisasi
+- [x] Indeks penugasan: Petugas Auditor, Lokasi Audit, Tanggal Audit, Standar/Instrumen,
+      aksi "Detail Tim", paginasi 15 baris (`audit_assignments.instrument_version_id`)
+- [x] Test: `EmployeeMultiClinicTest`, `UserMultiRoleAndScopeTest` (termasuk render form
+      create/edit/show: centang peran & scope, catatan sumber klinik), `AssignmentIndexViewTest`
+      — total suite 107 test / 330 assertion lulus
 
 ---
 

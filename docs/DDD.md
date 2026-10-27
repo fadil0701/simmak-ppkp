@@ -133,12 +133,13 @@ Relasi pada Mermaid menggunakan notasi `||--o{` untuk one-to-many, `||--o|` untu
 ### 6.1. Core Platform
 Master organisasi, klinik, unit, pegawai, lampiran, referensi, dan konfigurasi tenant.
 
-Jumlah tabel: 14
+Jumlah tabel: 15
 - `organizations`
 - `clinics`
 - `departments`
 - `units`
 - `employees`
+- `employee_clinic_assignments`
 - `reference_data`
 - `reference_data_values`
 - `fiscal_years`
@@ -152,13 +153,14 @@ Jumlah tabel: 14
 ### 6.2. Authentication & RBAC
 Identitas pengguna, peran, izin, integrasi LDAP, sesi, token, dan cakupan akses klinik.
 
-Jumlah tabel: 11
+Jumlah tabel: 12
 - `users`
 - `roles`
 - `permissions`
 - `role_permissions`
 - `user_roles`
 - `user_clinic_scopes`
+- `user_scope_assignments`
 - `ldap_configurations`
 - `ldap_sync_logs`
 - `login_attempts`
@@ -288,6 +290,30 @@ Jumlah tabel: 6
 - `migrations_meta`
 - `outbox_events`
 - `integration_logs`
+
+### 6.12. Perubahan Skema 26 Oktober 2026 (akses multi klinik & scope sistem)
+
+Tiga perubahan aditif, sudah diterapkan lewat migrasi dan diverifikasi pada PostgreSQL 17:
+
+1. `employee_clinic_assignments` (baru, domain Core Platform)
+   - `id` UUID PK; `organization_id` FK `organizations`; `employee_id` FK `employees` (cascade);
+     `clinic_id` FK `clinics` (cascade); `unit_id` FK `units` (null on delete);
+     `is_primary` boolean default `false`; `created_at`/`updated_at`.
+   - Unik `(employee_id, clinic_id)`; indeks `(organization_id, clinic_id)`.
+   - Satu pegawai boleh memegang banyak klinik, tepat satu `is_primary = true` (dijaga
+     `Employee::syncClinicAssignments()`). `employees.clinic_id`/`unit_id` tetap menyimpan
+     klinik utama agar query lama tidak berubah.
+2. `user_scope_assignments` (baru, domain Authentication & RBAC)
+   - `id` UUID PK; `user_id` FK `users` (cascade); `scope` varchar(40);
+     `granted_by` FK `users` (null on delete); `granted_at` timestamp; timestamps.
+   - Unik `(user_id, scope)`. Nilai `scope`: `audit_internal`, `mutu`, `akreditasi`,
+     `monitoring`, `auditor`, `auditi` (`App\Support\SimmakScopes`).
+   - Backfill migrasi: peran `auditor` → scope `auditor`, `auditi`/`staff` → `auditi`,
+     `kepala-pusat` → `monitoring`.
+3. `audit_assignments.instrument_version_id` (kolom baru)
+   - UUID nullable, FK `instrument_versions` (null on delete).
+   - Judul standar/instrumen tampil pada indeks penugasan walau eksekusi belum dibuat;
+     bila kosong, `AuditAssignment::instrumentTitle()` memakai instrumen dari eksekusi.
 
 ## 7. Data Dictionary Lengkap
 

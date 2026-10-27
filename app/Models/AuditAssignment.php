@@ -14,7 +14,7 @@ class AuditAssignment extends BaseModel
     use ClinicScope;
 
     protected $fillable = [
-        'organization_id', 'audit_program_id', 'clinic_id', 'assignment_code', 'title',
+        'organization_id', 'audit_program_id', 'clinic_id', 'instrument_version_id', 'assignment_code', 'title',
         'scope_notes', 'lead_auditor_id', 'scheduled_start', 'scheduled_end', 'status',
         'conflict_check_status', 'submitted_at', 'activated_at', 'metadata', 'created_by', 'updated_by',
     ];
@@ -53,5 +53,32 @@ class AuditAssignment extends BaseModel
     public function executions(): HasMany
     {
         return $this->hasMany(AuditExecution::class);
+    }
+
+    /**
+     * Instrumen yang direncanakan untuk penugasan ini (opsional, data lama kosong).
+     */
+    public function instrumentVersion(): BelongsTo
+    {
+        return $this->belongsTo(InstrumentVersion::class);
+    }
+
+    /**
+     * Judul standar instrumen: dari penugasan, atau turunan dari eksekusi pertama.
+     */
+    public function instrumentTitle(): ?string
+    {
+        $version = $this->instrumentVersion
+            ?? $this->executions->first()?->instrumentVersion;
+
+        $standard = $version?->standard;
+
+        if ($standard === null) {
+            return null;
+        }
+
+        $label = $version->version_label ?? null;
+
+        return $label ? $standard->title.' ('.$label.')' : $standard->title;
     }
 }

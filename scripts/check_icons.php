@@ -1,5 +1,8 @@
 <?php
 
+use App\Support\SimmakMenu;
+use Illuminate\Contracts\Console\Kernel;
+
 /**
  * Diagnostic: verify every icon referenced by SimmakMenu resolves to a Blade view.
  * Usage: php scripts/check_icons.php  (run inside the app container)
@@ -8,9 +11,9 @@
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
-$icons = collect(\App\Support\SimmakMenu::items())
+$icons = collect(SimmakMenu::items())
     ->pluck('icon')
     ->unique()
     ->values()

@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /**
@@ -40,7 +41,7 @@ class ClinicScopeTest extends TestCase
 
         Role::where('name', 'pj-mutu')->first()->syncPermissions(['clinics.view']);
 
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->org = Organization::create([
             'code' => 'SCOPE-ORG',

@@ -17,7 +17,7 @@
         <div>
             <h2 class="sim-page-title">{{ $user->name }}</h2>
             <p class="sim-page-subtitle">
-                {{ \App\Support\RoleLabel::for($user->getRoleNames()->first()) }}
+                {{ $user->getRoleNames()->map(fn ($roleName) => \App\Support\RoleLabel::for($roleName))->join(', ') ?: 'Tanpa peran' }}
                 <span class="text-sim-mono text-xs text-sim-muted">({{ $user->username }})</span>
             </p>
         </div>
@@ -62,6 +62,38 @@
                             </dd>
                         </div>
                     </dl>
+                </div>
+            </div>
+
+            <div class="sim-card">
+                <div class="sim-card-header"><h3 class="sim-card-title">Peran &amp; Scope Sistem</h3></div>
+                <div class="sim-card-body space-y-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-sim-muted">Peran</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @forelse ($user->getRoleNames() as $roleName)
+                                <span class="sim-badge sim-badge-status bg-sim-surface-alt text-sim-ink border border-sim-border">
+                                    {{ \App\Support\RoleLabel::for($roleName) }}
+                                    <span class="text-sim-mono text-[10px] text-sim-muted">{{ $roleName }}</span>
+                                </span>
+                            @empty
+                                <span class="text-sm text-sim-muted">Belum ada peran.</span>
+                            @endforelse
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-sim-muted">Scope Sistem</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @forelse ($user->scopeNames() as $scopeName)
+                                <span class="sim-badge sim-badge-status bg-sim-surface-alt text-sim-ink border border-sim-border">
+                                    {{ \App\Support\SimmakScopes::labels()[$scopeName] ?? $scopeName }}
+                                    <span class="text-sim-mono text-[10px] text-sim-muted">{{ $scopeName }}</span>
+                                </span>
+                            @empty
+                                <span class="text-sm text-sim-muted">Tidak ada scope tambahan.</span>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
             </div>
 

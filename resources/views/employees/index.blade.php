@@ -72,7 +72,20 @@
                                 {{ $employee->positionMaster?->name ?? $employee->position ?? '—' }}
                             </td>
                             <td class="px-3 py-2 text-sim-muted">
-                                {{ $employee->clinic?->name ?? '—' }}
+                                @php
+                                    $heldClinics = $employee->clinicAssignments
+                                        ->sortByDesc('is_primary')
+                                        ->map(fn ($assignment) => $assignment->clinic)
+                                        ->filter();
+                                @endphp
+                                @if ($heldClinics->isEmpty())
+                                    {{ $employee->clinic?->name ?? '—' }}
+                                @else
+                                    {{ $heldClinics->first()->name }}
+                                    @if ($heldClinics->count() > 1)
+                                        <div class="text-xs">+{{ $heldClinics->count() - 1 }} klinik lain</div>
+                                    @endif
+                                @endif
                                 @if ($employee->unit)
                                     <div class="text-xs">{{ $employee->unit->name }}</div>
                                 @endif

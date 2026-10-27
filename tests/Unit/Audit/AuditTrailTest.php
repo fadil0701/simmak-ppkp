@@ -3,8 +3,10 @@
 namespace Tests\Unit\Audit;
 
 use App\Models\AuditTrail;
-use App\Models\User;
 use App\Models\Organization;
+use App\Models\User;
+use Illuminate\Database\Eloquent\MassAssignmentException;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AuditTrailTest extends TestCase
@@ -29,7 +31,7 @@ class AuditTrailTest extends TestCase
         ]);
 
         $trail = AuditTrail::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $org->id,
             'user_id' => $user->id,
             'event' => 'test.event',
@@ -62,14 +64,14 @@ class AuditTrailTest extends TestCase
         ]);
 
         $trail = AuditTrail::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $org->id,
             'user_id' => $user->id,
             'event' => 'test.event',
             'auditable_type' => 'test',
         ]);
 
-        $this->expectException(\Illuminate\Database\Eloquent\MassAssignmentException::class);
+        $this->expectException(MassAssignmentException::class);
         $trail->update(['event' => 'modified.event']);
     }
 
@@ -93,14 +95,14 @@ class AuditTrailTest extends TestCase
         ]);
 
         $trail = AuditTrail::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'organization_id' => $org->id,
             'user_id' => $user->id,
             'event' => 'test.event',
             'auditable_type' => 'test',
         ]);
 
-        $this->expectException(\Illuminate\Database\Eloquent\MassAssignmentException::class);
+        $this->expectException(MassAssignmentException::class);
         $trail->delete();
     }
 }

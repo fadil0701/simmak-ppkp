@@ -18,6 +18,7 @@ class AuditAssignmentService
                 'organization_id' => $user->organization_id,
                 'audit_program_id' => $data['audit_program_id'],
                 'clinic_id' => $data['clinic_id'] ?? null,
+                'instrument_version_id' => $data['instrument_version_id'] ?? null,
                 'assignment_code' => $data['assignment_code'],
                 'title' => $data['title'],
                 'scope_notes' => $data['scope_notes'] ?? null,
@@ -158,16 +159,26 @@ class AuditAssignmentService
     public function getAssignmentsForUser(User $user, bool $upcomingOnly = false)
     {
         $query = AuditWorkScope::assignments(AuditAssignment::query(), $user)
-            ->with(['program', 'clinic', 'leadAuditor', 'teamMembers.user'])
+            ->with([
+                'program:id,name',
+                'clinic:id,name,city',
+                'leadAuditor:id,name,employee_id',
+                'leadAuditor.employee:id,employee_number,full_name,position',
+                'teamMembers' => fn ($q) => $q->where('active', true),
+                'teamMembers.user:id,name,employee_id',
+                'instrumentVersion.standard:id,title',
+                'executions.instrumentVersion.standard:id,title',
+            ])
             ->orderByDesc('created_at');
 
         if ($upcomingOnly) {
             $query->whereIn('status', ['active', 'proposed'])
                 ->whereDate('scheduled_end', '>=', now()->toDateString())
+                ->reorder()
                 ->orderBy('scheduled_start');
         }
 
-        return $query->get();
+        return $query->paginate(15)->withQueryString();
     }
 
     public function ensureLeadOnTeam(AuditAssignment $assignment, User $user): void

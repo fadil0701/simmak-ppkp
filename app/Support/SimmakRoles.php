@@ -34,6 +34,12 @@ class SimmakRoles
 
     public const AUDITI = 'auditi';
 
+    public const KASATPEL_UKP = 'kasatpel-ukp';
+
+    public const KASATPEL_UKM = 'kasatpel-ukm';
+
+    public const ADMIN_KLINIK = 'admin-klinik';
+
     /**
      * Peran lama yang masih dibuat agar tes/akun existing tidak pecah.
      *
@@ -50,30 +56,57 @@ class SimmakRoles
     }
 
     /**
-     * @return list<string>
-     */
-    public static function assignableNames(): array
-    {
-        return array_keys(self::labels());
-    }
-
-    /**
+     * Katalog peran resmi (8 peran) — inilah daftar yang boleh dipilih pada form pengguna.
+     *
      * @return array<string, string>
      */
-    public static function labels(): array
+    public static function catalog(): array
     {
         return [
             self::SUPER_ADMIN => 'Super Admin (Akses Penuh Sistem)',
             self::ADMIN_SISTEM => 'Admin Sistem',
             self::KEPALA_PUSAT => 'Kepala Pusat',
             self::KASUBBAG_TU => 'Kasubbag TU',
-            self::KETUA_TIM_MUTU => 'Ketua Tim Mutu',
-            self::KETUA_TIM_AUDIT => 'Ketua Tim Audit',
-            self::KETUA_TIM_AKREDITASI => 'Ketua Tim Akreditasi',
-            self::AUDITOR => 'Auditor',
+            self::KASATPEL_UKP => 'Kasatpel UKP',
+            self::KASATPEL_UKM => 'Kasatpel UKM',
             self::KEPALA_KLINIK => 'Kepala Klinik/Unit',
-            self::AUDITI => 'Auditi',
+            self::ADMIN_KLINIK => 'Admin Klinik/Unit',
         ];
+    }
+
+    /**
+     * Peran lama yang tetap ada di database (akun existing) tetapi tidak lagi
+     * dapat dipilih untuk akun baru. Fungsi audit dipindahkan ke Scope Sistem.
+     *
+     * @return array<string, string>
+     */
+    public static function legacyRoleLabels(): array
+    {
+        return [
+            self::KETUA_TIM_MUTU => 'Ketua Tim Mutu (lama)',
+            self::KETUA_TIM_AUDIT => 'Ketua Tim Audit (lama)',
+            self::KETUA_TIM_AKREDITASI => 'Ketua Tim Akreditasi (lama)',
+            self::AUDITOR => 'Auditor (lama)',
+            self::AUDITI => 'Auditi (lama)',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function assignableNames(): array
+    {
+        return array_keys(self::catalog());
+    }
+
+    /**
+     * Label seluruh peran yang dikenal sistem (resmi + lama).
+     *
+     * @return array<string, string>
+     */
+    public static function labels(): array
+    {
+        return self::catalog() + self::legacyRoleLabels();
     }
 
     public static function label(?string $role): string
@@ -227,6 +260,21 @@ class SimmakRoles
             'audit.log.view', 'capa.view', 'clinics.view',
         ];
 
+        // Pengawas lingkup (Kasatpel UKP/UKM): menyiapkan dan mengawal audit
+        // lingkupnya, tanpa kewenangan menyetujui program atau menutup temuan.
+        $pengawasLingkup = array_values(array_unique(array_merge($monitorAudit, [
+            'dashboard.clinic',
+            'dms.manage', 'capa.manage', 'risk.manage', 'quality.manage', 'audit.manage',
+            'audit.program.create', 'audit.program.update', 'audit.program.submit',
+            'audit.assignment.manage',
+            'audit.standard.manage', 'audit.standard.review',
+            'audit.execution.execute',
+            'audit.evidence.upload',
+            'audit.finding.create', 'audit.finding.update', 'audit.finding.review',
+            'audit.action.update', 'audit.capa.verify',
+            'audit.report.manage',
+        ])));
+
         return match ($role) {
             self::SUPER_ADMIN => $all,
             self::ADMIN_SISTEM => [
@@ -253,6 +301,12 @@ class SimmakRoles
             ],
             self::KETUA_TIM_MUTU => $qualityLead,
             self::KETUA_TIM_AUDIT => $auditLead,
+            self::KASATPEL_UKP => $pengawasLingkup,
+            self::KASATPEL_UKM => $pengawasLingkup,
+            self::ADMIN_KLINIK => array_values(array_unique(array_merge(
+                self::permissionsFor(self::AUDITI),
+                ['dms.manage', 'audit.evidence.upload'],
+            ))),
             self::KETUA_TIM_AKREDITASI => [
                 'dashboard.view', 'dashboard.clinic',
                 'dms.view',
@@ -298,7 +352,12 @@ class SimmakRoles
 
     public static function ensurePermissions(): void
     {
-        foreach (self::allPermissionNames() as $permission) {
+        $names = array_values(array_unique(array_merge(
+            self::allPermissionNames(),
+            SimmakScopes::allPermissions(),
+        )));
+
+        foreach ($names as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
     }

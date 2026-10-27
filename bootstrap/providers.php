@@ -1,7 +1,11 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\AuthServiceProvider;
+use Maatwebsite\Excel\ExcelServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\AuthServiceProvider::class,
-    Maatwebsite\Excel\ExcelServiceProvider::class,
+    AppServiceProvider::class,
+    AuthServiceProvider::class,
+    ExcelServiceProvider::class,
 ];

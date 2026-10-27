@@ -5,18 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\Clinic;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\UserClinicScopeSynchronizer;
+use App\Services\UserScopeSynchronizer;
 use App\Support\SimmakRoles;
+use App\Support\SimmakScopes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    public function __construct(
+        private readonly UserClinicScopeSynchronizer $clinicScopes,
+        private readonly UserScopeSynchronizer $userScopes,
+    ) {}
+
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -79,18 +88,25 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::defaults()],
             'default_clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
-            'role' => ['required', 'string', Rule::in(SimmakRoles::assignableNames())],
+            'role_ids' => ['nullable', 'array'],
+            'role_ids.*' => ['string', Rule::in(SimmakRoles::assignableNames())],
+            // Kompatibilitas form/tautan lama yang masih mengirim satu peran.
+            'role' => ['nullable', 'string', Rule::in(SimmakRoles::assignableNames())],
             'clinic_ids' => ['nullable', 'array'],
             'clinic_ids.*' => ['uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
+            'scope_names' => ['nullable', 'array'],
+            'scope_names.*' => ['string', Rule::in(SimmakScopes::assignableNames())],
             'is_active' => ['nullable', 'boolean'],
         ], [], $this->attributeNames());
 
+        $roleNames = $this->resolveRoleNames($validated);
         $clinicIds = $this->resolveClinicIds($validated);
+        $employee = isset($validated['employee_id']) ? Employee::find($validated['employee_id']) : null;
 
         $newUser = User::create([
             'organization_id' => $orgId,
             'employee_id' => $validated['employee_id'] ?? null,
-            'default_clinic_id' => $validated['default_clinic_id'] ?? null,
+            'default_clinic_id' => $employee?->primaryClinicId() ?? ($validated['default_clinic_id'] ?? null),
             'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
@@ -100,8 +116,9 @@ class UserController extends Controller
             'email_verified_at' => now(),
         ]);
 
-        $newUser->assignRole($validated['role']);
-        $this->syncClinicScopes($newUser, $clinicIds, $validated['default_clinic_id'] ?? null);
+        $newUser->syncRoles($roleNames);
+        $this->syncClinicScope($newUser, $employee, $clinicIds, $validated['default_clinic_id'] ?? null);
+        $this->userScopes->sync($newUser, $validated['scope_names'] ?? [], $actor);
 
         return redirect()->route('users.index')->with('status', 'Pengguna berhasil ditambahkan.');
     }
@@ -126,8 +143,10 @@ class UserController extends Controller
             $this->formData($request->user(), $user),
             [
                 'user' => $user,
-                'currentRole' => $user->getRoleNames()->first(),
+                'currentRoles' => $user->getRoleNames()->all(),
+                'currentScopes' => $user->scopeNames(),
                 'scopedClinicIds' => $user->clinics()->pluck('clinics.id')->all(),
+                'derivedClinicIds' => $user->employee?->clinicScopeIds() ?? [],
             ]
         ));
     }
@@ -146,20 +165,27 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'default_clinic_id' => ['nullable', 'uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
-            'role' => ['required', 'string', Rule::in(SimmakRoles::assignableNames())],
+            'role_ids' => ['nullable', 'array'],
+            'role_ids.*' => ['string', Rule::in(SimmakRoles::assignableNames())],
+            // Kompatibilitas form/tautan lama yang masih mengirim satu peran.
+            'role' => ['nullable', 'string', Rule::in(SimmakRoles::assignableNames())],
             'clinic_ids' => ['nullable', 'array'],
             'clinic_ids.*' => ['uuid', Rule::exists('clinics', 'id')->where('organization_id', $orgId)],
+            'scope_names' => ['nullable', 'array'],
+            'scope_names.*' => ['string', Rule::in(SimmakScopes::assignableNames())],
             'is_active' => ['nullable', 'boolean'],
         ], [], $this->attributeNames());
 
+        $roleNames = $this->resolveRoleNames($validated);
         $clinicIds = $this->resolveClinicIds($validated);
+        $employee = isset($validated['employee_id']) ? Employee::find($validated['employee_id']) : null;
 
         $data = [
             'employee_id' => $validated['employee_id'] ?? null,
             'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
-            'default_clinic_id' => $validated['default_clinic_id'] ?? null,
+            'default_clinic_id' => $employee?->primaryClinicId() ?? ($validated['default_clinic_id'] ?? null),
             'is_active' => (bool) ($validated['is_active'] ?? false),
         ];
 
@@ -169,8 +195,9 @@ class UserController extends Controller
 
         $user->update($data);
 
-        $user->syncRoles([$validated['role']]);
-        $this->syncClinicScopes($user, $clinicIds, $validated['default_clinic_id'] ?? null);
+        $user->syncRoles($roleNames);
+        $this->syncClinicScope($user, $employee, $clinicIds, $validated['default_clinic_id'] ?? null);
+        $this->userScopes->sync($user, $validated['scope_names'] ?? [], $actor);
 
         return redirect()->route('users.show', $user)->with('status', 'Pengguna berhasil diperbarui.');
     }
@@ -220,9 +247,12 @@ class UserController extends Controller
     private function formData(User $actor, ?User $target = null): array
     {
         $roleNames = SimmakRoles::assignableNames();
-        $currentRole = $target?->getRoleNames()->first();
-        if ($currentRole && ! in_array($currentRole, $roleNames, true)) {
-            $roleNames[] = $currentRole;
+
+        // Peran lama milik akun tetap ditampilkan agar tidak hilang saat disunting.
+        foreach ($target?->getRoleNames()->all() ?? [] as $currentRole) {
+            if (! in_array($currentRole, $roleNames, true)) {
+                $roleNames[] = $currentRole;
+            }
         }
 
         return [
@@ -242,7 +272,30 @@ class UserController extends Controller
                 ->where('is_active', true)
                 ->orderBy('full_name')
                 ->get(),
+            'scopes' => SimmakScopes::labels(),
         ];
+    }
+
+    /**
+     * Peran yang dipilih: `role_ids[]` (multi) dengan fallback `role` tunggal.
+     *
+     * @return array<int, string>
+     */
+    private function resolveRoleNames(array $validated): array
+    {
+        $roleNames = array_values(array_unique(array_filter((array) ($validated['role_ids'] ?? []))));
+
+        if ($roleNames === [] && ! empty($validated['role'])) {
+            $roleNames = [$validated['role']];
+        }
+
+        if ($roleNames === []) {
+            throw ValidationException::withMessages([
+                'role_ids' => 'Pilih minimal satu peran untuk pengguna ini.',
+            ]);
+        }
+
+        return $roleNames;
     }
 
     private function attributeNames(): array
@@ -254,6 +307,7 @@ class UserController extends Controller
             'email' => 'surel',
             'password' => 'kata sandi',
             'role' => 'peran',
+            'role_ids' => 'peran',
             'default_clinic_id' => 'klinik default',
             'clinic_ids' => 'akses klinik',
         ];
@@ -276,16 +330,19 @@ class UserController extends Controller
     }
 
     /**
+     * Akses klinik: mengikuti master pegawai bila akun terhubung ke pegawai,
+     * selain itu memakai pilihan manual pada form.
+     *
      * @param  array<int, string>  $clinicIds
      */
-    private function syncClinicScopes(User $user, array $clinicIds, ?string $defaultClinicId): void
+    private function syncClinicScope(User $user, ?Employee $employee, array $clinicIds, ?string $defaultClinicId): void
     {
-        $sync = collect($clinicIds)
-            ->mapWithKeys(fn (string $id) => [
-                $id => ['is_default' => $id === $defaultClinicId],
-            ])
-            ->all();
+        if ($employee !== null) {
+            $this->clinicScopes->syncForEmployee($employee);
 
-        $user->clinics()->sync($sync);
+            return;
+        }
+
+        $this->clinicScopes->syncScopes($user, $clinicIds, $defaultClinicId);
     }
 }

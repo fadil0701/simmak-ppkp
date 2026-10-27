@@ -134,7 +134,7 @@ class AccreditationSeeder extends Seeder
         return $standards;
     }
 
-  /**
+    /**
      * @param  array<string, AccreditationStandard>  $standards
      */
     private function seedProgram(

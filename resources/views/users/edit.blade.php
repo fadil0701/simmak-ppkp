@@ -102,17 +102,26 @@
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div class="sim-form-group">
-                        <label class="sim-form-label" for="role">Peran <span class="sim-form-label-required"></span></label>
-                        <select id="role" name="role" required class="sim-form-select {{ $errors->has('role') ? 'border-sim-danger' : '' }}">
-                            <option value="">— Pilih peran —</option>
+                        <span class="sim-form-label">Peran <span class="sim-form-label-required"></span></span>
+                        <div class="grid gap-2 rounded-lg border border-sim-border bg-sim-surface-alt p-3">
                             @foreach ($roles as $role)
-                                <option value="{{ $role->name }}" @selected(old('role', $currentRole) === $role->name)>
-                                    {{ \App\Support\RoleLabel::for($role->name) }} ({{ $role->name }})
-                                </option>
+                                <label class="flex items-center gap-2 text-sm text-sim-ink">
+                                    <input type="checkbox" name="role_ids[]" value="{{ $role->name }}"
+                                           @checked(collect(old('role_ids', $currentRoles))->contains($role->name))
+                                           class="h-4 w-4 rounded border-sim-border text-sim-primary focus:ring-sim-primary">
+                                    <span>
+                                        {{ \App\Support\RoleLabel::for($role->name) }}
+                                        <span class="text-sim-text">({{ $role->name }})</span>
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
-                        @error('role')<p class="sim-form-error">{{ $message }}</p>@enderror
-                        <p class="sim-form-hint">Peran menentukan hak akses sistem. Jabatan di master pegawai tidak mengubah peran ini.</p>
+                        </div>
+                        @error('role_ids')<p class="sim-form-error">{{ $message }}</p>@enderror
+                        @error('role_ids.*')<p class="sim-form-error">{{ $message }}</p>@enderror
+                        <p class="sim-form-hint">
+                            Satu akun boleh memegang lebih dari satu peran; hak akses efektif adalah
+                            gabungan seluruh peran. Jabatan di master pegawai tidak mengubah peran ini.
+                        </p>
                     </div>
                     <div class="sim-form-group">
                         <label class="sim-form-label" for="default_clinic_id">Klinik Default</label>
@@ -140,7 +149,37 @@
                             </label>
                         @endforeach
                     </div>
-                    <p class="sim-form-hint">Bila tidak ada yang dipilih, pengguna hanya mendapat Klinik Default.</p>
+                    <p id="clinic-source-note" class="sim-form-hint" hidden>
+                        Akses klinik mengikuti master pegawai. Semua klinik yang dipegang pegawai
+                        diberikan otomatis, dan klinik default mengikuti klinik utama pegawai.
+                    </p>
+                    <p id="clinic-manual-note" class="sim-form-hint">
+                        Akses klinik mengikuti master pegawai. Pilih data pegawai terlebih dahulu;
+                        bila akun tanpa pegawai (akun teknis), pilih klinik secara manual.
+                    </p>
+                </div>
+
+                <div class="sim-form-group">
+                    <span class="sim-form-label">Scope Sistem</span>
+                    <div class="grid gap-2 rounded-lg border border-sim-border bg-sim-surface-alt p-3">
+                        @foreach ($scopes as $scope => $label)
+                            <label class="flex items-start gap-2 text-sm text-sim-ink">
+                                <input type="checkbox" name="scope_names[]" value="{{ $scope }}"
+                                       @checked(collect(old('scope_names', $currentScopes))->contains($scope))
+                                       class="mt-0.5 h-4 w-4 rounded border-sim-border text-sim-primary focus:ring-sim-primary">
+                                <span>
+                                    {{ $label }}
+                                    <span class="block text-xs text-sim-text">{{ $scope }}</span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('scope_names')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    @error('scope_names.*')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    <p class="sim-form-hint">
+                        Scope menambah izin fungsional di luar peran struktural. Scope tidak melewati
+                        batas klinik maupun segregasi tugas (menyetujui program, menutup temuan).
+                    </p>
                 </div>
 
                 <div class="sim-form-group">
@@ -159,4 +198,41 @@
             </form>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const employeeSelect = document.getElementById('employee_id');
+            if (!employeeSelect) {
+                return;
+            }
+
+            const clinicInputs = document.querySelectorAll('input[name="clinic_ids[]"]');
+            const defaultClinic = document.getElementById('default_clinic_id');
+            const derivedNote = document.getElementById('clinic-source-note');
+            const manualNote = document.getElementById('clinic-manual-note');
+
+            const toggleClinicSource = function () {
+                const derived = employeeSelect.value !== '';
+
+                clinicInputs.forEach(function (input) {
+                    input.disabled = derived;
+                });
+
+                if (defaultClinic) {
+                    defaultClinic.disabled = derived;
+                }
+
+                if (derivedNote) {
+                    derivedNote.hidden = !derived;
+                }
+
+                if (manualNote) {
+                    manualNote.hidden = derived;
+                }
+            };
+
+            employeeSelect.addEventListener('change', toggleClinicSource);
+            toggleClinicSource();
+        })();
+    </script>
 @endsection

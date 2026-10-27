@@ -16,6 +16,44 @@ kolom, atau data lama yang dihapus.
 
 ---
 
+## 0. Status implementasi (26 Oktober 2026)
+
+Seluruh langkah §5 sudah **diimplementasikan** dan hijau pada suite 107 test / 330 assertion
+(`php artisan test`), `view:cache`, `npm run build`, dan Pint untuk berkas yang disentuh.
+Keputusan terbuka ADR-0014…ADR-0018 **masih berstatus Proposed**; implementasi memakai opsi
+paling kecil yang dapat dibalik (add-only, nullable, default aman).
+
+| # | Langkah §5 | Status | Bukti |
+|---|------------|--------|-------|
+| 1 | Migrasi pivot `employee_clinic_assignments` + backfill | Selesai | `database/migrations/2026_10_26_100001_*`, 7 baris backfill pada data dev |
+| 2 | `Employee` multi klinik + form centang klinik/radio utama | Selesai | `Employee::syncClinicAssignments()`, `employees/form.blade.php`, `EmployeeMultiClinicTest` (8 test) |
+| 3 | Katalog 8 peran (`SimmakRoles::catalog()`) + label legacy | Selesai | `SimmakRoles`, peran lama tetap ada & tidak lagi assignable |
+| 4 | Multi peran pada form pengguna | Selesai | `role_ids[]`, `syncRoles()`, `UserMultiRoleAndScopeTest` |
+| 5 | Sinkronisasi klinik dari pegawai | Selesai | `App\Services\UserClinicScopeSynchronizer`, dipanggil dari `EmployeeController`/`UserController` |
+| 6 | Tabel + bundel Scope Sistem | Selesai | `2026_10_26_100002_*`, `App\Support\SimmakScopes`, `User::scopeNames()`, `simmak:sync-user-scopes` |
+| 7 | Form Scope Sistem multi-pilih | Selesai | `users/create|edit` (checkbox `scope_names[]`), `users/show` menampilkan peran + scope |
+| 8 | Indeks penugasan (kolom + detail tim) | Selesai | `audit/assignments/index|show.blade.php`, `audit_assignments.instrument_version_id`, `AssignmentIndexViewTest` (4 test) |
+| 9 | Sinkronisasi dokumentasi & manual | Selesai | `AGENTS.md`, `docs/DDD.md` §6.12, `docs/ROLE_MATRIX.md` §11, `docs/PROGRESS_TIMELINE.md`, `docs/manual/01_ROLE_DAN_AKSES.md` |
+
+Catatan implementasi yang menyimpang dari rencana awal (dan alasannya):
+
+- Nama tes digabung menjadi dua berkas: `EmployeeMultiClinicTest` (langkah 1–2) dan
+  `UserMultiRoleAndScopeTest` (langkah 3–7). Tidak ada `RoleCatalogTest`/`UserMultiRoleTest`/
+  `UserClinicScopeSyncTest`/`UserScopePermissionTest` terpisah.
+- `SimmakRoles::labels()` mengembalikan katalog resmi **plus** label peran legacy, sedangkan
+  `assignableNames()` hanya 8 peran resmi. `sync()` tetap membuat baris peran legacy agar akun
+  dan seeder demo tidak pecah.
+- `kasatpel-ukp` dan `kasatpel-ukm` memakai bundel izin yang sama (`$pengawasLingkup`): perbedaan
+  lingkup UKP/UKM adalah data organisasi, bukan izin. Pemetaan per akun dari `ketua-tim-*`
+  menunggu ADR-0015.
+- Scope diberikan sebagai **izin langsung** pada akun (`model_has_permissions`) sehingga
+  `simmak:sync-user-scopes` akan menimpa izin langsung yang diberikan manual. Izin peran
+  (`role_has_permissions`) tidak tersentuh.
+- `employee_clinic_assignments` ditulis lewat model pivot ber-UUID (`EmployeeClinicAssignment
+  extends Pivot`) agar `attach()/sync()` tidak menyisipkan `id` kosong.
+
+---
+
 ## 1. Ringkasan
 
 | Area | Masalah saat ini | Arah perbaikan | Dampak skema |

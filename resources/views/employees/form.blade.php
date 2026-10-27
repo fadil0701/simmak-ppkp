@@ -70,25 +70,45 @@
                     </div>
                 </div>
 
-                <div class="grid gap-5 sm:grid-cols-3">
-                    <div class="sim-form-group">
-                        <label class="sim-form-label" for="clinic_id">Klinik / Unit</label>
-                        <select id="clinic_id" name="clinic_id" class="sim-form-select">
-                            <option value="">— Tidak ada —</option>
-                            @foreach ($clinics as $clinic)
-                                <option value="{{ $clinic->id }}" @selected(old('clinic_id', $employee?->clinic_id) === $clinic->id)>
-                                    {{ $clinic->code }} — {{ $clinic->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('clinic_id')<p class="sim-form-error">{{ $message }}</p>@enderror
+                <div class="sim-form-group">
+                    <span class="sim-form-label">Klinik / Unit Kerja yang Dipegang</span>
+                    <div class="space-y-2 rounded-lg border border-sim-border bg-sim-surface-alt p-3">
+                        @forelse ($clinics as $clinic)
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <label class="flex items-center gap-2 text-sm text-sim-ink">
+                                    <input type="checkbox" name="clinic_ids[]" value="{{ $clinic->id }}"
+                                           class="h-4 w-4 rounded border-sim-border text-sim-primary focus:ring-sim-primary"
+                                           @checked(in_array($clinic->id, old('clinic_ids', $scopedClinicIds), true))>
+                                    <span>{{ $clinic->code }} — {{ $clinic->name }}</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-xs text-sim-text">
+                                    <input type="radio" name="primary_clinic_id" value="{{ $clinic->id }}"
+                                           class="h-3.5 w-3.5 border-sim-border text-sim-primary focus:ring-sim-primary"
+                                           @checked(old('primary_clinic_id', $employee?->primaryClinicId()) === $clinic->id)>
+                                    Klinik utama
+                                </label>
+                            </div>
+                        @empty
+                            <p class="text-sm text-sim-text">Belum ada klinik yang dapat dipilih.</p>
+                        @endforelse
                     </div>
+                    @error('clinic_ids')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    @error('clinic_ids.*')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    @error('primary_clinic_id')<p class="sim-form-error">{{ $message }}</p>@enderror
+                    <p class="sim-form-hint">
+                        Pegawai boleh memegang lebih dari satu klinik/unit kerja. Klinik utama menjadi dasar
+                        penugasan audit dan sumber sinkronisasi akses klinik pada akun pengguna.
+                    </p>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
                     <div class="sim-form-group">
-                        <label class="sim-form-label" for="unit_id">Subunit (opsional)</label>
+                        <label class="sim-form-label" for="unit_id">Subunit pada Klinik Utama (opsional)</label>
                         <select id="unit_id" name="unit_id" class="sim-form-select">
                             <option value="">— Tidak ada —</option>
                             @foreach ($units as $unit)
-                                <option value="{{ $unit->id }}" @selected(old('unit_id', $employee?->unit_id) === $unit->id)>
+                                <option value="{{ $unit->id }}" data-clinic="{{ $unit->clinic_id }}"
+                                        @selected(old('unit_id', $employee?->unit_id) === $unit->id)>
                                     {{ $unit->name }}
                                 </option>
                             @endforeach
@@ -120,4 +140,40 @@
             </form>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const unitSelect = document.getElementById('unit_id');
+            if (!unitSelect) {
+                return;
+            }
+
+            const primaryRadios = document.querySelectorAll('input[name="primary_clinic_id"]');
+
+            const filterUnits = function () {
+                const selected = document.querySelector('input[name="primary_clinic_id"]:checked');
+                const clinicId = selected ? selected.value : '';
+
+                Array.from(unitSelect.options).forEach(function (option) {
+                    if (option.value === '') {
+                        return;
+                    }
+
+                    const matches = clinicId !== '' && option.dataset.clinic === clinicId;
+                    option.hidden = !matches;
+                    option.disabled = !matches;
+
+                    if (!matches && option.selected) {
+                        unitSelect.value = '';
+                    }
+                });
+            };
+
+            primaryRadios.forEach(function (radio) {
+                radio.addEventListener('change', filterUnits);
+            });
+
+            filterUnits();
+        })();
+    </script>
 @endsection

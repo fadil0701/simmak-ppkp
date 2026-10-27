@@ -20,6 +20,16 @@
             @if ($assignment->scope_notes)
                 <p class="text-sm text-slate-500">{{ $assignment->scope_notes }}</p>
             @endif
+            <p class="text-sm text-slate-500">
+                Jumlah auditor: {{ $assignment->teamMembers->where('active', true)->count() }} (ketua + anggota)
+                · {{ $assignment->clinic?->name ?? 'Tanpa lokasi' }}
+                @if ($assignment->scheduled_start && $assignment->scheduled_end)
+                    · {{ $assignment->scheduled_start->translatedFormat('d M Y') }} – {{ $assignment->scheduled_end->translatedFormat('d M Y') }}
+                @endif
+                @if ($assignment->instrumentTitle())
+                    · {{ $assignment->instrumentTitle() }}
+                @endif
+            </p>
         </div>
 
         <div class="flex gap-2 flex-wrap">
@@ -45,12 +55,39 @@
                 <h3 class="font-semibold text-slate-800">Tim Auditor</h3>
             </div>
             <div class="simmak-card-body space-y-3">
+                @php
+                    $inactiveMembers = $assignment->teamMembers->where('active', false)->count();
+                    $pendingMembers = $assignment->teamMembers
+                        ->filter(fn ($member) => ! $member->independence_declared || $member->conflict_declared)
+                        ->count();
+                @endphp
+                @if ($inactiveMembers > 0 || $pendingMembers > 0)
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-1">
+                        @if ($inactiveMembers > 0)
+                            <p>{{ $inactiveMembers }} anggota tim berstatus nonaktif — data tetap ditampilkan untuk jejak audit.</p>
+                        @endif
+                        @if ($pendingMembers > 0)
+                            <p>{{ $pendingMembers }} anggota belum menyelesaikan deklarasi independensi/konflik.</p>
+                        @endif
+                    </div>
+                @endif
                 @forelse ($assignment->teamMembers as $member)
                     <div class="border border-slate-100 rounded-lg p-4 hover:bg-slate-50">
                         <div class="flex items-center justify-between mb-2">
                             <div>
-                                <div class="font-mono text-xs text-slate-500">{{ $member->user->name }}</div>
-                                <div class="font-medium text-slate-800">{{ ucfirst(str_replace('_', ' ', $member->team_role)) }}</div>
+                                <div class="font-medium text-slate-800">{{ $member->user?->name ?? 'Pengguna tidak ditemukan' }}</div>
+                                <div class="text-xs text-slate-500">
+                                    {{ ucfirst(str_replace('_', ' ', $member->team_role)) }}
+                                    @if ($member->user?->employee?->employee_number)
+                                        · NIP {{ $member->user->employee->employee_number }}
+                                    @endif
+                                    @if ($member->user?->employee?->position)
+                                        · {{ $member->user->employee->position }}
+                                    @endif
+                                    @if ($member->user?->employee?->unit?->name)
+                                        · {{ $member->user->employee->unit->name }}
+                                    @endif
+                                </div>
                             </div>
                             <span class="simmak-badge {{ $member->active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700' }}">
                                 {{ $member->active ? 'Aktif' : 'Nonaktif' }}
