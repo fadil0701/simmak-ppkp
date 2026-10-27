@@ -18,7 +18,7 @@ kolom, atau data lama yang dihapus.
 
 ## 0. Status implementasi (26 Oktober 2026)
 
-Seluruh langkah §5 sudah **diimplementasikan** dan hijau pada suite 107 test / 330 assertion
+Seluruh langkah §5 sudah **diimplementasikan** dan hijau pada suite 108 test / 337 assertion
 (`php artisan test`), `view:cache`, `npm run build`, dan Pint untuk berkas yang disentuh.
 Keputusan terbuka ADR-0014…ADR-0018 **masih berstatus Proposed**; implementasi memakai opsi
 paling kecil yang dapat dibalik (add-only, nullable, default aman).

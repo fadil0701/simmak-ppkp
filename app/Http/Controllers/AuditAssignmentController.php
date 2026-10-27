@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
 
 class AuditAssignmentController extends Controller
 {
@@ -215,16 +216,24 @@ class AuditAssignmentController extends Controller
      */
     private function auditorCandidates(string $organizationId)
     {
-        $candidates = User::query()
-            ->where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->permission('audit.execution.execute')
-            ->with(['employee.unit', 'employee.clinic'])
-            ->orderBy('name')
-            ->get();
+        // Izin bisa belum ter-seed (instalasi baru/seeder parsial); jangan sampai
+        // form penugasan gagal 500 hanya karena permission belum ada.
+        $canExecute = Permission::where('name', 'audit.execution.execute')
+            ->where('guard_name', 'web')
+            ->exists();
 
-        if ($candidates->isNotEmpty()) {
-            return $candidates;
+        if ($canExecute) {
+            $candidates = User::query()
+                ->where('organization_id', $organizationId)
+                ->where('is_active', true)
+                ->permission('audit.execution.execute')
+                ->with(['employee.unit', 'employee.clinic'])
+                ->orderBy('name')
+                ->get();
+
+            if ($candidates->isNotEmpty()) {
+                return $candidates;
+            }
         }
 
         return User::query()

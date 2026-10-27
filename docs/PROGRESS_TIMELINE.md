@@ -442,7 +442,7 @@ Di `APP_ENV=production` tanpa `DEMO_ACCOUNT_PASSWORD`, seeder dilewati.
       aksi "Detail Tim", paginasi 15 baris (`audit_assignments.instrument_version_id`)
 - [x] Test: `EmployeeMultiClinicTest`, `UserMultiRoleAndScopeTest` (termasuk render form
       create/edit/show: centang peran & scope, catatan sumber klinik), `AssignmentIndexViewTest`
-      — total suite 107 test / 330 assertion lulus
+      — total suite 108 test / 337 assertion lulus
 
 ---
 

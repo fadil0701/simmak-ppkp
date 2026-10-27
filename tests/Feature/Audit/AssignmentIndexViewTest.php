@@ -204,6 +204,34 @@ class AssignmentIndexViewTest extends TestCase
     }
 
     /** @test */
+    public function create_form_lists_planned_instruments_and_auditor_candidates(): void
+    {
+        $standard = AuditStandard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'STD-02',
+            'title' => 'Standar Audit Mutu Internal',
+            'status' => 'active',
+        ]);
+
+        $version = InstrumentVersion::create([
+            'audit_standard_id' => $standard->id,
+            'version_label' => 'v2027',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->viewer)->get('/audit/assignments/create');
+
+        $response->assertStatus(200);
+        $response->assertSee('name="instrument_version_id"', false);
+        $response->assertSee('value="'.$version->id.'"', false);
+        $response->assertSee('Standar Audit Mutu Internal (v2027)');
+        $response->assertSee('name="lead_auditor_id"', false);
+        $response->assertSee('Ketua Tim Audit');
+        // Akun tanpa data pegawai tetap muncul dengan surel sebagai pengenal.
+        $response->assertSee('peninjau@test.local');
+    }
+
+    /** @test */
     public function index_marks_assignments_that_passed_their_schedule(): void
     {
         $this->makeAssignment('TUGAS-2026-003', [
