@@ -5,8 +5,8 @@
 
 @section('content')
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ route('accreditation.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Dashboard Akreditasi</a>
-        <a href="{{ route('accreditation.standards') }}" class="text-sm font-medium text-teal-700 hover:underline">Lihat Standar →</a>
+        <a href="{{ route('accreditation.index') }}" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-back">← Kembali ke Dashboard Akreditasi</a>
+        <a href="{{ route('accreditation.standards') }}" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-detail">Lihat Standar →</a>
     </div>
 
     @if (! $program)
@@ -53,7 +53,7 @@
                                                     <option value="{{ $doc->id }}">{{ $doc->document_number }} — {{ \Illuminate\Support\Str::limit($doc->title, 40) }}</option>
                                                 @endforeach
                                             </select>
-                                            <button type="submit" class="sim-btn sim-btn-primary sim-btn-sm">Tautkan</button>
+                                            <button type="submit" class="sim-btn sim-btn-approve sim-btn-sm">Tautkan</button>
                                         </form>
                                     @else
                                         <span class="text-xs text-slate-400">Sudah tertaut</span>

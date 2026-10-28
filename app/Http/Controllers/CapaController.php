@@ -77,7 +77,7 @@ class CapaController extends Controller
         }
 
         $cases = $query->get();
-        $filename = 'capa-'.now()->format('Ymd_His').'.csv';
+        $filename = 'tindak-lanjut-'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload(function () use ($cases) {
             $handle = fopen('php://output', 'w');
@@ -180,7 +180,7 @@ class CapaController extends Controller
 
         $this->capaService->addAction($capa, $validated, $request->user());
 
-        return back()->with('status', 'Tindakan CAPA berhasil ditambahkan.');
+        return back()->with('status', 'Tindakan tindak lanjut berhasil ditambahkan.');
     }
 
     public function submitEvidence(Request $request, CapaAction $action): RedirectResponse
@@ -204,7 +204,7 @@ class CapaController extends Controller
                 'clinic_id' => $capa->clinic_id,
                 'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
                 'evidence_type' => 'capa_follow_up',
-                'description' => $validated['evidence_notes'] ?? 'Bukti tindak lanjut CAPA',
+                'description' => $validated['evidence_notes'] ?? 'Bukti tindak lanjut',
             ]);
             ActionEvidence::create([
                 'corrective_action_id' => $action->id,
@@ -236,7 +236,7 @@ class CapaController extends Controller
         $this->capaService->recordVerification($capa, $validated, $request->user());
 
         $message = match ($validated['result']) {
-            'effective' => 'Auditor menerima tindak lanjut. Temuan dan CAPA ditutup.',
+            'effective' => 'Auditor menerima tindak lanjut. Temuan dan tindak lanjut ditutup.',
             'needs_improvement' => 'Hasil: perlu perbaikan. Kasus dikembalikan ke tindak lanjut.',
             default => 'Hasil: tidak efektif. Kasus dikembalikan ke tindak lanjut dengan tenggat baru.',
         };

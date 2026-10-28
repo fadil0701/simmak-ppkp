@@ -23,7 +23,7 @@
                 <input type="date" name="start_date" class="sim-form-input" required>
                 <input type="date" name="end_date" class="sim-form-input" required>
                 <div class="md:col-span-4 flex justify-end">
-                    <x-action icon="check-circle" label="Simpan" />
+                    <x-action action="save" icon="check-circle" label="Simpan" />
                 </div>
             </form>
         </div>
@@ -51,7 +51,7 @@
                             <td>{{ $fy->end_date?->format('d M Y') }}</td>
                             <td>
                                 <div class="sim-action-group">
-                                    <x-action href="{{ route('fiscal-years.destroy', $fy) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus tahun anggaran ini?" />
+                                    <x-action action="delete" href="{{ route('fiscal-years.destroy', $fy) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus tahun anggaran ini?" />
                                 </div>
                             </td>
                         </tr>

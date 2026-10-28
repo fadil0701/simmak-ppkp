@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.standards.index') }}" class="sim-btn sim-btn-outline sim-btn-sm">← Kembali ke Daftar Standar</a>
+        <a href="{{ route('audit.standards.index') }}" class="sim-btn sim-btn-back sim-btn-sm">← Kembali ke Daftar Standar</a>
     </div>
 
     <div class="sim-card">

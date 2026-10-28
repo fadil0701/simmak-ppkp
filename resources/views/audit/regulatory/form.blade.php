@@ -2,7 +2,7 @@
 
 @php
     $isCreate = is_null($source);
-    $title = $isCreate ? 'Tambah Sumber Regulasi' : 'Sunting Sumber Regulasi';
+    $title = $isCreate ? 'Tambah Sumber Regulasi' : 'Edit Sumber Regulasi';
 @endphp
 
 @section('title', $title.' — SIMMAK PPKP')
@@ -10,7 +10,7 @@
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('audit.regulatory.index') }}" icon="chevron-left" label="Kembali ke Register" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('audit.regulatory.index') }}" icon="chevron-left" label="Kembali ke Register" size="sm" />
     </div>
 
     @if (session('status'))
@@ -101,8 +101,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-sim-border-light pt-4">
-                    <a href="{{ route('audit.regulatory.index') }}" class="sim-btn sim-btn-outline">Batal</a>
-                    <x-action icon="check-circle" :label="$isCreate ? 'Simpan Sumber Regulasi' : 'Simpan Perubahan'" />
+                    <a href="{{ route('audit.regulatory.index') }}" class="sim-btn sim-btn-neutral">Batal</a>
+                    <x-action action="edit" icon="check-circle" :label="$isCreate ? 'Simpan Sumber Regulasi' : 'Simpan Perubahan'" />
                 </div>
             </form>
         </div>
@@ -148,7 +148,7 @@
                         </div>
 
                         <div class="flex justify-end border-t border-sim-border-light pt-4">
-                            <x-action icon="check-circle" label="Simpan Status Verifikasi" />
+                            <x-action action="save" icon="check-circle" label="Simpan Status Verifikasi" />
                         </div>
                     </form>
                 </div>

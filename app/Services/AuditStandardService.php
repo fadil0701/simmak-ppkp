@@ -46,15 +46,48 @@ class AuditStandardService
         return $source;
     }
 
+    /** Status master standar yang sah. */
+    public const STANDARD_STATUSES = ['draft', 'active', 'inactive', 'archived'];
+
     public function createStandard(array $data, User $user): AuditStandard
     {
+        $status = $data['status'] ?? 'draft';
+
+        if (! in_array($status, self::STANDARD_STATUSES, true)) {
+            $status = 'draft';
+        }
+
         return AuditStandard::create([
             'organization_id' => $user->organization_id,
             'source_document_id' => $data['source_document_id'] ?? null,
             'code' => $data['code'],
             'title' => $data['title'],
-            'status' => 'draft',
+            'status' => $status,
         ]);
+    }
+
+    /**
+     * Mengubah status master standar (draft → active → inactive/archived).
+     */
+    public function setStandardStatus(AuditStandard $standard, string $status): AuditStandard
+    {
+        if (! in_array($status, self::STANDARD_STATUSES, true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Status standar tidak dikenal: '.$status.'.',
+            ]);
+        }
+
+        // Standar hanya boleh diaktifkan bila sudah punya versi instrumen,
+        // agar tidak ada standar "aktif" yang isinya kosong.
+        if ($status === 'active' && $standard->instrumentVersions()->count() === 0) {
+            throw ValidationException::withMessages([
+                'status' => 'Standar belum memiliki versi instrumen. Tambahkan minimal satu versi instrumen sebelum mengaktifkan standar.',
+            ]);
+        }
+
+        $standard->update(['status' => $status]);
+
+        return $standard->refresh();
     }
 
     public function createInstrumentVersion(array $data, User $user): InstrumentVersion
@@ -108,18 +141,20 @@ class AuditStandardService
             ->update(['status' => 'archived']);
 
         $version->update(['status' => 'active']);
+
+        // Versi instrumen aktif berarti standar induk sedang dipakai audit,
+        // jadi status master standar otomatis menjadi aktif. Standar yang
+        // sengaja diarsipkan tidak dibangkitkan kembali oleh efek samping ini.
+        $standard = $version->standard;
+
+        if ($standard && $standard->status !== 'archived') {
+            $standard->update(['status' => 'active']);
+        }
     }
 
     public function createSection(array $data, User $user): StandardSection
     {
         $version = InstrumentVersion::findOrFail($data['instrument_version_id']);
-
-        // Super admin boleh menambah seksi walau versi sudah dikunci eksekusi.
-        if ($version->isLocked() && ! $user->hasUnrestrictedAccess()) {
-            throw ValidationException::withMessages([
-                'version' => 'Versi instrumen sudah dipakai eksekusi audit dan dikunci. Buat versi baru untuk mengubah isi kriteria/seksi.',
-            ]);
-        }
 
         return StandardSection::create([
             'instrument_version_id' => $version->id,
@@ -131,17 +166,21 @@ class AuditStandardService
         ]);
     }
 
+    public function updateSection(StandardSection $section, array $data, User $user): StandardSection
+    {
+        $section->update([
+            'code' => $data['code'],
+            'title' => $data['title'],
+            'description' => array_key_exists('description', $data) ? $data['description'] : $section->description,
+            'sort_order' => $data['sort_order'] ?? $section->sort_order,
+        ]);
+
+        return $section->refresh();
+    }
+
     public function createCriterion(array $data, User $user): StandardCriterion
     {
         $section = StandardSection::with('instrumentVersion')->findOrFail($data['standard_section_id']);
-        $version = $section->instrumentVersion;
-
-        // Super admin boleh menambah kriteria walau versi sudah dikunci eksekusi.
-        if ($version && $version->isLocked() && ! $user->hasUnrestrictedAccess()) {
-            throw ValidationException::withMessages([
-                'version' => 'Versi instrumen sudah dipakai eksekusi audit dan dikunci. Buat versi baru untuk mengubah isi kriteria/seksi.',
-            ]);
-        }
 
         return StandardCriterion::create([
             'standard_section_id' => $section->id,
@@ -157,6 +196,22 @@ class AuditStandardService
             'sort_order' => $data['sort_order'] ?? 0,
             'active' => $data['active'] ?? true,
         ]);
+    }
+
+    public function updateCriterion(StandardCriterion $criterion, array $data, User $user): StandardCriterion
+    {
+        $criterion->update([
+            'code' => $data['code'],
+            'title' => $data['title'],
+            'requirement_text' => array_key_exists('requirement_text', $data) ? $data['requirement_text'] : $criterion->requirement_text,
+            'assessment_guidance' => array_key_exists('assessment_guidance', $data) ? $data['assessment_guidance'] : $criterion->assessment_guidance,
+            'evidence_guidance' => array_key_exists('evidence_guidance', $data) ? $data['evidence_guidance'] : $criterion->evidence_guidance,
+            'max_score' => $data['max_score'] ?? $criterion->max_score,
+            'sort_order' => $data['sort_order'] ?? $criterion->sort_order,
+            'active' => array_key_exists('active', $data) ? (bool) $data['active'] : $criterion->active,
+        ]);
+
+        return $criterion->refresh();
     }
 
     public function getStandardsForOrganization(?string $organizationId)

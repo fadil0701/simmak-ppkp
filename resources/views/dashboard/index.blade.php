@@ -3,7 +3,7 @@
 @section('title', $showExecutive ? 'Dashboard Eksekutif — SIMMAK PPKP' : 'Dashboard Audit Internal — SIMMAK PPKP')
 @section('page-title', $showExecutive ? 'Dashboard Eksekutif' : 'Dashboard Audit Internal')
 @section('page-subtitle', $showExecutive
-    ? 'Ringkasan kesiapan akreditasi, temuan, CAPA, dan risiko seluruh klinik'
+    ? 'Ringkasan kesiapan akreditasi, temuan, tindak lanjut, dan risiko seluruh klinik'
     : 'Antrian kerja audit internal dan status audit seluruh klinik')
 
 @section('content')
@@ -55,10 +55,10 @@
                 </div>
             </div>
 
-            {{-- Progres CAPA --}}
+            {{-- Progres Tindak Lanjut --}}
             <div class="sim-card flex flex-col">
                 <div class="sim-card-header border-b-0 pb-0">
-                    <h3 class="text-xs font-bold uppercase tracking-wide text-sim-navy-900">Progres CAPA</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-wide text-sim-navy-900">Progres Tindak Lanjut</h3>
                     <p class="mt-0.5 text-[10px] text-sim-muted">Tindakan Korektif &amp; Preventif</p>
                 </div>
                 <div class="sim-card-body flex flex-1 flex-col">
@@ -101,7 +101,7 @@
                             <svg class="mt-0.5 h-4 w-4 shrink-0 text-sim-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
                             <span>Segera lakukan tinjauan dan perbarui dokumen.</span>
                         </div>
-                        <a href="{{ route('dms.index') }}" class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sim-primary hover:underline">
+                        <a href="{{ route('dms.index') }}" class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sim-primary hover:underline" class="sim-btn sim-btn-detail">
                             Lihat Semua
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </a>
@@ -114,7 +114,7 @@
                     </div>
                     <div class="sim-card-body flex flex-1 flex-col pt-0">
                         @include('partials.dashboard.activity-list', ['activities' => $activities])
-                        <a href="#" class="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-sim-primary hover:underline">
+                        <a href="#" class="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-sim-primary hover:underline" class="sim-btn sim-btn-detail">
                             Lihat Semua Aktivitas
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </a>
@@ -135,7 +135,7 @@
                                 <option value="{{ $region }}" @selected($selected_region === $region)>{{ $region }}</option>
                             @endforeach
                         </select>
-                        <a href="{{ route('dashboard.export-ranking') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-sim-border bg-sim-white px-3 py-1.5 text-sm font-medium text-sim-ink hover:bg-sim-hover">
+                        <a href="{{ route('dashboard.export-ranking') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-sim-border bg-sim-white px-3 py-1.5 text-sm font-medium text-sim-ink hover:bg-sim-hover" class="sim-btn sim-btn-download">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                             Ekspor
                         </a>
@@ -150,7 +150,7 @@
                                 <th class="px-4 py-2.5">Wilayah</th>
                                 <th class="px-4 py-2.5">Skor Akreditasi (%)</th>
                                 <th class="px-4 py-2.5">Temuan Terbuka</th>
-                                <th class="px-4 py-2.5">CAPA Selesai (%)</th>
+                                <th class="px-4 py-2.5">Tindak Lanjut Selesai (%)</th>
                                 <th class="px-4 py-2.5">Skor Risiko</th>
                                 <th class="px-4 py-2.5">Status</th>
                             </tr>

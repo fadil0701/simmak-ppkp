@@ -34,18 +34,18 @@
 
         <div class="flex gap-2 flex-wrap">
             @can('audit.assignment.manage', $assignment)
-                <x-action href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Ubah" size="sm" />
+                <x-action action="edit" href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Edit" size="sm" />
             @endcan
             @can('audit.assignment.manage', $assignment)
                 @if ($assignment->status === 'draft')
-                    <x-action href="{{ route('audit.assignments.submit', $assignment) }}" icon="upload" label="Ajukan Aktivasi" size="sm"
+                    <x-action action="upload" href="{{ route('audit.assignments.submit', $assignment) }}" icon="upload" label="Ajukan Aktivasi" size="sm"
                               method="POST" confirm="Ajukan penugasan ini untuk aktivasi?" />
                 @elseif ($assignment->status === 'proposed' && $assignment->conflict_check_status === 'resolved')
-                    <x-action href="{{ route('audit.assignments.activate', $assignment) }}" icon="check-circle" label="Aktifkan" size="sm"
+                    <x-action action="approve" href="{{ route('audit.assignments.activate', $assignment) }}" icon="check-circle" label="Aktifkan" size="sm"
                               method="POST" confirm="Aktifkan penugasan ini?" />
                 @endif
             @endcan
-            <x-action href="{{ route('audit.assignments.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
+            <x-action action="back" href="{{ route('audit.assignments.index') }}" icon="chevron-left" label="Kembali" size="sm" />
         </div>
     </div>
 
@@ -127,7 +127,7 @@
                                     <textarea name="conflict_notes" rows="2" class="sim-form-textarea">{{ old('conflict_notes', $member->conflict_notes) }}</textarea>
                                     @error('conflict_notes')<p class="sim-form-error">{{ $message }}</p>@enderror
                                 </div>
-                                <x-action icon="check-circle" label="Simpan Deklarasi" size="sm" class="mt-2" />
+                                <x-action action="save" icon="check-circle" label="Simpan Deklarasi" size="sm" class="mt-2" />
                             </form>
                             @endunless
                         @endcan
@@ -156,7 +156,7 @@
                                     <input type="text" name="team_role" value="auditor" class="sim-form-input" required>
                                 </div>
                                 <div class="flex items-end">
-                                    <x-action icon="plus" label="Tambah" size="sm" />
+                                    <x-action action="create" icon="plus" label="Tambah" size="sm" />
                                 </div>
                             </div>
                         </form>
@@ -224,7 +224,7 @@
                                 <label class="sim-form-label">Judul Eksekusi<span class="sim-form-label-required"></span></label>
                                 <input type="text" name="title" maxlength="255" value="{{ old('title', $assignment->title) }}" class="sim-form-input">
                             </div>
-                            <x-action icon="plus" label="Buat Eksekusi" />
+                            <x-action action="create" icon="plus" label="Buat Eksekusi" />
                         </form>
                     </div>
                 </div>

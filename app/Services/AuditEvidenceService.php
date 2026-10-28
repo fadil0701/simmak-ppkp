@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Evidence;
 use App\Models\User;
+use App\Support\FullTextSearch;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
@@ -262,11 +263,14 @@ class AuditEvidenceService
             ->get();
     }
 
-    public function getEvidenceForUser(User $user)
+    public function getEvidenceForUser(User $user, ?string $search = null)
     {
-        return Evidence::forUserClinics($user)
+        $query = Evidence::forUserClinics($user)
             ->with(['clinic', 'execution', 'uploader'])
-            ->orderByDesc('uploaded_at')
-            ->paginate(15);
+            ->orderByDesc('uploaded_at');
+
+        FullTextSearch::apply($query, ['original_filename', 'description'], $search);
+
+        return $query->paginate(15)->withQueryString();
     }
 }

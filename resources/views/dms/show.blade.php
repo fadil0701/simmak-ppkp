@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('dms.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Daftar Dokumen</a>
+        <a href="{{ route('dms.index') }}" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-back">← Kembali ke Daftar Dokumen</a>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
@@ -48,11 +48,11 @@
                     <div class="flex flex-wrap gap-3">
                         <form method="POST" action="{{ route('dms.submit-review', $document) }}">
                             @csrf
-                            <button type="submit" class="sim-btn sim-btn-primary">Ajukan Tinjauan</button>
+                            <button type="submit" class="sim-btn sim-btn-approve">Ajukan Tinjauan</button>
                         </form>
                         <form method="POST" action="{{ route('dms.publish', $document) }}">
                             @csrf
-                            <button type="submit" class="sim-btn sim-btn-outline">Terbitkan Langsung</button>
+                            <button type="submit" class="sim-btn sim-btn-approve">Terbitkan Langsung</button>
                         </form>
                     </div>
                 @elseif ($document->status === 'review')
@@ -62,12 +62,12 @@
                             <label class="sim-form-label text-xs">Komentar Tinjauan (opsional)</label>
                             <textarea name="comments" rows="2" class="sim-form-textarea"></textarea>
                         </div>
-                        <button type="submit" class="sim-btn sim-btn-primary">Setujui Tinjauan</button>
+                        <button type="submit" class="sim-btn sim-btn-approve">Setujui Tinjauan</button>
                     </form>
                 @elseif ($document->status === 'approved')
                     <form method="POST" action="{{ route('dms.publish', $document) }}">
                         @csrf
-                        <button type="submit" class="sim-btn sim-btn-primary">Terbitkan Dokumen</button>
+                        <button type="submit" class="sim-btn sim-btn-approve">Terbitkan Dokumen</button>
                     </form>
                 @endif
 
@@ -102,7 +102,7 @@
                     </div>
                     <p class="mt-3 text-xs text-slate-500">Scan untuk verifikasi keaslian dokumen</p>
                     <a href="{{ $document->qrCode->verificationUrl() }}" target="_blank" rel="noopener"
-                       class="mt-1 inline-block text-[10px] font-medium text-teal-700 hover:underline">
+                       class="mt-1 inline-block text-[10px] font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-approve">
                         Buka halaman verifikasi
                     </a>
                 </div>

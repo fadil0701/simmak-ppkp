@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreignUuid('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignUuid('updated_by')->nullable()->constrained('users')->nullOnDelete();
 
-            $table->unique(['audit_execution_id', 'standard_criterion_id']);
+            $table->unique(['audit_execution_id', 'standard_criterion_id'], 'checklist_responses_execution_criterion_unique');
             $table->index(['audit_execution_id']);
             $table->index(['standard_criterion_id']);
             $table->index(['response_value']);

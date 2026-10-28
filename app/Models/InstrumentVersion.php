@@ -45,8 +45,10 @@ class InstrumentVersion extends BaseModel
     }
 
     /**
-     * Versi dikunci jika sudah dipakai oleh eksekusi audit — isi kriteria/seksi
-     * tidak boleh diubah retroaktif. Perubahan wajib dibuat sebagai versi baru.
+     * True jika versi ini sudah terhubung ke eksekusi audit.
+     *
+     * Informasi jejak pemakaian saja: perbaikan isi seksi/EP tetap diizinkan
+     * pada versi yang sama (tanpa wajib membuat versi baru).
      */
     public function isLocked(): bool
     {

@@ -5,6 +5,7 @@ namespace Tests\Unit\Audit;
 use App\Models\Organization;
 use App\Models\User;
 use App\Services\AuditEvidenceService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -12,6 +13,8 @@ use Tests\TestCase;
 
 class EvidenceSecurityTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @test */
     public function valid_pdf_file_is_accepted(): void
     {

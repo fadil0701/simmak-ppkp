@@ -14,7 +14,7 @@
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('audit.assignments.index') }}" icon="chevron-left" label="Kembali ke daftar" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('audit.assignments.index') }}" icon="chevron-left" label="Kembali ke daftar" size="sm" />
     </div>
 
     <div class="sim-card max-w-3xl">

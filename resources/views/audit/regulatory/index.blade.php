@@ -13,7 +13,7 @@
             </p>
         </div>
         @can('audit.standard.manage')
-            <a href="{{ route('audit.regulatory.create') }}" class="sim-btn sim-btn-primary">Tambah Sumber Regulasi</a>
+            <a href="{{ route('audit.regulatory.create') }}" class="sim-btn sim-btn-create">Tambah Sumber Regulasi</a>
         @endcan
     </div>
 
@@ -36,8 +36,8 @@
                     @endforeach
                 </select>
                 <div class="flex gap-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Filter</button>
-                    <a href="{{ route('audit.regulatory.index') }}" class="sim-btn sim-btn-outline">Reset</a>
+                    <button type="submit" class="sim-btn sim-btn-neutral">Filter</button>
+                    <a href="{{ route('audit.regulatory.index') }}" class="sim-btn sim-btn-back">Reset</a>
                 </div>
             </form>
         </div>
@@ -86,8 +86,8 @@
                             <td class="px-3 py-2 text-center">
                                 <div class="sim-action-group">
                                     @can('audit.standard.manage')
-                                        <x-action href="{{ route('audit.regulatory.edit', $source) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
-                                        <x-action href="{{ route('audit.regulatory.destroy', $source) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus sumber regulasi ini?" />
+                                        <x-action action="edit" href="{{ route('audit.regulatory.edit', $source) }}" icon="pencil" label="Edit" size="sm" />
+                                        <x-action action="delete" href="{{ route('audit.regulatory.destroy', $source) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus sumber regulasi ini?" />
                                     @else
                                         <span class="text-sim-muted">—</span>
                                     @endcan

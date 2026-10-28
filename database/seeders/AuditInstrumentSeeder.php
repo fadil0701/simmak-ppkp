@@ -57,7 +57,9 @@ class AuditInstrumentSeeder extends Seeder
                 [
                     'source_document_id' => $source->id,
                     'title' => $group['title'],
-                    'status' => 'draft',
+                    // Versi instrumen di bawah dibuat langsung aktif, jadi
+                    // master standar ikut aktif agar kolom Status konsisten.
+                    'status' => 'active',
                 ]
             );
 

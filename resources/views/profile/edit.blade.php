@@ -80,7 +80,7 @@
                 @endif
 
                 <div class="flex justify-end gap-3 border-t border-sim-border-light pt-4">
-                    <x-action icon="check-circle" label="Simpan Profil" />
+                    <x-action action="save" icon="check-circle" label="Simpan Profil" />
                 </div>
             </form>
         </div>

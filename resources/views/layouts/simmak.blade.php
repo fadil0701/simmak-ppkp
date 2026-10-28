@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'SIMMAK-PPKP DKI Jakarta')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
@@ -211,9 +212,9 @@
                                     <div class="text-sm font-medium text-sim-ink">{{ auth()->user()->name }}</div>
                                     <div class="truncate text-xs text-sim-muted">{{ auth()->user()->email }}</div>
                                 </div>
-                                <a href="{{ route('profile.edit') }}" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover" role="menuitem">
+                                <a href="{{ route('profile.edit') }}" class="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-sim-ink hover:bg-sim-hover" role="menuitem" class="sim-btn sim-btn-edit">
                                     <span class="inline-flex text-sim-muted">@include('partials.icons.pencil')</span>
-                                    Ubah profil
+                                    Edit Profil
                                 </a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf

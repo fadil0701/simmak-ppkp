@@ -10,7 +10,7 @@
             <p class="sim-page-subtitle">Data pegawai sumber untuk pembuatan akun pengguna dan penugasan audit.</p>
         </div>
         @can('employees.manage')
-            <a href="{{ route('employees.create') }}" class="sim-btn sim-btn-primary">Tambah Pegawai</a>
+            <a href="{{ route('employees.create') }}" class="sim-btn sim-btn-create">Tambah Pegawai</a>
         @endcan
     </div>
 
@@ -39,8 +39,8 @@
                     <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
                 </select>
                 <div class="flex gap-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Filter</button>
-                    <a href="{{ route('employees.index') }}" class="sim-btn sim-btn-outline">Reset</a>
+                    <button type="submit" class="sim-btn sim-btn-neutral">Filter</button>
+                    <a href="{{ route('employees.index') }}" class="sim-btn sim-btn-back">Reset</a>
                 </div>
             </form>
         </div>
@@ -96,12 +96,12 @@
                             <td class="px-3 py-2 text-center">
                                 <div class="sim-action-group">
                                     @can('employees.manage')
-                                        <x-action href="{{ route('employees.edit', $employee) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
-                                        <x-action href="{{ route('employees.destroy', $employee) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus data pegawai ini?" />
+                                        <x-action action="edit" href="{{ route('employees.edit', $employee) }}" icon="pencil" label="Edit" size="sm" />
+                                        <x-action action="delete" href="{{ route('employees.destroy', $employee) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus data pegawai ini?" />
                                     @endif
                                     @can('users.manage')
                                         @if (! $employee->users()->exists())
-                                            <x-action href="{{ route('users.create', ['employee_id' => $employee->id]) }}" icon="users" label="Buat Akun" variant="outline" size="sm" />
+                                            <x-action action="create" href="{{ route('users.create', ['employee_id' => $employee->id]) }}" icon="users" label="Buat Akun" size="sm" />
                                         @endif
                                     @endcan
                                 </div>

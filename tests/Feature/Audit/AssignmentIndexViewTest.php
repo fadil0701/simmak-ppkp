@@ -157,6 +157,7 @@ class AssignmentIndexViewTest extends TestCase
         $response->assertSee('Jakarta Pusat');
         $response->assertSee('02 Mar 2026');
         $response->assertSee('Belum ditentukan');
+        $response->assertSee('Kalender');
     }
 
     /** @test */
@@ -244,5 +245,20 @@ class AssignmentIndexViewTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Melewati jadwal');
+    }
+
+    /** @test */
+    public function calendar_lists_assignments_on_the_scheduled_month(): void
+    {
+        $this->makeAssignment('TUGAS-2026-CAL');
+
+        $response = $this->actingAs($this->viewer)->get('/audit/calendar?year=2026&month=3');
+
+        $response->assertOk();
+        $response->assertSee('Kalender Audit');
+        $response->assertSee('Maret 2026');
+        $response->assertSee('TUGAS-2026-CAL');
+        $response->assertSee('Klinik Pratama Jakarta Pusat');
+        $response->assertDontSee('TUGAS-MISSING');
     }
 }

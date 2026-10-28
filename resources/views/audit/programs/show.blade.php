@@ -14,23 +14,23 @@
 
         <div class="flex gap-2 flex-wrap">
             @can('audit.program.update', $program)
-                <x-action href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Ubah" size="sm" />
+                <x-action action="edit" href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Edit" size="sm" />
             @endcan
             @can('audit.program.submit', $program)
                 @if ($program->status === 'draft')
-                    <x-action href="{{ route('audit.programs.submit', $program) }}" icon="upload" label="Ajukan Tinjauan" size="sm"
+                    <x-action action="upload" href="{{ route('audit.programs.submit', $program) }}" icon="upload" label="Ajukan Tinjauan" size="sm"
                               method="POST" confirm="Ajukan program ini untuk tinjauan?" />
                 @endif
             @endcan
             @can('audit.program.approve', $program)
                 @if ($program->status === 'submitted_for_review')
-                    <x-action href="{{ route('audit.programs.approve', $program) }}" icon="check-circle" label="Setujui" size="sm"
+                    <x-action action="approve" href="{{ route('audit.programs.approve', $program) }}" icon="check-circle" label="Setujui" size="sm"
                               method="POST" confirm="Setujui program ini?" />
-                    <x-action href="{{ route('audit.programs.return', $program) }}" icon="x-mark" label="Kembalikan" variant="secondary" size="sm"
+                    <x-action action="back" href="{{ route('audit.programs.return', $program) }}" icon="x-mark" label="Kembalikan" size="sm"
                               method="POST" confirm="Kembalikan program ini untuk revisi?" :fields="['reason' => 'Perlu revisi']" />
                 @endif
             @endcan
-            <x-action href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
+            <x-action action="back" href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" size="sm" />
         </div>
     </div>
 

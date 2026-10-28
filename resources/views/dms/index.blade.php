@@ -26,7 +26,7 @@
     <div class="simmak-card">
         <div class="simmak-card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 class="font-semibold text-slate-800">Daftar Dokumen</h3>
-            <a href="{{ route('dms.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('dms.create') }}" class="sim-btn sim-btn-create inline-flex items-center gap-2">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Dokumen Baru
             </a>
@@ -42,7 +42,7 @@
                     <option value="published" @selected(request('status') === 'published')>Terbit</option>
                     <option value="expired" @selected(request('status') === 'expired')>Kedaluwarsa</option>
                 </select>
-                <button type="submit" class="sim-btn sim-btn-secondary">Filter</button>
+                <button type="submit" class="sim-btn sim-btn-neutral">Filter</button>
             </div>
         </form>
 
@@ -80,7 +80,7 @@
                                 @if ($doc->status === 'draft')
                                     <form method="POST" action="{{ route('dms.publish', $doc) }}" class="inline">
                                         @csrf
-                                        <button type="submit" class="text-sm font-medium text-teal-700 hover:underline">Terbitkan</button>
+                                        <button type="submit" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-approve">Terbitkan</button>
                                     </form>
                                 @else
                                     —

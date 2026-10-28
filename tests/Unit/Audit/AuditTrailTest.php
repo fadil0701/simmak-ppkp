@@ -6,11 +6,14 @@ use App\Models\AuditTrail;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\MassAssignmentException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AuditTrailTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @test */
     public function audit_trail_record_can_be_created(): void
     {

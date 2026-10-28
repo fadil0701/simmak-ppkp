@@ -81,21 +81,21 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
-            <x-action href="{{ route('audit.executions.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
+            <x-action action="back" href="{{ route('audit.executions.index') }}" icon="chevron-left" label="Kembali" />
 
             @if ($execution->status === 'preparation' && $canExecute)
-                <x-action href="{{ route('audit.executions.start', $execution) }}" method="POST" icon="play-circle"
+                <x-action action="start" href="{{ route('audit.executions.start', $execution) }}" method="POST" icon="play-circle"
                           label="Mulai Audit" confirm="Mulai eksekusi audit ini sekarang?" />
             @endif
 
             @if ($execution->status === 'in_progress' && $canSubmit)
-                <x-action href="{{ route('audit.executions.submit', $execution) }}" method="POST" icon="check-circle"
-                          label="Serahkan untuk Tinjauan" variant="secondary"
+                <x-action action="save" href="{{ route('audit.executions.submit', $execution) }}" method="POST" icon="check-circle"
+                          label="Serahkan untuk Tinjauan"
                           confirm="Serahkan hasil audit untuk tinjauan? Pastikan seluruh EP sudah dinilai." />
             @endif
 
             @if ($execution->status === 'submitted_for_review' && $canFinalize)
-                <x-action href="{{ route('audit.executions.finalize', $execution) }}" method="POST" icon="check-circle"
+                <x-action action="save" href="{{ route('audit.executions.finalize', $execution) }}" method="POST" icon="check-circle"
                           label="Finalisasi" confirm="Finalisasi hasil audit ini?" />
             @endif
         </div>
@@ -245,7 +245,7 @@
                     </p>
                     <div class="mt-4">
                         @can('audit.standard.view')
-                            <x-action href="{{ route('audit.standards.index') }}" icon="book-open" label="Buka Standar & Instrumen" variant="secondary" size="sm" />
+                            <x-action action="navigate" href="{{ route('audit.standards.index') }}" icon="book-open" label="Buka Standar & Instrumen" size="sm" />
                         @endcan
                     </div>
                 </div>
@@ -253,7 +253,8 @@
         </div>
     @else
         @if ($editable)
-            <form method="POST" action="{{ route('audit.executions.table', $execution) }}" id="form-tabel-audit">
+            <form method="POST" action="{{ route('audit.executions.table', $execution) }}" id="form-tabel-audit"
+                  data-autosave-url="{{ route('audit.executions.table.autosave', $execution) }}">
                 @csrf
         @endif
 
@@ -398,14 +399,15 @@
                             <span data-counter="assessed">{{ $stats['completed'] }}</span> dari {{ $stats['total'] }} EP dinilai
                         </span>
                         <span class="hidden sm:inline">
-                            EP tidak sesuai / sesuai sebagian yang disertai rekomendasi otomatis menjadi temuan &amp; CAPA.
+                            EP tidak sesuai / sesuai sebagian yang disertai rekomendasi otomatis menjadi temuan &amp; Tindak Lanjut.
                         </span>
                     </div>
                     <div class="flex items-center gap-2">
+                        <span id="checklist-autosave-status" class="text-xs text-sim-muted" aria-live="polite">Autosave aktif</span>
                         <span class="hidden text-xs text-sim-muted lg:inline">
                             Temuan tidak tertutup sebelum auditor memvalidasi tindak lanjut klinik.
                         </span>
-                        <x-action icon="check-circle" label="Simpan Tabel" />
+                        <x-action action="save" icon="check-circle" label="Simpan Tabel" />
                     </div>
                 </div>
             </form>
@@ -469,12 +471,57 @@
                     if (percentLabel) percentLabel.textContent = percent + '%';
                 }
 
+                var autosaveUrl = form.getAttribute('data-autosave-url');
+                var autosaveStatus = document.getElementById('checklist-autosave-status');
+                var autosaveTimer = null;
+                var csrf = document.querySelector('meta[name="csrf-token"]');
+
+                function setAutosaveStatus(text) {
+                    if (autosaveStatus) autosaveStatus.textContent = text;
+                }
+
+                function runAutosave() {
+                    if (!autosaveUrl || !csrf) return;
+                    setAutosaveStatus('Menyimpan…');
+                    fetch(autosaveUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrf.getAttribute('content')
+                        },
+                        body: new FormData(form)
+                    }).then(function (response) {
+                        if (!response.ok) throw new Error('autosave failed');
+                        return response.json();
+                    }).then(function (payload) {
+                        setAutosaveStatus(payload.saved_at ? ('Tersimpan ' + payload.saved_at) : 'Tersimpan');
+                    }).catch(function () {
+                        setAutosaveStatus('Autosave gagal — gunakan Simpan Tabel');
+                    });
+                }
+
+                function scheduleAutosave() {
+                    clearTimeout(autosaveTimer);
+                    autosaveTimer = setTimeout(runAutosave, 1400);
+                }
+
                 form.addEventListener('change', function (event) {
-                    if (event.target.matches('[data-conformity-select]')) refresh();
+                    if (event.target.matches('[data-conformity-select]')) {
+                        refresh();
+                        scheduleAutosave();
+                    }
                 });
 
                 form.addEventListener('input', function (event) {
-                    if (event.target.matches('[data-recommendation]')) refresh();
+                    if (event.target.matches('[data-recommendation]')) {
+                        refresh();
+                        scheduleAutosave();
+                    }
+                });
+
+                form.addEventListener('submit', function () {
+                    clearTimeout(autosaveTimer);
                 });
 
                 refresh();

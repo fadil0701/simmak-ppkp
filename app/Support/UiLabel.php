@@ -26,6 +26,51 @@ class UiLabel
         };
     }
 
+    /**
+     * Status master standar audit (tabel audit_standards).
+     *
+     * Berbeda dari executionStatus(): standar memakai daur hidup dokumen
+     * (draft → active → inactive/archived), bukan status pelaksanaan audit.
+     */
+    public static function standardStatus(?string $status): string
+    {
+        return match ($status) {
+            'draft' => 'Draf',
+            'active' => 'Aktif',
+            'inactive' => 'Nonaktif',
+            'archived' => 'Diarsipkan',
+            default => $status ?? '—',
+        };
+    }
+
+    /**
+     * Kelas badge Tailwind untuk status standar.
+     */
+    public static function standardStatusTone(?string $status): string
+    {
+        return match ($status) {
+            'active' => 'border-sim-success bg-sim-success-bg text-sim-success',
+            'inactive' => 'border-sim-warning bg-sim-warning-bg text-sim-warning',
+            'archived' => 'border-sim-neutral bg-sim-neutral-bg text-sim-muted',
+            default => 'border-sim-info bg-sim-info-bg text-sim-info',
+        };
+    }
+
+    /**
+     * Status versi instrumen (tabel instrument_versions).
+     */
+    public static function instrumentStatus(?string $status): string
+    {
+        return match ($status) {
+            'draft' => 'Draf',
+            'review' => 'Tinjauan',
+            'approved' => 'Disahkan',
+            'active' => 'Aktif',
+            'archived' => 'Diarsipkan',
+            default => $status ?? '—',
+        };
+    }
+
     public static function capaStatus(?string $status): string
     {
         return match ($status) {
@@ -101,7 +146,7 @@ class UiLabel
             'returned_for_revision' => 'Dikembalikan',
             'confirmed' => 'Dikonfirmasi',
             'action_required' => 'Perlu Tindakan',
-            'in_capa' => 'Dalam CAPA',
+            'in_capa' => 'Dalam Tindak Lanjut',
             'pending_verification' => 'Menunggu Verifikasi',
             'closed' => 'Selesai',
             'verified' => 'Terverifikasi',

@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\AuditCapaService;
 use App\Services\AuditTrailService;
 use App\Support\AuditWorkScope;
+use App\Support\FullTextSearch;
 use App\Support\SpreadsheetCell;
 use App\Support\UiLabel;
 use Illuminate\Database\Eloquent\Builder;
@@ -98,6 +99,14 @@ class AuditFindingController extends Controller
 
         if ($request->boolean('escalated')) {
             $query->where('is_escalated', true);
+        }
+
+        if ($request->filled('q')) {
+            FullTextSearch::apply(
+                $query,
+                ['finding_code', 'title', 'description', 'recommendation'],
+                $request->string('q')->toString()
+            );
         }
 
         return $query;
@@ -404,7 +413,7 @@ class AuditFindingController extends Controller
         abort_unless($request->user()->can('audit.action.update') || $request->user()->can('capa.manage'), 403);
 
         if (! in_array($finding->status, ['confirmed', 'in_capa', 'action_required', 'pending_verification'], true)) {
-            return back()->with('error', 'CAPA hanya dapat dibuat setelah temuan dikonfirmasi.');
+            return back()->with('error', 'Tindak lanjut hanya dapat dibuat setelah temuan dikonfirmasi.');
         }
 
         if ($finding->capaCase) {
@@ -421,7 +430,7 @@ class AuditFindingController extends Controller
             ['actor' => $request->user()->name]
         );
 
-        return redirect()->route('capa.show', $capa)->with('status', 'CAPA berhasil dibuat dari temuan audit.');
+        return redirect()->route('capa.show', $capa)->with('status', 'Tindak lanjut berhasil dibuat dari temuan audit.');
     }
 
     public function destroy(Request $request, AuditFinding $finding): RedirectResponse
@@ -429,7 +438,7 @@ class AuditFindingController extends Controller
         $this->authorize('delete', $finding);
 
         if ($finding->capaCase) {
-            return back()->with('error', 'Temuan tidak dapat dihapus karena sudah memiliki kasus CAPA.');
+            return back()->with('error', 'Temuan tidak dapat dihapus karena sudah memiliki kasus tindak lanjut.');
         }
 
         $finding->delete();

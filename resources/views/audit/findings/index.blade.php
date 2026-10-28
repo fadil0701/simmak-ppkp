@@ -19,9 +19,9 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
-            <x-action href="{{ route('findings.export', request()->query()) }}" icon="download" label="Ekspor CSV" variant="outline" />
+            <x-action action="export" href="{{ route('findings.export', request()->query()) }}" icon="download" label="Ekspor CSV" />
             @can('audit.finding.create')
-                <x-action href="{{ route('findings.create') }}" icon="plus" label="Tambah Temuan" />
+                <x-action action="create" href="{{ route('findings.create') }}" icon="plus" label="Tambah Temuan" />
             @endcan
         </div>
     </div>
@@ -34,6 +34,15 @@
 
             <div class="flex gap-2 flex-wrap">
                 <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                    <input type="hidden" name="severity" value="{{ request('severity') }}">
+                    <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
+                    <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari kode, judul, uraian…"
+                           class="sim-form-input sim-btn-sm w-56" aria-label="Cari temuan">
+                    <x-action action="save" icon="check-circle" label="Cari" size="sm" />
+                </form>
+                <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="q" value="{{ request('q') }}">
                     <input type="hidden" name="severity" value="{{ request('severity') }}">
                     <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
                     <select name="status" class="sim-form-select" onchange="this.form.submit()">
@@ -46,6 +55,7 @@
                     </select>
                 </form>
                 <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="q" value="{{ request('q') }}">
                     <input type="hidden" name="status" value="{{ request('status') }}">
                     <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
                     <select name="severity" class="sim-form-select" onchange="this.form.submit()">
@@ -58,6 +68,7 @@
                     </select>
                 </form>
                 <form method="GET" class="flex gap-2">
+                    <input type="hidden" name="q" value="{{ request('q') }}">
                     <input type="hidden" name="status" value="{{ request('status') }}">
                     <input type="hidden" name="severity" value="{{ request('severity') }}">
                     <select name="clinic_id" class="sim-form-select" onchange="this.form.submit()">
@@ -71,6 +82,7 @@
                 </form>
                 @if ($stats['escalated'] > 0)
                     <form method="GET" class="flex items-center">
+                        <input type="hidden" name="q" value="{{ request('q') }}">
                         <input type="hidden" name="status" value="{{ request('status') }}">
                         <input type="hidden" name="severity" value="{{ request('severity') }}">
                         <input type="hidden" name="clinic_id" value="{{ request('clinic_id') }}">
@@ -141,9 +153,9 @@
                             <td class="text-center text-sim-mono text-xs">{{ $finding->due_at?->format('d M Y') ?? '—' }}</td>
                             <td class="text-right">
                                 <div class="sim-action-group">
-                                    <x-action href="{{ route('findings.show', $finding) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    <x-action action="detail" href="{{ route('findings.show', $finding) }}" icon="file-text" label="Detail" size="sm" />
                                     @can('audit.finding.update', $finding)
-                                        <x-action href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Edit" size="sm" />
                                     @endcan
                                 </div>
                             </td>

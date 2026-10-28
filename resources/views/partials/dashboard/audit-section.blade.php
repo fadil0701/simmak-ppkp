@@ -20,15 +20,15 @@
                 <div class="sim-card p-4 border-l-4 {{ $auditStats['findings_critical'] > 0 ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
                     <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['findings_critical'] > 0 ? 'text-sim-danger' : 'text-sim-success' }}">Temuan kritis terbuka</div>
                     <div class="text-2xl font-bold text-sim-ink">{{ $auditStats['findings_critical'] }}</div>
-                    <div class="mt-1 text-xs text-sim-muted">Severity kritis dan status belum ditutup (draf sampai CAPA/verifikasi).</div>
+                    <div class="mt-1 text-xs text-sim-muted">Severity kritis dan status belum ditutup (draf sampai tindak lanjut/verifikasi).</div>
                     <a href="{{ route('findings.index', ['severity' => 'critical', 'open' => 1]) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka temuan kritis →</a>
                 </div>
 
                 <div class="sim-card p-4 border-l-4 {{ $auditStats['capa_overdue'] > 0 ? 'border-sim-danger bg-sim-danger-bg' : 'border-sim-success bg-sim-success-bg' }}">
-                    <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['capa_overdue'] > 0 ? 'text-sim-danger' : 'text-sim-success' }}">CAPA terlambat</div>
+                    <div class="mb-2 text-xs font-semibold uppercase {{ $auditStats['capa_overdue'] > 0 ? 'text-sim-danger' : 'text-sim-success' }}">Tindak lanjut terlambat</div>
                     <div class="text-2xl font-bold text-sim-ink">{{ $auditStats['capa_overdue'] }}</div>
                     <div class="mt-1 text-xs text-sim-muted">Kasus belum selesai dengan target penutupan sebelum hari ini. Terlambat adalah indikator, bukan status.</div>
-                    <a href="{{ route('capa.index', ['overdue' => 1]) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka CAPA terlambat →</a>
+                    <a href="{{ route('capa.index', ['overdue' => 1]) }}" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Buka Tindak Lanjut Terlambat →</a>
                 </div>
             </div>
         </div>
@@ -75,9 +75,9 @@
             <div class="sim-card-header flex items-center justify-between">
                 <div>
                     <h3 class="sim-card-title">Temuan Terbuka per Klinik</h3>
-                    <p class="text-xs text-sim-muted">Temuan terbuka, kritis, dan CAPA terlambat</p>
+                    <p class="text-xs text-sim-muted">Temuan terbuka, kritis, dan Tindak lanjut terlambat</p>
                 </div>
-                <a href="{{ route('findings.index') }}" class="text-xs font-medium text-sim-primary hover:underline">Lihat semua</a>
+                <a href="{{ route('findings.index') }}" class="text-xs font-medium text-sim-primary hover:underline" class="sim-btn sim-btn-detail">Lihat semua</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="sim-table w-full">
@@ -86,7 +86,7 @@
                             <th>Klinik</th>
                             <th class="text-center">Terbuka</th>
                             <th class="text-center">Kritis</th>
-                            <th class="text-center">CAPA terlambat</th>
+                            <th class="text-center">Tindak lanjut terlambat</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -107,6 +107,51 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-12">
+        <div class="sim-card lg:col-span-6">
+            <div class="sim-card-header">
+                <h3 class="sim-card-title">Eksekusi menurut status</h3>
+                <p class="text-xs text-sim-muted">Jumlah pelaksanaan audit dalam ruang lingkup klinik Anda</p>
+            </div>
+            <div class="sim-card-body">
+                @if ($auditCharts['executions']['empty'])
+                    <p class="px-2 py-8 text-center text-sm text-sim-muted">Belum ada eksekusi untuk ditampilkan sebagai grafik.</p>
+                @else
+                    <div class="relative mx-auto h-56 max-w-sm" role="img" aria-label="Grafik donat status eksekusi audit">
+                        <canvas data-chart-type="doughnut" data-chart='@json($auditCharts['executions'])'></canvas>
+                    </div>
+                    <p class="mt-2 text-center text-xs text-sim-muted">
+                        Persiapan {{ $auditCharts['executions']['values'][0] }},
+                        berjalan {{ $auditCharts['executions']['values'][1] }},
+                        tinjauan {{ $auditCharts['executions']['values'][2] }},
+                        final {{ $auditCharts['executions']['values'][3] }}.
+                    </p>
+                @endif
+            </div>
+        </div>
+        <div class="sim-card lg:col-span-6">
+            <div class="sim-card-header">
+                <h3 class="sim-card-title">Temuan terbuka menurut tingkat risiko</h3>
+                <p class="text-xs text-sim-muted">Hanya temuan yang belum ditutup</p>
+            </div>
+            <div class="sim-card-body">
+                @if ($auditCharts['findings']['empty'])
+                    <p class="px-2 py-8 text-center text-sm text-sim-muted">Belum ada temuan terbuka untuk ditampilkan sebagai grafik.</p>
+                @else
+                    <div class="relative h-56" role="img" aria-label="Grafik batang temuan terbuka menurut tingkat risiko">
+                        <canvas data-chart-type="bar" data-chart='@json($auditCharts['findings'])'></canvas>
+                    </div>
+                    <p class="mt-2 text-center text-xs text-sim-muted">
+                        Kritis {{ $auditCharts['findings']['values'][0] }},
+                        mayor {{ $auditCharts['findings']['values'][1] }},
+                        minor {{ $auditCharts['findings']['values'][2] }},
+                        observasi {{ $auditCharts['findings']['values'][3] }}.
+                    </p>
+                @endif
             </div>
         </div>
     </div>
@@ -135,7 +180,7 @@
             <div class="sim-card-body space-y-3 text-sm">
                 <div class="flex justify-between gap-3">
                     <span class="text-sim-muted">Program audit (organisasi)</span>
-                    <a href="{{ route('audit.programs.index') }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['programs'] }} <span class="font-normal text-sim-muted">({{ $auditStats['programs_approved'] }} disetujui)</span></a>
+                    <a href="{{ route('audit.programs.index') }}" class="font-medium text-sim-primary hover:underline" class="sim-btn sim-btn-approve">{{ $auditStats['programs'] }} <span class="font-normal text-sim-muted">({{ $auditStats['programs_approved'] }} disetujui)</span></a>
                 </div>
                 <div class="flex justify-between gap-3">
                     <span class="text-sim-muted">Penugasan aktif</span>
@@ -150,10 +195,10 @@
                     <a href="{{ route('findings.index', ['open' => 1]) }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['findings_open'] }}</a>
                 </div>
                 <div class="flex justify-between gap-3">
-                    <span class="text-sim-muted">CAPA terbuka</span>
+                    <span class="text-sim-muted">Tindak lanjut terbuka</span>
                     <a href="{{ route('capa.index') }}" class="font-medium text-sim-primary hover:underline">{{ $auditStats['capa_open'] }}</a>
                 </div>
-                <p class="pt-2 text-[11px] leading-relaxed text-sim-muted">Periode hitungan: data berjalan (bukan rentang tanggal). Program dihitung per organisasi; temuan, CAPA, eksekusi, dan penugasan mengikuti klinik yang dapat Anda akses.</p>
+                <p class="pt-2 text-[11px] leading-relaxed text-sim-muted">Periode hitungan: data berjalan (bukan rentang tanggal). Program dihitung per organisasi; temuan, tindak lanjut, eksekusi, dan penugasan mengikuti klinik yang dapat Anda akses.</p>
             </div>
         </div>
     </div>

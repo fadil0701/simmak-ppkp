@@ -31,7 +31,7 @@
                     <p class="sim-form-hint">Tanggal target survei akreditasi organisasi.</p>
                 </div>
                 <div class="pt-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan Pengaturan</button>
+                    <button type="submit" class="sim-btn sim-btn-save">Simpan Pengaturan</button>
                 </div>
             </form>
         </div>

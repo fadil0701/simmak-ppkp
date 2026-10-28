@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', 'Sunting Penugasan — SIMMAK PPKP')
-@section('page-title', 'Sunting Penugasan')
+@section('title', 'Edit Penugasan — SIMMAK PPKP')
+@section('page-title', 'Edit Penugasan')
 @section('page-subtitle', $assignment->assignment_code . ' — ' . $assignment->title)
 
 @section('breadcrumb')
@@ -10,13 +10,13 @@
         <svg class="h-3.5 w-3.5 text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         <a href="{{ route('audit.assignments.show', $assignment) }}">{{ $assignment->assignment_code }}</a>
         <svg class="h-3.5 w-3.5 text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        <span>Sunting</span>
+        <span>Edit</span>
     </li>
 @endsection
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="chevron-left" label="Kembali ke detail" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('audit.assignments.show', $assignment) }}" icon="chevron-left" label="Kembali ke detail" size="sm" />
     </div>
 
     <div class="mb-4 sim-alert sim-alert-info">

@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" size="sm" />
     </div>
 
     <div class="simmak-card max-w-3xl">
@@ -160,7 +160,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <x-action icon="check-circle" label="Simpan Temuan" />
+                    <x-action action="save" icon="check-circle" label="Simpan Temuan" />
                 </div>
             </form>
         </div>

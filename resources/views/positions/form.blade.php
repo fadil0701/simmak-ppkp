@@ -2,7 +2,7 @@
 
 @php
     $isCreate = is_null($position);
-    $title = $isCreate ? 'Tambah Jabatan' : 'Sunting Jabatan';
+    $title = $isCreate ? 'Tambah Jabatan' : 'Edit Jabatan';
     $route = $isCreate ? route('positions.store') : route('positions.update', $position);
 @endphp
 
@@ -11,7 +11,7 @@
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('positions.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" class="mb-4" />
+        <x-action action="back" href="{{ route('positions.index') }}" icon="chevron-left" label="Kembali" size="sm" class="mb-4" />
     </div>
 
     <div class="sim-card max-w-2xl">
@@ -73,8 +73,8 @@
                 </div>
 
                 <div class="flex justify-end gap-3 border-t border-sim-border-light pt-4">
-                    <a href="{{ route('positions.index') }}" class="sim-btn sim-btn-outline">Batal</a>
-                    <x-action icon="check-circle" :label="$isCreate ? 'Simpan Jabatan' : 'Simpan Perubahan'" />
+                    <a href="{{ route('positions.index') }}" class="sim-btn sim-btn-neutral">Batal</a>
+                    <x-action action="edit" icon="check-circle" :label="$isCreate ? 'Simpan Jabatan' : 'Simpan Perubahan'" />
                 </div>
             </form>
         </div>

@@ -186,4 +186,18 @@ class EvidenceDownloadTest extends TestCase
             ->expectsOutputToContain('Checksum tidak cocok')
             ->assertExitCode(0);
     }
+
+    /** @test */
+    public function index_search_filters_by_filename_and_description(): void
+    {
+        $kept = $this->makeEvidence('audit_evidence/org/clinic/sk-visi.jpeg', 'SK-visi-misi.pdf');
+        $kept->update(['description' => 'Salinan SK penetapan visi misi']);
+        $this->makeEvidence('audit_evidence/org/clinic/lain.jpeg', 'daftar-hadir.xlsx');
+
+        $response = $this->actingAs($this->user)->get(route('audit.evidence.index', ['q' => 'visi misi']));
+
+        $response->assertOk();
+        $response->assertSee('SK-visi-misi.pdf');
+        $response->assertDontSee('daftar-hadir.xlsx');
+    }
 }

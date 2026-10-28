@@ -1,7 +1,7 @@
 @extends('layouts.simmak')
 
-@section('title', 'CAPA — SIMMAK PPKP')
-@section('page-title', 'Manajemen CAPA')
+@section('title', 'Tindak Lanjut — SIMMAK PPKP')
+@section('page-title', 'Manajemen Tindak Lanjut')
 
 @section('content')
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -24,14 +24,14 @@
                 <input type="checkbox" name="overdue" value="1" class="rounded border-slate-300" @checked(request()->boolean('overdue')) onchange="this.form.submit()">
                 Hanya terlambat
             </label>
-            <a href="{{ route('capa.export', request()->query()) }}" class="text-sm font-medium text-teal-700 hover:underline">Ekspor CSV</a>
+            <a href="{{ route('capa.export', request()->query()) }}" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-download">Ekspor CSV</a>
         </form>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
                     <tr>
-                        <th class="px-5 py-3">No. CAPA</th>
+                        <th class="px-5 py-3">No. Tindak Lanjut</th>
                         <th class="px-5 py-3">Permasalahan</th>
                         <th class="px-5 py-3">Klinik</th>
                         <th class="px-5 py-3">Prioritas</th>
@@ -57,7 +57,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">Belum ada kasus CAPA.</td></tr>
+                        <tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">Belum ada kasus tindak lanjut.</td></tr>
                     @endforelse
                 </tbody>
             </table>

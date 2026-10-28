@@ -39,7 +39,7 @@
                         <div class="text-xs font-semibold text-sim-danger uppercase mb-2">Temuan Risiko Tinggi</div>
                         <div class="text-2xl font-bold text-sim-ink">{{ $highRiskFindings->count() }}</div>
                         <div class="text-xs text-sim-muted mt-1">Temuan kritis dan tinggi yang membutuhkan perhatian segera.</div>
-                        <x-action href="{{ route('findings.index', ['severity' => 'critical']) }}" icon="chevron-right" label="Lihat semua temuan" variant="ghost" size="sm" class="mt-3" />
+                        <x-action action="detail" href="{{ route('findings.index', ['severity' => 'critical']) }}" icon="chevron-right" label="Lihat semua temuan" size="sm" class="mt-3" />
                     </div>
                 @else
                     <div class="sim-card p-4 border-l-4 border-sim-success bg-sim-success-bg">
@@ -53,7 +53,7 @@
                     <div class="sim-card p-4 border-l-4 border-sim-danger bg-sim-danger-bg">
                         <div class="text-xs font-semibold text-sim-danger uppercase mb-2">Tindak Lanjut Terlambat</div>
                         <div class="text-2xl font-bold text-sim-ink">{{ $overdueActions->count() }}</div>
-                        <div class="text-xs text-sim-muted mt-1">CAPA yang telah melewati tenggat penyelesaian.</div>
+                        <div class="text-xs text-sim-muted mt-1">Tindak lanjut yang telah melewati tenggat penyelesaian.</div>
                         <a href="{{ route('capa.index') }}?status=overdue" class="mt-3 inline-block text-sm font-medium text-sim-primary hover:underline">Tindak lanjuti →</a>
                     </div>
                 @else
@@ -77,7 +77,7 @@
                         <h3 class="sim-card-title">Jadwal Audit Berikutnya</h3>
                         <p class="text-xs text-sim-muted">Program audit yang telah disetujui dan dijadwalkan</p>
                     </div>
-                    <x-action href="{{ route('audit.programs.index') }}" icon="clipboard-list" label="Semua Program" variant="ghost" size="sm" class="mt-3" />
+                    <x-action action="navigate" href="{{ route('audit.programs.index') }}" icon="clipboard-list" label="Semua Program" size="sm" class="mt-3" />
                 </div>
                 <div class="sim-card-body p-0">
                     @php
@@ -122,9 +122,9 @@
                 <div class="sim-card-header flex items-center justify-between">
                     <div>
                         <h3 class="sim-card-title">Temuan Terbuka per Klinik</h3>
-                        <p class="text-xs text-sim-muted">Jumlah temuan dengan status terbuka, dalam CAPA, atau menunggu verifikasi</p>
+                        <p class="text-xs text-sim-muted">Jumlah temuan dengan status terbuka, dalam tindak lanjut, atau menunggu verifikasi</p>
                     </div>
-                    <x-action href="{{ route('findings.index') }}" icon="chevron-right" label="Lihat Semua" variant="ghost" size="sm" />
+                    <x-action action="detail" href="{{ route('findings.index') }}" icon="chevron-right" label="Lihat Semua" size="sm" />
                 </div>
                 <div class="sim-card-body p-0">
                     <table class="sim-table w-full">
@@ -221,7 +221,7 @@
             <div class="text-xs text-sim-muted mt-1">{{ $stats['findings_closed'] }} ditutup</div>
         </div>
         <div class="sim-card p-4">
-            <div class="text-xs font-semibold text-sim-muted uppercase">CAPA Aktif</div>
+            <div class="text-xs font-semibold text-sim-muted uppercase">Tindak Lanjut Aktif</div>
             <div class="text-2xl font-bold text-sim-ink mt-1">{{ $stats['capa_open'] }}</div>
             <div class="text-xs text-sim-muted mt-1">{{ $stats['capa_closed'] }} selesai</div>
         </div>

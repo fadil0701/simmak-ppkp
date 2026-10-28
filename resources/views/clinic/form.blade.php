@@ -2,7 +2,7 @@
 
 @php
     $isCreate = is_null($clinic);
-    $title = $isCreate ? 'Tambah Unit/Klinik' : 'Sunting Unit/Klinik';
+    $title = $isCreate ? 'Tambah Unit/Klinik' : 'Edit Unit/Klinik';
     $route = $isCreate ? route('clinics.store') : route('clinics.update', $clinic);
     $method = $isCreate ? 'POST' : 'PUT';
 @endphp
@@ -12,7 +12,7 @@
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('clinics.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" class="mb-4" />
+        <x-action action="back" href="{{ route('clinics.index') }}" icon="chevron-left" label="Kembali" size="sm" class="mb-4" />
     </div>
 
     <div class="simmak-card max-w-2xl">
@@ -155,7 +155,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <x-action icon="check-circle" :label="$isCreate ? 'Simpan Unit/Klinik' : 'Simpan Perubahan'" />
+                    <x-action action="edit" icon="check-circle" :label="$isCreate ? 'Simpan Unit/Klinik' : 'Simpan Perubahan'" />
                 </div>
             </form>
         </div>

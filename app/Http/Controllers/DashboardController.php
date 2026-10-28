@@ -62,6 +62,7 @@ class DashboardController extends Controller
             'upcomingAssignments' => $audit['upcomingAssignments'],
             'recentActivities' => $audit['recentActivities'],
             'findingsByClinic' => $audit['findingsByClinic'],
+            'auditCharts' => $audit['charts'],
         ]);
 
         return view('dashboard.index', $payload);
@@ -80,7 +81,7 @@ class DashboardController extends Controller
 
             fwrite($handle, "\xEF\xBB\xBF");
 
-            fputcsv($handle, ['Rank', 'Kode', 'Klinik', 'Wilayah', 'Skor Akreditasi', 'Temuan', 'CAPA Selesai %', 'Risk Score', 'Status']);
+            fputcsv($handle, ['Rank', 'Kode', 'Klinik', 'Wilayah', 'Skor Akreditasi', 'Temuan', 'Tindak Lanjut Selesai %', 'Risk Score', 'Status']);
 
             foreach ($ranking as $row) {
                 fputcsv($handle, array_map(fn ($value) => $this->sanitizeCsvValue($value), [

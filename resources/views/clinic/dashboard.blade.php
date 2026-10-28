@@ -20,7 +20,7 @@
                 </div>
             </div>
             @can('audit.execution.view')
-                <a href="{{ route('audit.executions.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline">
+                <a href="{{ route('audit.executions.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-detail">
                     Lihat Semua <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>
             @endcan
@@ -29,7 +29,7 @@
         <div class="simmak-card p-5">
             <div class="flex items-start justify-between">
                 <div>
-                    <div class="text-sm font-medium text-slate-500">CAPA</div>
+                    <div class="text-sm font-medium text-slate-500">Tindak Lanjut</div>
                     <div class="mt-2 flex gap-4">
                         <div><span class="text-2xl font-bold text-red-600">{{ $capa['open'] }}</span><span class="ml-1 text-xs text-slate-500">Terbuka</span></div>
                         <div><span class="text-2xl font-bold text-amber-500">{{ $capa['in_progress'] }}</span><span class="ml-1 text-xs text-slate-500">Dalam Proses</span></div>
@@ -39,7 +39,7 @@
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 </div>
             </div>
-            <a href="{{ route('capa.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline">
+            <a href="{{ route('capa.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-detail">
                 Lihat Semua <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
@@ -49,7 +49,7 @@
             <div class="mt-3">
                 @include('partials.dashboard.risk-heatmap', ['heatmap' => $risk_heatmap, 'compact' => true])
             </div>
-            <a href="{{ route('risk.index') }}" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline">
+            <a href="{{ route('risk.index') }}" class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-detail">
                 Lihat Semua <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
@@ -76,7 +76,7 @@
                     <p class="text-sm text-slate-500">Belum ada program akreditasi.</p>
                 @endforelse
             </div>
-            <a href="{{ route('accreditation.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline">
+            <a href="{{ route('accreditation.index') }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-edit">
                 Dashboard Akreditasi <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>

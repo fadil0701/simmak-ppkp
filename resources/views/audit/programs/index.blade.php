@@ -19,7 +19,7 @@
         </div>
 
         @can('audit.program.create')
-            <x-action href="{{ route('audit.programs.create') }}" icon="plus" label="Tambah Program" />
+            <x-action action="create" href="{{ route('audit.programs.create') }}" icon="plus" label="Tambah Program" />
         @endcan
     </div>
 
@@ -96,9 +96,9 @@
                             <td class="text-center text-sim-mono text-xs">{{ $program->schedules_count }}</td>
                             <td class="text-right">
                                 <div class="sim-action-group">
-                                    <x-action href="{{ route('audit.programs.show', $program) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    <x-action action="detail" href="{{ route('audit.programs.show', $program) }}" icon="file-text" label="Detail" size="sm" />
                                     @can('audit.program.update', $program)
-                                        <x-action href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('audit.programs.edit', $program) }}" icon="pencil" label="Edit" size="sm" />
                                     @endcan
                                 </div>
                             </td>

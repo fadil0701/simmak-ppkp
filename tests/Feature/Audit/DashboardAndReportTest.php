@@ -131,6 +131,33 @@ class DashboardAndReportTest extends TestCase
             AuditWorkScope::findings(AuditFinding::query(), $this->auditor)->whereIn('status', AuditFinding::OPEN_STATUSES)->count(),
             $stats['findings_open']
         );
+
+        $charts = app(AuditDashboardService::class)->chartSeries($this->auditor);
+        $this->assertFalse($charts['findings']['empty']);
+        $this->assertSame(1, $charts['findings']['values'][0]);
+
+        $page = $this->actingAs($this->auditor)->get('/dashboard');
+        $page->assertOk();
+        $page->assertSee('Eksekusi menurut status');
+        $page->assertSee('Temuan terbuka menurut tingkat risiko');
+    }
+
+    /** @test */
+    public function findings_index_full_text_search_matches_title(): void
+    {
+        $this->makeFinding($this->clinicA, 'TMN-SRC-1', 'in_capa');
+        AuditFinding::where('finding_code', 'TMN-SRC-1')->update([
+            'title' => 'Kebijakan visum tidak tersedia',
+            'description' => 'Tidak ada SK penetapan visi misi klinik',
+        ]);
+        $this->makeFinding($this->clinicA, 'TMN-SRC-2', 'in_capa');
+        AuditFinding::where('finding_code', 'TMN-SRC-2')->update(['title' => 'Struktur organisasi lengkap']);
+
+        $response = $this->actingAs($this->auditor)->get('/findings?q=visum');
+
+        $response->assertOk();
+        $response->assertSee('TMN-SRC-1');
+        $response->assertDontSee('TMN-SRC-2');
     }
 
     /** @test */

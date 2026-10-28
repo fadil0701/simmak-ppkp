@@ -147,5 +147,5 @@ Index dibangun pada semua foreign key, kolom status, dan kolom yang sering difil
 
 - Metadata instrumen dipisahkan dari hasil audit aktual (standard_* vs checklist_responses/audit_findings).
 - Riwayat versi instrumen tersimpan untuk menjaga data historis tetap dapat dibaca.
-- Instrumen yang telah digunakan dalam audit tidak berubah secara retroaktif saat versi baru diterbitkan.
+- Koreksi isi seksi/EP diizinkan pada versi yang sama; versi baru dipakai saat instrumen resmi diganti, bukan untuk perbaikan redaksi.
 - Setiap audit terhubung dengan versi instrumen yang digunakan saat audit berlangsung via `audit_executions.instrument_version_id`.

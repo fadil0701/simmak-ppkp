@@ -11,7 +11,7 @@
     @endif
 
     <div class="mb-4">
-        <a href="{{ route('risk.index') }}" class="text-sm font-medium text-teal-700 hover:underline">← Kembali ke Manajemen Risiko</a>
+        <a href="{{ route('risk.index') }}" class="text-sm font-medium text-teal-700 hover:underline" class="sim-btn sim-btn-back">← Kembali ke Manajemen Risiko</a>
     </div>
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -109,7 +109,7 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="sim-btn sim-btn-primary">Tambah Mitigasi</button>
+                <button type="submit" class="sim-btn sim-btn-create">Tambah Mitigasi</button>
             </form>
         </div>
     </div>

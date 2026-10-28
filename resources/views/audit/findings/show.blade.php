@@ -16,24 +16,24 @@
         <div class="flex gap-2">
             @can('audit.finding.update', $finding)
                 @if (in_array($finding->status, ['draft', 'under_review', 'returned_for_revision'], true))
-                    <x-action href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Ubah" size="sm" />
+                    <x-action action="edit" href="{{ route('findings.edit', $finding) }}" icon="pencil" label="Edit" size="sm" />
                 @endif
             @endcan
             @can('audit.finding.review', $finding)
                 @if ($finding->status === 'under_review')
-                    <x-action href="{{ route('findings.review', $finding) }}" icon="check-circle" label="Konfirmasi" size="sm"
+                    <x-action action="approve" href="{{ route('findings.review', $finding) }}" icon="check-circle" label="Konfirmasi" size="sm"
                               method="POST" confirm="Konfirmasi temuan ini?" :fields="['review_decision' => 'confirm']" />
-                    <x-action href="{{ route('findings.review', $finding) }}" icon="x-mark" label="Kembalikan" variant="secondary" size="sm"
+                    <x-action action="back" href="{{ route('findings.review', $finding) }}" icon="x-mark" label="Kembalikan" size="sm"
                               method="POST" confirm="Kembalikan temuan ini untuk revisi?"
                               :fields="['review_decision' => 'return', 'review_reason' => 'Perlu revisi']" />
                 @endif
             @endcan
             @can('close', $finding)
-                <x-action href="{{ route('findings.close', $finding) }}" icon="check-circle" label="Tutup Temuan" size="sm"
+                <x-action action="save" href="{{ route('findings.close', $finding) }}" icon="check-circle" label="Tutup Temuan" size="sm"
                           method="POST" confirm="Tutup temuan ini setelah verifikasi efektif?" :fields="['close_reason' => 'Verifikasi efektif tercatat']" />
             @endcan
             @can('reopen', $finding)
-                <x-action href="{{ route('findings.reopen', $finding) }}" icon="x-mark" label="Buka Kembali" variant="secondary" size="sm"
+                <x-action action="back" href="{{ route('findings.reopen', $finding) }}" icon="x-mark" label="Buka Kembali" size="sm"
                           method="POST" confirm="Buka kembali temuan ini?" :fields="['reopen_reason' => 'Perlu peninjauan ulang']" />
             @endcan
             @can('escalate', $finding)
@@ -41,12 +41,12 @@
                     <form method="POST" action="{{ route('findings.escalate', $finding) }}" class="inline-flex items-center gap-2">
                         @csrf
                         <input type="text" name="escalation_reason" required maxlength="1000" placeholder="Alasan eskalasi..." class="sim-form-input w-48 border-sim-danger">
-                        <x-action icon="alert-triangle" label="Eskalasi" variant="danger" size="sm"
+                        <x-action action="escalate" icon="alert-triangle" label="Eskalasi" size="sm"
                                   confirm="Eskalasi temuan kritis ini untuk prioritas tinggi?" />
                     </form>
                 @endif
             @endcan
-            <x-action href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" variant="outline" size="sm" />
+            <x-action action="back" href="{{ route('findings.index') }}" icon="chevron-left" label="Kembali" size="sm" />
         </div>
     </div>
 
@@ -151,25 +151,25 @@
             </div>
 
             <div class="simmak-card-header mt-4">
-                <h3 class="font-semibold text-slate-800">CAPA</h3>
+                <h3 class="font-semibold text-slate-800">Tindak Lanjut</h3>
             </div>
             <div class="simmak-card-body space-y-3">
                 @if ($finding->capaCase)
                     <div class="border border-slate-100 rounded-lg p-3">
                         <div class="font-medium text-slate-800">{{ $finding->capaCase->case_number }}</div>
                         <div class="text-xs text-slate-600">{{ \App\Support\UiLabel::capaStatus($finding->capaCase->status) }}</div>
-                        <x-action href="{{ route('capa.show', $finding->capaCase) }}" icon="tool" label="Lihat CAPA" variant="outline" size="sm" class="mt-2" />
+                        <x-action action="detail" href="{{ route('capa.show', $finding->capaCase) }}" icon="tool" label="Detail Tindak Lanjut" size="sm" class="mt-2" />
                     </div>
                 @else
                     @if (in_array($finding->status, ['confirmed', 'in_capa', 'action_required', 'pending_verification'], true))
                         @canany(['audit.action.update', 'capa.manage'])
-                            <x-action href="{{ route('findings.create-capa', $finding) }}" icon="plus" label="Buat CAPA" class="w-full"
-                                      method="POST" confirm="Buat CAPA dari temuan ini?" />
+                            <x-action action="create" href="{{ route('findings.create-capa', $finding) }}" icon="plus" label="Buat Tindak Lanjut" class="w-full"
+                                      method="POST" confirm="Buat Tindak Lanjut dari temuan ini?" />
                         @else
-                            <p class="text-xs text-slate-500">Tidak berwenang membuat CAPA.</p>
+                            <p class="text-xs text-slate-500">Tidak berwenang membuat tindak lanjut.</p>
                         @endcanany
                     @else
-                        <p class="text-xs text-slate-500">Konfirmasi temuan terlebih dahulu sebelum membuat CAPA.</p>
+                        <p class="text-xs text-slate-500">Konfirmasi temuan terlebih dahulu sebelum membuat tindak lanjut.</p>
                     @endif
                 @endif
             </div>
@@ -188,7 +188,7 @@
                             <div class="font-medium text-slate-800">{{ $link->evidence->original_filename }}</div>
                             <div class="text-xs text-slate-500">{{ $link->evidence->mime_type }}</div>
                         </div>
-                        <x-action href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" variant="outline" size="sm" />
+                        <x-action action="download" href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" size="sm" />
                     </div>
                 @endforeach
             </div>

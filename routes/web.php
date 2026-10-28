@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccreditationController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditAssignmentController;
+use App\Http\Controllers\AuditCalendarController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditEvidenceController;
 use App\Http\Controllers\AuditExecutionController;
@@ -214,6 +215,8 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
     });
 
     Route::middleware('permission:audit.standard.manage')->group(function () {
+        Route::patch('/audit/standards/{standard}/status', [AuditStandardController::class, 'updateStatus'])->name('audit.standards.status');
+        Route::get('/audit/standards/import/template', [AuditStandardController::class, 'downloadImportTemplate'])->name('audit.standards.import.template');
         Route::get('/audit/standards/{standard}/versions', [InstrumentVersionController::class, 'versions'])->name('audit.standards.versions');
         Route::get('/audit/standards/{standard}/versions/create', [InstrumentVersionController::class, 'create'])->name('audit.standards.versions.create');
         Route::post('/audit/standards/{standard}/versions', [InstrumentVersionController::class, 'store'])->name('audit.standards.versions.store');
@@ -221,7 +224,9 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/audit/versions/{version}/approve', [InstrumentVersionController::class, 'approve'])->name('audit.versions.approve');
         Route::post('/audit/versions/{version}/activate', [InstrumentVersionController::class, 'activate'])->name('audit.versions.activate');
         Route::post('/audit/versions/{version}/sections', [AuditStandardController::class, 'storeSection'])->name('audit.versions.sections.store');
+        Route::put('/audit/sections/{section}', [AuditStandardController::class, 'updateSection'])->name('audit.sections.update');
         Route::post('/audit/sections/{section}/criteria', [AuditStandardController::class, 'storeCriterion'])->name('audit.sections.criteria.store');
+        Route::put('/audit/criteria/{criterion}', [AuditStandardController::class, 'updateCriterion'])->name('audit.criteria.update');
         Route::get('/audit/standards/{standard}/import', [AuditStandardController::class, 'importForm'])->name('audit.standards.import');
         Route::post('/audit/standards/{standard}/import/preview', [AuditStandardController::class, 'previewImport'])->name('audit.standards.import.preview');
         Route::post('/audit/standards/{standard}/import/store', [AuditStandardController::class, 'storeImport'])->name('audit.standards.import.store');
@@ -247,6 +252,7 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
     });
 
     Route::middleware('permission:audit.assignment.view')->group(function () {
+        Route::get('/audit/calendar', AuditCalendarController::class)->name('audit.calendar');
         Route::get('/audit/assignments', [AuditAssignmentController::class, 'index'])->name('audit.assignments.index');
         Route::get('/audit/assignments/create', [AuditAssignmentController::class, 'create'])->name('audit.assignments.create');
         Route::post('/audit/assignments', [AuditAssignmentController::class, 'store'])->name('audit.assignments.store');
@@ -276,6 +282,7 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/audit/executions/{execution}/finalize', [AuditExecutionController::class, 'finalize'])->name('audit.executions.finalize');
         Route::post('/audit/executions/{execution}/response', [AuditExecutionController::class, 'saveResponse'])->name('audit.executions.response');
         Route::post('/audit/executions/{execution}/table', [AuditExecutionController::class, 'saveTable'])->name('audit.executions.table');
+        Route::post('/audit/executions/{execution}/table/autosave', [AuditExecutionController::class, 'autosaveTable'])->name('audit.executions.table.autosave');
     });
 
     Route::middleware('permission:audit.evidence.view')->group(function () {

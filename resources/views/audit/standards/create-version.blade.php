@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.standards.show', $standard) }}" class="sim-btn sim-btn-outline sim-btn-sm">← Kembali ke Detail Standar</a>
+        <a href="{{ route('audit.standards.show', $standard) }}" class="sim-btn sim-btn-back sim-btn-sm">← Kembali ke Detail Standar</a>
     </div>
 
     <div class="sim-card max-w-lg">
@@ -61,7 +61,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <x-action icon="check-circle" label="Simpan Versi" />
+                    <x-action action="save" icon="check-circle" label="Simpan Versi" />
                 </div>
             </form>
         </div>

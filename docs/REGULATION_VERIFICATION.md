@@ -36,7 +36,7 @@ Referensi berikut ada dalam sistem sebagai data demonstrasi dan **tidak boleh di
 - Semua instrumen dalam seeder demonstrasi diberi status `draft` atau `UNVERIFIED`.
 - Instrumen tidak boleh dipakai dalam audit produksi hingga status berubah menjadi `approved` dan `active` setelah verifikasi.
 - Administrator wajib memverifikasi status keberlakuan, perubahan, penggantian, dan ketentuan teknis terbaru sebelum instrumen disahkan.
-- Instrumen yang telah digunakan dalam audit tidak boleh berubah secara retroaktif ketika versi baru diterbitkan.
+- Koreksi redaksi seksi/EP boleh dilakukan pada versi yang sama meskipun sudah dipakai eksekusi; versi baru hanya untuk penggantian instrumen resmi. Eksekusi audit tetap merujuk `instrument_version_id` yang dipakai saat audit.
 - Setiap audit terhubung dengan versi instrumen yang digunakan saat audit berlangsung.
 
 

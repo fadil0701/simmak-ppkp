@@ -72,7 +72,7 @@
             @error('employee_id')<p class="sim-form-error">{{ $message }}</p>@enderror
             <p class="sim-form-hint">
                 Nama, surel, dan klinik akan mengikuti master pegawai.
-                <a href="{{ route('employees.create') }}" class="text-sim-primary hover:underline">Tambah data pegawai baru</a>.
+                <a href="{{ route('employees.create') }}" class="text-sim-primary hover:underline" class="sim-btn sim-btn-create">Tambah data pegawai baru</a>.
             </p>
         </div>
 
@@ -325,8 +325,8 @@
             <span class="sim-form-label-required"></span> wajib diisi.
         </p>
         <div class="flex flex-wrap justify-end gap-3">
-            <x-action :href="$cancelUrl" icon="chevron-left" label="Batal" variant="outline" />
-            <x-action icon="check-circle" :label="$submitLabel" />
+            <x-action action="cancel" :href="$cancelUrl" icon="chevron-left" label="Batal" />
+            <x-action action="save" icon="check-circle" :label="$submitLabel" />
         </div>
     </div>
 </form>

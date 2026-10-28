@@ -47,7 +47,7 @@ class ReportExport implements FromCollection, WithColumnWidths, WithHeadings, Wi
                 ];
             case 'capa':
                 return [
-                    'Kode CAPA', 'Judul', 'Klinik', 'PIC', 'Prioritas',
+                    'Kode Tindak Lanjut', 'Judul', 'Klinik', 'PIC', 'Prioritas',
                     'Status', 'Target Penyelesaian', 'Dibuat pada',
                 ];
             case 'execution':

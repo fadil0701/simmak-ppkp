@@ -1,11 +1,11 @@
 @extends('layouts.simmak')
 
 @section('title', $capa->case_number.' — SIMMAK PPKP')
-@section('page-title', 'Detail CAPA')
+@section('page-title', 'Detail Tindak Lanjut')
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('capa.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('capa.index') }}" icon="chevron-left" label="Kembali" size="sm" />
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
@@ -14,7 +14,7 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p class="font-mono text-sm text-slate-500">{{ $capa->case_number }}</p>
-                        <h2 class="text-lg font-bold text-slate-900">Kasus CAPA</h2>
+                        <h2 class="text-lg font-bold text-slate-900">Kasus Tindak Lanjut</h2>
                     </div>
                     <div class="flex gap-2">
                         <span class="simmak-badge {{ $capa->priority === 'critical' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800' }}">{{ \App\Support\UiLabel::capaPriority($capa->priority) }}</span>
@@ -49,7 +49,7 @@
 
         <div class="simmak-card">
             <div class="simmak-card-header">
-                <h3 class="text-sm font-semibold text-slate-700">Tindakan CAPA</h3>
+                <h3 class="text-sm font-semibold text-slate-700">Tindak Lanjut</h3>
             </div>
             <div class="simmak-card-body space-y-3">
                 @forelse ($capa->actions as $action)
@@ -80,9 +80,9 @@
                                     @csrf
                                     <label class="sim-form-label">Uraian tindak lanjut</label>
                                     <textarea name="evidence_notes" rows="2" class="sim-form-textarea" placeholder="Uraikan tindakan yang sudah dikerjakan.">{{ old('evidence_notes') }}</textarea>
-                                    <label class="sim-form-label">Unggah bukti (PDF/gambar/Office, maks. 10 MB)</label>
+                                    <label class="sim-form-label">Upload bukti (PDF/gambar/Office, maks. 10 MB)</label>
                                     <input type="file" name="file" class="sim-form-input text-sm" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                                    <x-action icon="upload" label="Kirim Bukti Tindak Lanjut" size="sm" />
+                                    <x-action action="upload" icon="upload" label="Kirim Bukti Tindak Lanjut" size="sm" />
                                 </form>
                             @endcan
                         @endif
@@ -108,7 +108,7 @@
                                 @endforeach
                             </select>
                             <input type="date" name="due_date" class="sim-form-input" value="{{ $capa->target_close_date?->format('Y-m-d') }}">
-                            <x-action icon="plus" label="Tambah Tindakan" size="sm" />
+                            <x-action action="create" icon="plus" label="Tambah Tindakan" size="sm" />
                         </form>
                     @endif
                 @endcan
@@ -182,7 +182,7 @@
                         <label class="sim-form-label">Akar Masalah</label>
                         <textarea name="root_cause" rows="2" required class="sim-form-textarea"></textarea>
                     </div>
-                    <x-action icon="check-circle" label="Simpan RCA" />
+                    <x-action action="save" icon="check-circle" label="Simpan RCA" />
                 </form>
             </div>
         </div>
@@ -228,7 +228,7 @@
                             <label class="sim-form-label">Tenggat baru (jika belum efektif)</label>
                             <input type="date" name="new_target_close_date" class="sim-form-input" min="{{ now()->toDateString() }}">
                         </div>
-                        <x-action icon="check-circle" label="Catat Verifikasi" />
+                        <x-action action="approve" icon="check-circle" label="Catat Verifikasi" />
                     </form>
                 @else
                     @if ($capa->status !== 'closed')

@@ -39,7 +39,7 @@
                     </div>
                 </button>
                 <div x-show="open" x-cloak class="absolute right-0 top-full z-30 mt-2 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Ubah profil</a>
+                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50" class="sim-btn sim-btn-edit">Edit Profil</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-slate-50">Keluar</button>

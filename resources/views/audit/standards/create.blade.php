@@ -4,60 +4,103 @@
 @section('page-title', 'Tambah Standar Audit')
 
 @section('content')
-    <div class="mb-4">
-        <a href="{{ route('audit.standards.index') }}" class="sim-btn sim-btn-outline sim-btn-sm">← Kembali ke Daftar Standar</a>
-    </div>
-
-    <div class="sim-card max-w-2xl">
-        <div class="sim-card-header">
-            <h3 class="sim-card-title">Tambah Standar Audit</h3>
+    <div class="mx-auto max-w-3xl space-y-5">
+        <div class="sim-page-header">
+            <div>
+                <h2 class="sim-page-title">Tambah Standar Audit</h2>
+                <p class="sim-page-subtitle">
+                    Standar adalah acuan penilaian. Setelah standar dibuat, tambahkan versi instrumen
+                    berisi daftar EP — bisa satu per satu atau sekaligus lewat impor Excel.
+                </p>
+            </div>
+            <a href="{{ route('audit.standards.index') }}" class="sim-btn sim-btn-back">
+                ←Kembali
+            </a>
         </div>
-        <div class="sim-card-body space-y-4">
-            <form method="POST" action="{{ route('audit.standards.store') }}" class="space-y-4">
-                @csrf
 
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Kode Standar <span class="text-red-500">*</span></label>
-                    <input type="text" name="code" maxlength="80"
-                           value="{{ old('code') }}"
-                           class="sim-form-input {{ $errors->has('code') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: FKTP-01" required>
-                    @if ($errors->has('code'))
-                        <p class="sim-form-error">{{ $errors->first('code') }}</p>
-                    @endif
+        <form method="POST" action="{{ route('audit.standards.store') }}" class="space-y-5">
+            @csrf
+
+            <x-form-section step="1" title="Identitas Standar"
+                            description="Kode dipakai sebagai penanda singkat dan harus unik di organisasi Anda.">
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="sm:col-span-1">
+                        <label class="sim-form-label" for="code">
+                            Kode Standar <span class="sim-form-label-required"></span>
+                        </label>
+                        <input id="code" type="text" name="code" maxlength="80" required
+                               value="{{ old('code') }}"
+                               class="sim-form-input font-mono {{ $errors->has('code') ? 'border-sim-danger' : '' }}"
+                               placeholder="FKTP-01">
+                        <p class="sim-form-hint">Singkat, tanpa spasi. Contoh: TKK, PMKP, FKTP-01.</p>
+                        @error('code')
+                            <p class="sim-form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="sim-form-label" for="title">
+                            Judul Standar <span class="sim-form-label-required"></span>
+                        </label>
+                        <input id="title" type="text" name="title" maxlength="255" required
+                               value="{{ old('title') }}"
+                               class="sim-form-input {{ $errors->has('title') ? 'border-sim-danger' : '' }}"
+                               placeholder="Standar Pelayanan Klinik Pratama">
+                        <p class="sim-form-hint">Nama lengkap standar seperti tertulis pada dokumen acuan.</p>
+                        @error('title')
+                            <p class="sim-form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Judul Standar <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" maxlength="255"
-                           value="{{ old('title') }}"
-                           class="sim-form-input {{ $errors->has('title') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: Standar Pelayanan Klinik Pratama" required>
-                    @if ($errors->has('title'))
-                        <p class="sim-form-error">{{ $errors->first('title') }}</p>
-                    @endif
-                </div>
-
-                <div class="sim-form-group">
-                    <label class="sim-form-label">Sumber Regulasi</label>
-                    <select name="source_document_id" class="sim-form-select {{ $errors->has('source_document_id') ? 'border-sim-danger' : '' }}">
-                        <option value="">— Pilih sumber regulasi —</option>
+                <div>
+                    <label class="sim-form-label" for="source_document_id">Sumber Regulasi</label>
+                    <select id="source_document_id" name="source_document_id"
+                            class="sim-form-select {{ $errors->has('source_document_id') ? 'border-sim-danger' : '' }}">
+                        <option value="">— Tidak terkait regulasi tertentu —</option>
                         @foreach ($sources as $source)
-                            <option value="{{ $source->id }}" {{ old('source_document_id') === $source->id ? 'selected' : '' }}>
-                                {{ $source->document_number }} — {{ \Illuminate\Support\Str::limit($source->title, 60) }}
+                            <option value="{{ $source->id }}" @selected(old('source_document_id') === $source->id)>
+                                {{ $source->document_number }} — {{ \Illuminate\Support\Str::limit($source->title, 70) }}
                             </option>
                         @endforeach
                     </select>
-                    @if ($errors->has('source_document_id'))
-                        <p class="sim-form-error">{{ $errors->first('source_document_id') }}</p>
-                    @endif
-                    <p class="sim-form-hint">Pilih sumber regulasi yang telah diverifikasi (jika tersedia).</p>
+                    <p class="sim-form-hint">Opsional. Pilih regulasi acuan bila sudah terdaftar dan terverifikasi.</p>
+                    @error('source_document_id')
+                        <p class="sim-form-error">{{ $message }}</p>
+                    @enderror
                 </div>
+            </x-form-section>
 
-                <div class="flex justify-end pt-4 border-t border-sim-border-light">
-                    <x-action icon="check-circle" label="Simpan Standar" />
+            <x-form-section step="2" title="Status Awal"
+                            description="Standar baru umumnya dimulai sebagai draf. Status Aktif menandakan standar siap dipakai audit.">
+                <div>
+                    <label class="sim-form-label" for="status">Status</label>
+                    <select id="status" name="status"
+                            class="sim-form-select {{ $errors->has('status') ? 'border-sim-danger' : '' }}">
+                        @foreach (\App\Services\AuditStandardService::STANDARD_STATUSES as $statusOption)
+                            <option value="{{ $statusOption }}" @selected(old('status', 'draft') === $statusOption)>
+                                {{ \App\Support\UiLabel::standardStatus($statusOption) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="sim-form-hint">
+                        Status <strong>Aktif</strong> hanya dapat dipilih setelah standar punya minimal satu
+                        versi instrumen. Bila belum, standar tetap tersimpan sebagai Draf.
+                    </p>
+                    @error('status')
+                        <p class="sim-form-error">{{ $message }}</p>
+                    @enderror
                 </div>
-            </form>
-        </div>
+            </x-form-section>
+
+            <div class="sim-save-bar">
+                <span class="text-sm text-sim-muted">Data bertanda <span class="text-sim-danger">*</span> wajib diisi.</span>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('audit.standards.index') }}" class="sim-btn sim-btn-neutral">Batal</a>
+                    <x-action action="save" icon="check-circle" label="Simpan Standar" />
+                </div>
+            </div>
+        </form>
     </div>
 @endsection
+

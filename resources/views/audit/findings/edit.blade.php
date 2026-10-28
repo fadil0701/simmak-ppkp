@@ -1,16 +1,16 @@
 @extends('layouts.simmak')
 
-@section('title', 'Sunting Temuan — SIMMAK PPKP')
-@section('page-title', 'Sunting Temuan')
+@section('title', 'Edit Temuan — SIMMAK PPKP')
+@section('page-title', 'Edit Temuan')
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('findings.show', $finding) }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('findings.show', $finding) }}" icon="chevron-left" label="Kembali" size="sm" />
     </div>
 
     <div class="simmak-card max-w-3xl">
         <div class="simmak-card-header">
-            <h3 class="font-semibold text-slate-800">Sunting Temuan: {{ $finding->finding_code }}</h3>
+            <h3 class="font-semibold text-slate-800">Edit Temuan: {{ $finding->finding_code }}</h3>
         </div>
         <div class="simmak-card-body space-y-4">
             <form method="POST" action="{{ route('findings.update', $finding) }}" class="space-y-4">
@@ -106,7 +106,7 @@
                 </div>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                    <x-action icon="check-circle" label="Simpan Perubahan" />
+                    <x-action action="edit" icon="check-circle" label="Simpan Perubahan" />
                 </div>
             </form>
         </div>

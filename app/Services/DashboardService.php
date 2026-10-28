@@ -252,7 +252,7 @@ class DashboardService
             if ($recentCapa) {
                 $activities[] = [
                     'icon' => 'check',
-                    'text' => 'CAPA '.$recentCapa->case_number.' — '.ucfirst($recentCapa->status),
+                    'text' => $recentCapa->case_number.' — '.ucfirst($recentCapa->status),
                     'subtitle' => $recentCapa->clinic?->name,
                     'time' => $recentCapa->updated_at->diffForHumans(),
                 ];

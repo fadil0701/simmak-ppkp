@@ -12,6 +12,7 @@ use App\Services\AuditCapaService;
 use App\Services\AuditExecutionService;
 use App\Support\AuditScoreScale;
 use App\Support\AuditWorkScope;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -242,6 +243,31 @@ class AuditExecutionController extends Controller
         }
 
         return back()->with('status', $message);
+    }
+
+    /**
+     * Autosave baris tabel tanpa membuat temuan. Tombol Simpan Tabel tetap
+     * menjalankan saveTable() termasuk sinkronisasi temuan.
+     */
+    public function autosaveTable(Request $request, AuditExecution $execution): JsonResponse
+    {
+        $this->authorize('execute', $execution);
+
+        $validated = $request->validate([
+            'rows' => ['required', 'array'],
+            'rows.*.standard_criterion_id' => ['required', 'uuid'],
+            'rows.*.facts_analysis' => ['nullable', 'string', 'max:5000'],
+            'rows.*.recommendation' => ['nullable', 'string', 'max:5000'],
+            'rows.*.response_value' => ['nullable', Rule::in(AuditScoreScale::allowedResponseValues())],
+        ]);
+
+        $saved = $this->executionService->saveTableRows($execution, $validated['rows'], $request->user());
+
+        return response()->json([
+            'ok' => true,
+            'saved' => $saved,
+            'saved_at' => now()->timezone(config('app.timezone'))->format('H:i:s'),
+        ]);
     }
 
     /**

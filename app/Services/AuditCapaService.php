@@ -87,7 +87,7 @@ class AuditCapaService
             ->whereYear('created_at', $year)
             ->count() + 1;
 
-        return sprintf('CAPA-%s-%04d', $year, $seq);
+        return sprintf('TL-%s-%04d', $year, $seq);
     }
 
     public function createCapaFromFinding(AuditFinding $finding, User $user): CapaCase
@@ -167,7 +167,7 @@ class AuditCapaService
     {
         // Super admin boleh menambah tindakan pada kasus yang sudah ditutup.
         if ($capa->status === 'closed' && ! $user->hasUnrestrictedAccess()) {
-            throw new InvalidArgumentException('Kasus CAPA yang sudah ditutup tidak dapat ditambah tindakan.');
+            throw new InvalidArgumentException('Kasus tindak lanjut yang sudah ditutup tidak dapat ditambah tindakan.');
         }
 
         $action = CapaAction::create([

@@ -1,16 +1,16 @@
 @extends('layouts.simmak')
 
-@section('title', 'Unggah Bukti Audit — SIMMAK PPKP')
-@section('page-title', 'Unggah Bukti Audit')
+@section('title', 'Upload Bukti Audit — SIMMAK PPKP')
+@section('page-title', 'Upload Bukti Audit')
 
 @section('content')
     <div class="mb-4">
-        <x-action href="{{ route('audit.evidence.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('audit.evidence.index') }}" icon="chevron-left" label="Kembali" size="sm" />
     </div>
 
     <div class="simmak-card max-w-2xl">
         <div class="simmak-card-header">
-            <h3 class="font-semibold text-slate-800">Unggah Bukti Audit</h3>
+            <h3 class="font-semibold text-slate-800">Upload Bukti Audit</h3>
         </div>
         <div class="simmak-card-body space-y-4">
             <form method="POST" action="{{ route('audit.evidence.store') }}" enctype="multipart/form-data" class="space-y-4">
@@ -90,7 +90,7 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-100">
-                    <x-action icon="upload" label="Unggah Bukti" />
+                    <x-action action="upload" icon="upload" label="Upload Bukti" />
                 </div>
             </form>
         </div>

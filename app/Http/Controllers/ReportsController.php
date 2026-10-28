@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ReportExport;
 use App\Models\AuditFinding;
 use App\Models\Clinic;
 use App\Services\DashboardService;
@@ -9,7 +10,9 @@ use App\Support\SpreadsheetCell;
 use App\Support\UiLabel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportsController extends Controller
 {
@@ -103,8 +106,17 @@ class ReportsController extends Controller
 
     private function exportExcel(array $data)
     {
-        // Excel export requires maatwebsite/excel or PhpSpreadsheet.
-        // Jika tidak terpasang, kembalikan CSV yang dapat dibuka Excel.
+        // Format .xlsx asli via maatwebsite/excel (terpasang). CSV hanya fallback
+        // apabila paket tidak tersedia di lingkungan tertentu.
+        if (class_exists('\\Maatwebsite\\Excel\\Facades\\Excel')) {
+            $filename = 'laporan-audit-internal-'.Date::now()->format('Ymd_His').'.xlsx';
+
+            return Excel::download(
+                new ReportExport(['findings' => $data['findings']], 'findings'),
+                $filename
+            );
+        }
+
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="laporan-audit-internal-'.now()->format('Ymd_His').'.csv"',

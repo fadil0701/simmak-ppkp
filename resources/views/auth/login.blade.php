@@ -49,7 +49,7 @@
                     Kelola mutu, audit, dan akreditasi klinik dalam satu sistem.
                 </h2>
                 <p class="mt-5 max-w-md text-sm leading-relaxed text-white/65 text-pretty">
-                    Terintegrasi untuk manajemen dokumen, audit internal, CAPA, manajemen risiko,
+                    Terintegrasi untuk manajemen dokumen, audit internal, tindak lanjut, manajemen risiko,
                     dan kesiapan akreditasi 16 klinik FKTP/FKTL.
                 </p>
 

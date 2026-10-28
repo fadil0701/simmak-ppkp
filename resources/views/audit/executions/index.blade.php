@@ -44,13 +44,13 @@
             <h2 class="sim-page-title">Pelaksanaan Audit</h2>
             <p class="sim-page-subtitle">
                 Hanya penugasan yang Anda ikuti. Isi <strong>nilai kesesuaian</strong> dan <strong>rekomendasi</strong> pada instrumen;
-                EP tidak sesuai otomatis menjadi temuan dan CAPA klinik.
+                EP tidak sesuai otomatis menjadi temuan dan tindak lanjut klinik.
             </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
             @can('audit.assignment.view')
-                <x-action href="{{ route('audit.assignments.index') }}" icon="user-group" label="Penugasan Auditor" variant="outline" />
+                <x-action action="navigate" href="{{ route('audit.assignments.index') }}" icon="user-group" label="Penugasan Auditor" />
             @endcan
         </div>
     </div>
@@ -117,11 +117,11 @@
                             </div>
                         </div>
                         <p class="sim-form-hint">
-                            Auditor hanya dapat memeriksa klinik/unit pada penugasan ini. Temuan dan CAPA dibuat otomatis dari EP yang tidak sesuai.
+                            Auditor hanya dapat memeriksa klinik/unit pada penugasan ini. Temuan dan Tindak Lanjut dibuat otomatis dari EP yang tidak sesuai.
                         </p>
                     </div>
                     <div class="sim-card-footer flex justify-end">
-                        <x-action icon="plus" label="Buat Eksekusi" />
+                        <x-action action="create" icon="plus" label="Buat Eksekusi" />
                     </div>
                 </form>
             </div>
@@ -132,7 +132,7 @@
                     <p class="text-sim-muted">Buat dan aktifkan penugasan audit terlebih dahulu sebelum membuat eksekusi.</p>
                 </div>
                 @can('audit.assignment.view')
-                    <x-action href="{{ route('audit.assignments.index') }}" icon="user-group" label="Kelola Penugasan" variant="outline" size="sm" />
+                    <x-action action="navigate" href="{{ route('audit.assignments.index') }}" icon="user-group" label="Kelola Penugasan" size="sm" />
                 @endcan
             </div>
         @endif
@@ -171,9 +171,9 @@
                         <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="sim-btn sim-btn-secondary sim-btn-sm">Terapkan</button>
+                <button type="submit" class="sim-btn sim-btn-neutral sim-btn-sm">Terapkan</button>
                 @if ($filterActive)
-                    <a href="{{ route('audit.executions.index') }}" class="sim-btn sim-btn-ghost sim-btn-sm">Reset</a>
+                    <a href="{{ route('audit.executions.index') }}" class="sim-btn sim-btn-back sim-btn-sm">Reset</a>
                 @endif
             </form>
         </div>
@@ -253,11 +253,11 @@
                             <td class="text-right">
                                 <div class="sim-action-group">
                                     @if ($canExecuteRow && $execution->status === 'in_progress')
-                                        <x-action href="{{ route('audit.executions.checklist', $execution) }}" icon="clipboard-check" label="Isi Tabel" size="sm" />
+                                        <x-action action="edit" href="{{ route('audit.executions.checklist', $execution) }}" icon="clipboard-check" label="Isi Tabel" size="sm" />
                                     @elseif ($canExecuteRow && in_array($execution->status, ['submitted_for_review', 'finalized'], true))
-                                        <x-action href="{{ route('audit.executions.checklist', $execution) }}" icon="pencil" label="Koreksi" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('audit.executions.checklist', $execution) }}" icon="pencil" label="Koreksi" size="sm" />
                                     @else
-                                        <x-action href="{{ route('audit.executions.checklist', $execution) }}" icon="eye" label="Lihat" variant="outline" size="sm" />
+                                        <x-action action="detail" href="{{ route('audit.executions.checklist', $execution) }}" icon="eye" label="Detail" size="sm" />
                                     @endif
                                 </div>
                             </td>
@@ -279,10 +279,10 @@
                                     </p>
                                     <div class="mt-4 flex flex-wrap justify-center gap-2">
                                         @if ($filterActive)
-                                            <x-action href="{{ route('audit.executions.index') }}" icon="x-mark" label="Reset Filter" variant="outline" size="sm" />
+                                            <x-action action="cancel" href="{{ route('audit.executions.index') }}" icon="x-mark" label="Reset Filter" size="sm" />
                                         @endif
                                         @can('audit.assignment.view')
-                                            <x-action href="{{ route('audit.assignments.index') }}" icon="user-group" label="Lihat Penugasan" variant="secondary" size="sm" />
+                                            <x-action action="detail" href="{{ route('audit.assignments.index') }}" icon="user-group" label="Lihat Penugasan" size="sm" />
                                         @endcan
                                     </div>
                                 </div>

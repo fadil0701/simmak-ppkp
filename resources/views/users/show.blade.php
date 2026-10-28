@@ -22,9 +22,9 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <x-action href="{{ route('users.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
+            <x-action action="back" href="{{ route('users.index') }}" icon="chevron-left" label="Kembali" />
             @can('users.manage')
-                <x-action href="{{ route('users.edit', $user) }}" icon="pencil" label="Ubah" />
+                <x-action action="edit" href="{{ route('users.edit', $user) }}" icon="pencil" label="Edit" />
             @endcan
         </div>
     </div>
@@ -132,9 +132,8 @@
                         Dibuat {{ $user->created_at?->translatedFormat('d F Y') }}
                     </p>
                     @can('users.manage')
-                        <x-action href="{{ route('users.toggle-active', $user) }}" icon="check-circle"
-                                  :label="$user->is_active ? 'Nonaktifkan' : 'Aktifkan'"
-                                  variant="secondary" size="sm" class="w-full" method="POST" />
+                        <x-action action="cancel" href="{{ route('users.toggle-active', $user) }}" icon="check-circle"
+                                  :label="$user->is_active ? 'Nonaktifkan' : 'Aktifkan'" size="sm" class="w-full" method="POST" />
                     @endcan
                 </div>
             </div>
@@ -159,7 +158,7 @@
                                 <label class="sim-form-label" for="reset_password_confirmation">Konfirmasi</label>
                                 <input type="password" id="reset_password_confirmation" name="password_confirmation" required autocomplete="new-password" class="sim-form-input">
                             </div>
-                            <x-action icon="check-circle" label="Reset Kata Sandi" variant="secondary" class="w-full" />
+                            <x-action action="save" icon="check-circle" label="Reset Kata Sandi" class="w-full" />
                         </form>
                     </div>
                 </div>
@@ -169,7 +168,7 @@
                 <div class="sim-card border-sim-danger/30">
                     <div class="sim-card-header"><h3 class="sim-card-title text-sim-danger">Zona Berbahaya</h3></div>
                     <div class="sim-card-body">
-                        <x-action href="{{ route('users.destroy', $user) }}" icon="trash" label="Hapus Pengguna" variant="danger"
+                        <x-action action="delete" href="{{ route('users.destroy', $user) }}" icon="trash" label="Hapus Pengguna"
                                   class="w-full" method="DELETE"
                                   confirm="Hapus pengguna {{ $user->name }}? Tindakan ini tidak dapat dibatalkan." />
                     </div>

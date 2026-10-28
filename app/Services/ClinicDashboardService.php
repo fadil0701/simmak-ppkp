@@ -176,8 +176,8 @@ class ClinicDashboardService
         foreach ($capas as $capa) {
             $tasks[] = [
                 'name' => $capa->owner?->name ?? 'Tim Mutu',
-                'task' => 'CAPA '.$capa->case_number,
-                'category' => 'CAPA',
+                'task' => $capa->case_number,
+                'category' => 'Tindak Lanjut',
                 'due' => $capa->target_close_date->format('d M Y'),
                 'status' => $capa->target_close_date->isPast() ? 'overdue' : 'in_progress',
                 'initials' => strtoupper(substr($capa->owner?->name ?? 'TM', 0, 2)),

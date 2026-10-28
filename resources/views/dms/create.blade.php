@@ -45,8 +45,8 @@
                            class="sim-form-input file:mr-3 file:rounded file:border-0 file:bg-teal-50 file:px-3 file:py-1 file:text-sm file:font-medium file:text-teal-700">
                 </div>
                 <div class="flex gap-3 pt-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan</button>
-                    <a href="{{ route('dms.index') }}" class="sim-btn sim-btn-outline">Batal</a>
+                    <button type="submit" class="sim-btn sim-btn-save">Simpan</button>
+                    <a href="{{ route('dms.index') }}" class="sim-btn sim-btn-neutral">Batal</a>
                 </div>
             </form>
         </div>

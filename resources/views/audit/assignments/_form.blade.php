@@ -242,7 +242,7 @@
 
                     <p class="sim-form-hint">
                         Keanggotaan tim tidak diubah dari halaman ini agar deklarasi independensi yang sudah tercatat tidak hilang.
-                        <a href="{{ route('audit.assignments.show', $assignment) }}" class="underline">Kelola tim di halaman detail</a>.
+                        <a href="{{ route('audit.assignments.show', $assignment) }}" class="underline" class="sim-btn sim-btn-detail">Kelola tim di halaman detail</a>.
                     </p>
                 </div>
             @else
@@ -338,8 +338,8 @@
             @endif
         </p>
         <div class="flex flex-wrap items-center gap-2">
-            <x-action href="{{ $cancelUrl }}" icon="chevron-left" label="Batal" variant="outline" />
-            <x-action icon="check-circle" :label="$submitLabel" :disabled="$blockers !== []" />
+            <x-action action="cancel" href="{{ $cancelUrl }}" icon="chevron-left" label="Batal" />
+            <x-action action="save" icon="check-circle" :label="$submitLabel" :disabled="$blockers !== []" />
         </div>
     </div>
 </form>

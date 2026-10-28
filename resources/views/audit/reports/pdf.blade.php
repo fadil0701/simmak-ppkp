@@ -191,9 +191,9 @@
 
     @if (isset($capa_summary) && is_array($capa_summary))
         <div class="section">
-            <h2>Ringkasan CAPA</h2>
+            <h2>Ringkasan Tindak Lanjut</h2>
             <div class="summary-box">
-                <div class="label">Total CAPA</div>
+                <div class="label">Total Tindak Lanjut</div>
                 <div class="value">{{ $capa_summary['total'] ?? 0 }}</div>
             </div>
             @if (isset($capa_summary['by_status']) && is_array($capa_summary['by_status']))
@@ -252,7 +252,7 @@
 
     @if (isset($capa_cases) && $capa_cases->count() > 0)
         <div class="section">
-            <h2>CAPA dan Verifikasi</h2>
+            <h2>Tindak Lanjut dan Verifikasi</h2>
             <table class="data-table">
                 <thead>
                     <tr>

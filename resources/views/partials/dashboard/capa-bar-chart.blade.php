@@ -34,6 +34,6 @@
     </svg>
     </div>
     <div class="sim-card-footer">
-        Total CAPA: <strong class="font-semibold text-sim-ink">{{ $total }}</strong>
+        Total Tindak Lanjut: <strong class="font-semibold text-sim-ink">{{ $total }}</strong>
     </div>
 </div>

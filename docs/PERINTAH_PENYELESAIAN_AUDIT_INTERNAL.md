@@ -140,7 +140,7 @@ Migrate bersih, seed tidak error unik `PPKP-DKI`, rute `audit.*` terdaftar.
 **Perintah — Instrumen:**
 
 1. Lengkapi UI seksi dan kriteria per versi.
-2. Kunci versi yang sudah dipakai eksekusi: isi kriteria/seksi tidak diubah; versi baru = baris baru.
+2. Perbaikan isi seksi/EP dilakukan pada versi yang sama (termasuk yang sudah dipakai eksekusi). Versi baru hanya bila instrumen resmi diganti, bukan untuk koreksi redaksi.
 3. Status sumber tetap `UNVERIFIED` sampai diverifikasi. Tombol “aktifkan untuk produksi resmi” tidak boleh menandai VERIFIED tanpa reviewer manusia.
 
 **Perintah — Pelaksanaan dan checklist:**

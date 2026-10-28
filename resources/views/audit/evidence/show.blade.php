@@ -6,7 +6,7 @@
 <div class="max-w-4xl mx-auto space-y-4">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold text-gray-900">Detail Bukti Audit</h1>
-        <x-action href="{{ route('audit.evidence.index') }}" icon="chevron-left" label="Kembali" variant="ghost" size="sm" />
+        <x-action action="back" href="{{ route('audit.evidence.index') }}" icon="chevron-left" label="Kembali" size="sm" />
     </div>
 
     <div class="bg-white rounded-lg shadow p-6 space-y-3">
@@ -59,16 +59,16 @@
     <div class="flex gap-2">
         @can('download', $evidence)
             @if ($fileAvailable)
-                <x-action href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" />
+                <x-action action="download" href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" />
             @else
-                <span class="sim-btn sim-btn-outline cursor-not-allowed opacity-50" title="Berkas tidak ditemukan di penyimpanan">
+                <span class="sim-btn sim-btn-download cursor-not-allowed opacity-50" title="Berkas tidak ditemukan di penyimpanan">
                     <span class="inline-flex">@include('partials.icons.download')</span>
                     <span>Unduh</span>
                 </span>
             @endif
         @endcan
         @can('delete', $evidence)
-            <x-action href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" variant="danger" method="DELETE" confirm="Hapus bukti ini?" />
+            <x-action action="delete" href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" method="DELETE" confirm="Hapus bukti ini?" />
         @endcan
     </div>
 </div>

@@ -14,15 +14,15 @@
         </div>
 
         <div class="flex gap-2">
-            <a href="{{ route('audit.reports.download-pdf', $report) }}" class="sim-btn sim-btn-secondary sim-btn-sm">
+            <a href="{{ route('audit.reports.download-pdf', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Unduh PDF
             </a>
-            <a href="{{ route('audit.reports.download-excel', $report) }}" class="sim-btn sim-btn-secondary sim-btn-sm">
+            <a href="{{ route('audit.reports.download-excel', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
                 <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Unduh Excel
             </a>
-            <a href="{{ route('audit.reports.index') }}" class="sim-btn sim-btn-outline">
+            <a href="{{ route('audit.reports.index') }}" class="sim-btn sim-btn-back">
                 Kembali
             </a>
         </div>
@@ -100,7 +100,7 @@
                     <div class="text-2xl font-bold text-sim-danger">{{ $report->findings_summary['total'] ?? 0 }}</div>
                 </div>
                 <div class="p-3 border border-sim-border-light rounded-lg">
-                    <span class="text-xs text-sim-muted">Total CAPA</span>
+                    <span class="text-xs text-sim-muted">Total Tindak Lanjut</span>
                     <div class="text-2xl font-bold text-sim-info">{{ $report->capa_summary['total'] ?? 0 }}</div>
                 </div>
 
@@ -120,7 +120,7 @@
 
                 @if (isset($report->capa_summary['by_status']) && is_array($report->capa_summary['by_status']))
                     <div class="mt-3 pt-3 border-t border-sim-border-light">
-                        <span class="text-xs text-sim-muted font-semibold uppercase">CAPA per Status</span>
+                        <span class="text-xs text-sim-muted font-semibold uppercase">Tindak Lanjut per Status</span>
                         <ul class="mt-1 space-y-1 text-sm">
                             @foreach ($report->capa_summary['by_status'] as $status => $count)
                                 <li class="flex justify-between">

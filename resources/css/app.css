@@ -520,6 +520,74 @@
         @apply sim-btn bg-transparent text-sim-navy-800 hover:bg-sim-hover focus:ring-sim-border;
     }
 
+    /* ---------------------------------------------------------------
+       Palet aksi baku (28 Okt 2026).
+
+       Warna tombol ditentukan oleh JENIS AKSI, bukan pilihan bebas.
+       Sumber kebenaran: app/Support/UiAction.php. Jangan memakai
+       sim-btn-primary/secondary langsung untuk aksi standar.
+
+         Kembali   netral  (abu, outline)
+         Tambah    teal    (solid)
+         Simpan    navy    (solid)
+         Edit      amber   (solid)
+         Hapus     merah   (solid)
+         Detail    biru    (outline)
+         Setujui   hijau   (solid)
+         Tolak     oranye  (outline)
+         Batal     abu     (solid)
+         Unggah    teal    (outline)
+         Unduh     slate   (outline)
+         Cetak     navy    (outline)
+       --------------------------------------------------------------- */
+    .sim-btn-back {
+        @apply sim-btn border border-sim-border bg-sim-white text-sim-navy-800 hover:bg-sim-hover focus:ring-sim-border;
+    }
+
+    .sim-btn-create {
+        @apply sim-btn bg-sim-teal-600 text-white hover:bg-sim-teal-700 focus:ring-sim-teal-600;
+    }
+
+    .sim-btn-save {
+        @apply sim-btn bg-sim-navy-800 text-white hover:bg-sim-navy-900 focus:ring-sim-navy-800;
+    }
+
+    .sim-btn-edit {
+        @apply sim-btn bg-sim-warning text-white hover:bg-sim-warning/90 focus:ring-sim-warning;
+    }
+
+    .sim-btn-delete {
+        @apply sim-btn bg-sim-danger text-white hover:bg-sim-danger/90 focus:ring-sim-danger;
+    }
+
+    .sim-btn-detail {
+        @apply sim-btn border border-sim-info bg-sim-info-bg text-sim-info hover:bg-sim-info hover:text-white focus:ring-sim-info;
+    }
+
+    .sim-btn-approve {
+        @apply sim-btn bg-sim-success text-white hover:bg-sim-success/90 focus:ring-sim-success;
+    }
+
+    .sim-btn-reject {
+        @apply sim-btn border border-sim-warning bg-sim-warning-bg text-sim-warning hover:bg-sim-warning hover:text-white focus:ring-sim-warning;
+    }
+
+    .sim-btn-neutral {
+        @apply sim-btn bg-sim-surface-alt text-sim-muted border border-sim-border hover:bg-sim-hover focus:ring-sim-border;
+    }
+
+    .sim-btn-upload {
+        @apply sim-btn border border-sim-teal-600 bg-sim-teal-50 text-sim-teal-700 hover:bg-sim-teal-600 hover:text-white focus:ring-sim-teal-600;
+    }
+
+    .sim-btn-download {
+        @apply sim-btn border border-sim-border bg-sim-white text-sim-navy-700 hover:bg-sim-navy-800 hover:text-white focus:ring-sim-navy-800;
+    }
+
+    .sim-btn-print {
+        @apply sim-btn border border-sim-navy-800 bg-sim-white text-sim-navy-800 hover:bg-sim-navy-800 hover:text-white focus:ring-sim-navy-800;
+    }
+
     .sim-btn-sm {
         @apply px-3 py-1.5 text-xs;
     }

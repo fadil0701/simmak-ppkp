@@ -28,7 +28,7 @@ class DashboardController extends Controller
             'modules' => [
                 ['code' => 'dms', 'name' => 'DMS', 'status' => 'phase_2', 'progress' => 55],
                 ['code' => 'audit', 'name' => 'Audit Internal', 'status' => 'phase_3', 'progress' => 30],
-                ['code' => 'capa', 'name' => 'CAPA', 'status' => 'phase_3', 'progress' => 30],
+                ['code' => 'capa', 'name' => 'Tindak Lanjut', 'status' => 'phase_3', 'progress' => 30],
                 ['code' => 'risk', 'name' => 'Manajemen Risiko', 'status' => 'phase_4', 'progress' => 25],
                 ['code' => 'accreditation', 'name' => 'Akreditasi', 'status' => 'phase_5', 'progress' => 30],
                 ['code' => 'dashboard', 'name' => 'Dashboard Enterprise', 'status' => 'phase_6', 'progress' => 40],

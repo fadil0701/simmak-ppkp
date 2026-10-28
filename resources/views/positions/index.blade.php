@@ -10,7 +10,7 @@
             <p class="sim-page-subtitle">Jabatan hanya kelengkapan dokumen pegawai. Peran sistem (Super Admin, Auditor, Auditi, dan seterusnya) diatur di menu Pengguna, bukan di sini.</p>
         </div>
         @can('positions.manage')
-            <a href="{{ route('positions.create') }}" class="sim-btn sim-btn-primary">Tambah Jabatan</a>
+            <a href="{{ route('positions.create') }}" class="sim-btn sim-btn-create">Tambah Jabatan</a>
         @endcan
     </div>
 
@@ -37,8 +37,8 @@
                     <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
                 </select>
                 <div class="flex gap-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Filter</button>
-                    <a href="{{ route('positions.index') }}" class="sim-btn sim-btn-outline">Reset</a>
+                    <button type="submit" class="sim-btn sim-btn-neutral">Filter</button>
+                    <a href="{{ route('positions.index') }}" class="sim-btn sim-btn-back">Reset</a>
                 </div>
             </form>
         </div>
@@ -77,8 +77,8 @@
                             <td class="px-3 py-2 text-center">
                                 <div class="sim-action-group">
                                     @can('positions.manage')
-                                        <x-action href="{{ route('positions.edit', $position) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
-                                        <x-action href="{{ route('positions.destroy', $position) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus jabatan ini?" />
+                                        <x-action action="edit" href="{{ route('positions.edit', $position) }}" icon="pencil" label="Edit" size="sm" />
+                                        <x-action action="delete" href="{{ route('positions.destroy', $position) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus jabatan ini?" />
                                     @else
                                         <span class="text-sim-muted">—</span>
                                     @endcan

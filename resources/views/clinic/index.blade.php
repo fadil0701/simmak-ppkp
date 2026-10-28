@@ -21,7 +21,7 @@
         </div>
 
         @can('clinics.manage')
-            <x-action href="{{ route('clinics.create') }}" icon="plus" label="Tambah Unit/Klinik" />
+            <x-action action="create" href="{{ route('clinics.create') }}" icon="plus" label="Tambah Unit/Klinik" />
         @endcan
     </div>
 
@@ -69,9 +69,9 @@
                             <td class="px-4 py-3 text-center">
                                 <div class="sim-action-group">
                                     @can('clinics.manage')
-                                        <x-action href="{{ route('clinics.edit', $clinic) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('clinics.edit', $clinic) }}" icon="pencil" label="Edit" size="sm" />
                                         @unless ($clinic->isManagementUnit())
-                                            <x-action href="{{ route('clinics.destroy', $clinic) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus unit/klinik ini? Data terkait dapat terpengaruh." />
+                                            <x-action action="delete" href="{{ route('clinics.destroy', $clinic) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus unit/klinik ini? Data terkait dapat terpengaruh." />
                                         @endunless
                                     @else
                                         <span class="text-sm text-slate-400">—</span>

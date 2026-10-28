@@ -23,7 +23,7 @@ class AuditEvidenceController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $evidences = $this->evidenceService->getEvidenceForUser($user);
+        $evidences = $this->evidenceService->getEvidenceForUser($user, $request->string('q')->toString());
 
         // Berkas bisa hilang dari disk (volume storage tidak ter-mount, purge, dsb).
         // Tandai lebih awal supaya UI tidak menawarkan unduhan yang pasti gagal.

@@ -11,7 +11,7 @@
             <p class="sim-page-subtitle">Kelola akun pengguna lokal, peran, dan akses per klinik.</p>
         </div>
         @can('users.manage')
-            <x-action href="{{ route('users.create') }}" icon="plus" label="Tambah Pengguna" />
+            <x-action action="create" href="{{ route('users.create') }}" icon="plus" label="Tambah Pengguna" />
         @endcan
     </div>
 
@@ -39,7 +39,7 @@
                             <option value="active" @selected(request('status') === 'active')>Aktif</option>
                             <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
                         </select>
-                        <x-action icon="sliders" label="Terapkan" variant="secondary" />
+                        <x-action action="search" icon="sliders" label="Terapkan" />
                     </div>
                 </div>
             </form>
@@ -81,9 +81,9 @@
                             </td>
                             <td class="text-right">
                                 <div class="flex justify-end gap-2">
-                                    <x-action href="{{ route('users.show', $user) }}" icon="file-text" label="Lihat" variant="outline" size="sm" />
+                                    <x-action action="detail" href="{{ route('users.show', $user) }}" icon="file-text" label="Detail" size="sm" />
                                     @can('users.manage')
-                                        <x-action href="{{ route('users.edit', $user) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('users.edit', $user) }}" icon="pencil" label="Edit" size="sm" />
                                     @endcan
                                 </div>
                             </td>

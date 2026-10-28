@@ -329,4 +329,34 @@ class ChecklistTableTest extends TestCase
             'standard_criterion_id' => $this->criterion->id,
         ]);
     }
+
+    public function test_autosave_persists_rows_without_creating_findings(): void
+    {
+        $response = $this->actingAs($this->user)->postJson(
+            '/audit/executions/'.$this->execution->id.'/table/autosave',
+            [
+                'rows' => [
+                    $this->criterion->id => [
+                        'standard_criterion_id' => $this->criterion->id,
+                        'response_value' => '0',
+                        'recommendation' => 'Draf autosave, belum jadi temuan.',
+                    ],
+                ],
+            ]
+        );
+
+        $response->assertOk();
+        $response->assertJson(['ok' => true]);
+
+        $this->assertDatabaseHas('checklist_responses', [
+            'audit_execution_id' => $this->execution->id,
+            'standard_criterion_id' => $this->criterion->id,
+            'response_value' => 'non_compliant',
+            'recommendation' => 'Draf autosave, belum jadi temuan.',
+        ]);
+        $this->assertDatabaseMissing('audit_findings', [
+            'audit_execution_id' => $this->execution->id,
+            'standard_criterion_id' => $this->criterion->id,
+        ]);
+    }
 }

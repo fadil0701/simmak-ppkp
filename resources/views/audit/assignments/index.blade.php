@@ -10,9 +10,12 @@
             <p class="text-sm text-slate-500">Kelola penugasan tim auditor dan klinik sasaran untuk setiap program audit.</p>
         </div>
 
-        @can('audit.assignment.manage')
-            <x-action href="{{ route('audit.assignments.create') }}" icon="plus" label="Buat Penugasan" />
-        @endcan
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('audit.calendar') }}" class="sim-btn sim-btn-detail">Kalender</a>
+            @can('audit.assignment.manage')
+                <x-action action="create" href="{{ route('audit.assignments.create') }}" icon="plus" label="Buat Penugasan" />
+            @endcan
+        </div>
     </div>
 
     <div class="simmak-card">
@@ -101,9 +104,9 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <div class="sim-action-group">
-                                    <x-action href="{{ route('audit.assignments.show', $assignment) }}" icon="users" label="Detail Tim" variant="outline" size="sm" />
+                                    <x-action action="detail" href="{{ route('audit.assignments.show', $assignment) }}" icon="users" label="Detail Tim" size="sm" />
                                     @can('audit.assignment.manage', $assignment)
-                                        <x-action href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Ubah" variant="secondary" size="sm" />
+                                        <x-action action="edit" href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Edit" size="sm" />
                                     @endcan
                                 </div>
                             </td>

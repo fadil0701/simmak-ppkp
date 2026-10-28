@@ -1,21 +1,21 @@
 @extends('layouts.simmak')
 
-@section('title', 'Sunting Program Audit — SIMMAK PPKP')
-@section('page-title', 'Sunting Program Audit')
-@section('page-subtitle', 'Sunting detail program audit. Hanya program dengan status draft yang dapat diubah.')
+@section('title', 'Edit Program Audit — SIMMAK PPKP')
+@section('page-title', 'Edit Program Audit')
+@section('page-subtitle', 'Edit detail program audit. Hanya program dengan status draft yang dapat diubah.')
 
 @section('breadcrumb')
     <li class="flex items-center gap-1 text-sim-muted">
         <a href="{{ route('audit.programs.index') }}">Program Audit</a>
         <svg class="h-3.5 w-3.5 text-sim-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        <span>Sunting Program</span>
+        <span>Edit Program</span>
     </li>
 @endsection
 
 @section('content')
     <div class="sim-card max-w-2xl">
         <div class="sim-card-header">
-            <h3 class="sim-card-title">Sunting Program Audit</h3>
+            <h3 class="sim-card-title">Edit Program Audit</h3>
         </div>
         <div class="sim-card-body space-y-4">
             <form method="POST" action="{{ route('audit.programs.update', $program) }}" class="space-y-4">
@@ -97,8 +97,8 @@
                 </div>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
-                    <x-action href="{{ route('audit.programs.show', $program) }}" icon="chevron-left" label="Kembali" variant="outline" />
-                    <x-action icon="check-circle" label="Simpan Perubahan" />
+                    <x-action action="back" href="{{ route('audit.programs.show', $program) }}" icon="chevron-left" label="Kembali" />
+                    <x-action action="edit" icon="check-circle" label="Simpan Perubahan" />
                 </div>
             </form>
         </div>

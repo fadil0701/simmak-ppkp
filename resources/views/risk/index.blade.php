@@ -6,7 +6,7 @@
 @section('content')
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-slate-600">Register risiko organisasi, peta panas risiko inheren, dan daftar item risiko.</p>
-        <a href="{{ route('risk.create') }}" class="sim-btn sim-btn-primary">+ Catat Risiko</a>
+        <a href="{{ route('risk.create') }}" class="sim-btn sim-btn-create">+ Catat Risiko</a>
     </div>
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">

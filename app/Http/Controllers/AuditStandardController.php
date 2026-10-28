@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\InstrumentImportTemplate;
 use App\Models\AuditStandard;
 use App\Models\InstrumentVersion;
 use App\Models\RegulatorySource;
+use App\Models\StandardCriterion;
 use App\Models\StandardSection;
 use App\Services\AuditInstrumentImportService;
 use App\Services\AuditStandardService;
 use App\Services\AuditTrailService;
+use App\Support\UiLabel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AuditStandardController extends Controller
 {
@@ -46,6 +50,7 @@ class AuditStandardController extends Controller
             'source_document_id' => ['nullable', 'uuid', Rule::exists('regulatory_sources', 'id')],
             'code' => ['required', 'string', 'max:80', Rule::unique('audit_standards', 'code')->where('organization_id', $orgId)],
             'title' => ['required', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(AuditStandardService::STANDARD_STATUSES)],
         ]);
 
         $this->standardService->createStandard(array_merge($validated, ['organization_id' => $orgId]), $request->user());
@@ -81,11 +86,53 @@ class AuditStandardController extends Controller
             'source_document_id' => ['nullable', 'uuid', Rule::exists('regulatory_sources', 'id')],
             'code' => ['required', 'string', 'max:80', Rule::unique('audit_standards', 'code')->where('organization_id', $orgId)->ignore($standard->id)],
             'title' => ['required', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in(AuditStandardService::STANDARD_STATUSES)],
         ]);
+
+        // Status diubah lewat service agar aturan bisnis (mis. standar tanpa
+        // versi instrumen tidak boleh diaktifkan) tetap berlaku.
+        $status = $validated['status'] ?? null;
+        unset($validated['status']);
 
         $standard->update($validated);
 
+        if ($status !== null && $status !== $standard->status) {
+            try {
+                $this->standardService->setStandardStatus($standard, $status);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                return back()->withInput()->withErrors($e->errors());
+            }
+        }
+
         return redirect()->route('audit.standards.show', $standard)->with('status', 'Standar audit berhasil diperbarui.');
+    }
+
+    /**
+     * Aksi cepat mengubah status master standar dari tabel/daftar.
+     */
+    public function updateStatus(Request $request, AuditStandard $standard): RedirectResponse
+    {
+        abort_unless($request->user()->belongsToOrganization($standard->organization_id), 403);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(AuditStandardService::STANDARD_STATUSES)],
+        ]);
+
+        try {
+            $this->standardService->setStandardStatus($standard, $validated['status']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        (new AuditTrailService)->log(
+            'audit.standard.status_changed',
+            $standard,
+            ['status' => $standard->getOriginal('status')],
+            ['status' => $validated['status']],
+            ['actor' => $request->user()->name]
+        );
+
+        return back()->with('status', 'Status standar diubah menjadi '.UiLabel::standardStatus($validated['status']).'.');
     }
 
     public function destroy(Request $request, AuditStandard $standard): RedirectResponse
@@ -102,8 +149,8 @@ class AuditStandardController extends Controller
     }
 
     /**
-     * Menambah seksi pada versi instrumen. Versi yang sudah dipakai eksekusi
-     * dikunci dan menolak perubahan (PERINTAH Wave 2 — Instrumen).
+     * Menambah seksi pada versi instrumen. Perbaikan isi diizinkan meski versi
+     * sudah dipakai eksekusi audit (tanpa wajib membuat versi baru).
      */
     public function storeSection(Request $request, InstrumentVersion $version): RedirectResponse
     {
@@ -125,6 +172,40 @@ class AuditStandardController extends Controller
         return back()->with('status', 'Seksi instrumen berhasil ditambahkan.');
     }
 
+    public function updateSection(Request $request, StandardSection $section): RedirectResponse
+    {
+        $version = $section->instrumentVersion;
+        $standard = $version?->standard;
+        abort_unless($request->user()->belongsToOrganization($standard?->organization_id), 403);
+
+        $validated = $request->validate([
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                Rule::unique('standard_sections', 'code')
+                    ->where('instrument_version_id', $section->instrument_version_id)
+                    ->ignore($section->id),
+            ],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $before = $section->only(['code', 'title', 'description']);
+        $this->standardService->updateSection($section, $validated, $request->user());
+
+        (new AuditTrailService)->log(
+            'audit.standard.section_updated',
+            $section,
+            $before,
+            $section->only(['code', 'title', 'description']),
+            ['actor' => $request->user()->name]
+        );
+
+        return back()->with('status', 'Seksi instrumen berhasil diperbarui.');
+    }
+
     /**
      * Halaman formulir impor EP dari Excel/CSV.
      */
@@ -135,11 +216,21 @@ class AuditStandardController extends Controller
         return view('audit.standards.import', [
             'standard' => $standard,
             'rows' => [],
-            'errors' => [],
+            'parseErrors' => [],
             'invalid' => [],
             'duplicates' => [],
             'fileName' => null,
         ]);
+    }
+
+    /**
+     * Mengunduh template Excel impor EP yang sudah berisi contoh baris.
+     */
+    public function downloadImportTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $fileName = 'template-impor-ep-simmak.xlsx';
+
+        return Excel::download(new InstrumentImportTemplate, $fileName);
     }
 
     /**
@@ -155,7 +246,9 @@ class AuditStandardController extends Controller
 
         $fileName = $request->file('file')->getClientOriginalName();
         $parsed = $this->importService->parse($request->file('file'));
-        $errors = $parsed['errors'];
+        // Sengaja dinamai parseErrors (bukan $errors) agar tidak menimpa
+        // ViewErrorBag bawaan Laravel pada view.
+        $parseErrors = $parsed['errors'];
 
         $version = InstrumentVersion::where('audit_standard_id', $standard->id)
             ->whereIn('status', ['active', 'approved', 'draft'])
@@ -178,7 +271,7 @@ class AuditStandardController extends Controller
             $request->session()->forget('instrument_import_rows');
         }
 
-        return view('audit.standards.import', compact('standard', 'rows', 'errors', 'invalid', 'duplicates', 'fileName'));
+        return view('audit.standards.import', compact('standard', 'rows', 'parseErrors', 'invalid', 'duplicates', 'fileName'));
     }
 
     /**
@@ -228,7 +321,8 @@ class AuditStandardController extends Controller
     }
 
     /**
-     * Menambah kriteria pada seksi. Mewarisi penguncian dari versi instrumen.
+     * Menambah kriteria pada seksi. Perbaikan isi diizinkan meski versi sudah
+     * dipakai eksekusi audit.
      */
     public function storeCriterion(Request $request, StandardSection $section): RedirectResponse
     {
@@ -244,6 +338,7 @@ class AuditStandardController extends Controller
             'evidence_guidance' => ['nullable', 'string'],
             'max_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'active' => ['nullable', 'boolean'],
         ]);
 
         $this->standardService->createCriterion(
@@ -251,6 +346,45 @@ class AuditStandardController extends Controller
             $request->user()
         );
 
-        return back()->with('status', 'Kriteria instrumen berhasil ditambahkan.');
+        return back()->with('status', 'Elemen penilaian berhasil ditambahkan.');
+    }
+
+    public function updateCriterion(Request $request, StandardCriterion $criterion): RedirectResponse
+    {
+        $section = $criterion->section;
+        $version = $section?->instrumentVersion;
+        $standard = $version?->standard;
+        abort_unless($request->user()->belongsToOrganization($standard?->organization_id), 403);
+
+        $validated = $request->validate([
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                Rule::unique('standard_criteria', 'code')
+                    ->where('standard_section_id', $criterion->standard_section_id)
+                    ->ignore($criterion->id),
+            ],
+            'title' => ['required', 'string', 'max:255'],
+            'requirement_text' => ['nullable', 'string'],
+            'assessment_guidance' => ['nullable', 'string'],
+            'evidence_guidance' => ['nullable', 'string'],
+            'max_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'active' => ['nullable', 'boolean'],
+        ]);
+
+        $before = $criterion->only(['code', 'title', 'requirement_text', 'evidence_guidance', 'assessment_guidance', 'max_score']);
+        $this->standardService->updateCriterion($criterion, $validated, $request->user());
+
+        (new AuditTrailService)->log(
+            'audit.standard.criterion_updated',
+            $criterion,
+            $before,
+            $criterion->only(['code', 'title', 'requirement_text', 'evidence_guidance', 'assessment_guidance', 'max_score']),
+            ['actor' => $request->user()->name]
+        );
+
+        return back()->with('status', 'Elemen penilaian berhasil diperbarui.');
     }
 }

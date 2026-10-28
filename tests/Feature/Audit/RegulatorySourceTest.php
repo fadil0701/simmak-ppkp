@@ -264,7 +264,7 @@ class RegulatorySourceTest extends TestCase
         $response = $this->actingAs($this->user)->get('/audit/regulatory-sources/'.$source->id.'/edit');
 
         $response->assertStatus(200);
-        $response->assertSee('Sunting Sumber Regulasi');
+        $response->assertSee('Edit Sumber Regulasi');
         $response->assertSee('Verifikasi Dokumen');
         $response->assertSee(route('audit.regulatory.verify', $source));
     }

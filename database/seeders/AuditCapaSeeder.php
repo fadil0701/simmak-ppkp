@@ -95,7 +95,7 @@ class AuditCapaSeeder extends Seeder
 
         if ($findingWithCapa) {
             $capa = CapaCase::firstOrCreate(
-                ['organization_id' => $organization->id, 'case_number' => 'CAPA-2025-0001'],
+                ['organization_id' => $organization->id, 'case_number' => 'TL-2025-0001'],
                 [
                     'clinic_id' => $clinic->id,
                     'source_type' => 'audit_finding',

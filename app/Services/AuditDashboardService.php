@@ -27,6 +27,65 @@ class AuditDashboardService
             'upcomingAssignments' => $this->upcomingAssignments($user),
             'recentActivities' => $this->recentActivities($user, $clinicIds),
             'findingsByClinic' => $this->findingsByClinic($user),
+            'charts' => $this->chartSeries($user),
+        ];
+    }
+
+    /**
+     * Data grafik dashboard dari query operasional (bukan angka demo).
+     *
+     * @return array{executions: array{labels: list<string>, values: list<int>, colors: list<string>, empty: bool}, findings: array{labels: list<string>, values: list<int>, colors: list<string>, empty: bool}}
+     */
+    public function chartSeries(User $user): array
+    {
+        $executionLabels = [
+            'preparation' => 'Persiapan',
+            'in_progress' => 'Berjalan',
+            'submitted_for_review' => 'Tinjauan',
+            'finalized' => 'Final',
+        ];
+        $executionColors = ['#64748b', '#2563eb', '#d97706', '#059669'];
+        $executionCounts = AuditWorkScope::executions(AuditExecution::query(), $user)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $executionValues = [];
+        foreach (array_keys($executionLabels) as $status) {
+            $executionValues[] = (int) ($executionCounts[$status] ?? 0);
+        }
+
+        $severityLabels = [
+            'critical' => 'Kritis',
+            'major' => 'Mayor',
+            'minor' => 'Minor',
+            'observation' => 'Observasi',
+        ];
+        $severityColors = ['#dc2626', '#ea580c', '#ca8a04', '#2563eb'];
+        $severityCounts = AuditWorkScope::findings(AuditFinding::query(), $user)
+            ->whereIn('status', AuditFinding::OPEN_STATUSES)
+            ->selectRaw('severity, COUNT(*) as total')
+            ->groupBy('severity')
+            ->pluck('total', 'severity');
+
+        $severityValues = [];
+        foreach (array_keys($severityLabels) as $severity) {
+            $severityValues[] = (int) ($severityCounts[$severity] ?? 0);
+        }
+
+        return [
+            'executions' => [
+                'labels' => array_values($executionLabels),
+                'values' => $executionValues,
+                'colors' => $executionColors,
+                'empty' => array_sum($executionValues) === 0,
+            ],
+            'findings' => [
+                'labels' => array_values($severityLabels),
+                'values' => $severityValues,
+                'colors' => $severityColors,
+                'empty' => array_sum($severityValues) === 0,
+            ],
         ];
     }
 

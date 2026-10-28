@@ -97,8 +97,8 @@
                 </div>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
-                    <x-action href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" variant="outline" />
-                    <x-action icon="check-circle" label="Simpan Program" />
+                    <x-action action="back" href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" />
+                    <x-action action="save" icon="check-circle" label="Simpan Program" />
                 </div>
             </form>
         </div>

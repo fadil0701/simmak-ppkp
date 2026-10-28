@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="mb-4">
-        <a href="{{ route('audit.reports.index') }}" class="sim-btn sim-btn-outline sim-btn-sm">← Kembali ke Daftar Laporan</a>
+        <a href="{{ route('audit.reports.index') }}" class="sim-btn sim-btn-back sim-btn-sm">← Kembali ke Daftar Laporan</a>
     </div>
 
     <div class="sim-card max-w-2xl">
@@ -32,7 +32,7 @@
                     <select name="report_type" class="sim-form-select {{ $errors->has('report_type') ? 'border-sim-danger' : '' }}" required>
                         <option value="summary" {{ old('report_type') === 'summary' ? 'selected' : '' }}>Ringkasan Audit</option>
                         <option value="findings" {{ old('report_type') === 'findings' ? 'selected' : '' }}>Temuan Audit</option>
-                        <option value="capa" {{ old('report_type') === 'capa' ? 'selected' : '' }}>Tindak Lanjut CAPA</option>
+                        <option value="capa" {{ old('report_type') === 'capa' ? 'selected' : '' }}>Tindak Lanjut</option>
                         <option value="execution" {{ old('report_type') === 'execution' ? 'selected' : '' }}>Eksekusi Audit</option>
                         <option value="program" {{ old('report_type') === 'program' ? 'selected' : '' }}>Program Audit</option>
                     </select>
@@ -116,7 +116,7 @@
                         </select>
                     </div>
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Status CAPA</label>
+                        <label class="sim-form-label">Status Tindak Lanjut</label>
                         <select name="capa_status" class="sim-form-select">
                             <option value="">— Semua —</option>
                             @foreach (['open', 'analysis', 'action', 'verification', 'closed'] as $status)
@@ -152,7 +152,7 @@
                 </div>
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
-                    <x-action icon="wand" label="Buat Laporan" />
+                    <x-action action="create" icon="wand" label="Buat Laporan" />
                 </div>
             </form>
         </div>

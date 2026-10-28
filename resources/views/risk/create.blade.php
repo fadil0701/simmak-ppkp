@@ -64,8 +64,8 @@
                     </div>
                 </div>
                 <div class="flex gap-3 pt-2">
-                    <button type="submit" class="sim-btn sim-btn-primary">Simpan</button>
-                    <a href="{{ route('risk.index') }}" class="sim-btn sim-btn-outline">Batal</a>
+                    <button type="submit" class="sim-btn sim-btn-save">Simpan</button>
+                    <a href="{{ route('risk.index') }}" class="sim-btn sim-btn-neutral">Batal</a>
                 </div>
             </form>
         </div>

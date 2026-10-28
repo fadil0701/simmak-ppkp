@@ -11,16 +11,21 @@
         </div>
 
         @can('audit.evidence.upload')
-            <a href="{{ route('audit.evidence.create') }}" class="sim-btn sim-btn-primary inline-flex items-center gap-2">
+            <a href="{{ route('audit.evidence.create') }}" class="sim-btn sim-btn-upload inline-flex items-center gap-2">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Unggah Bukti
+                Upload Bukti
             </a>
         @endcan
     </div>
 
     <div class="simmak-card">
-        <div class="simmak-card-header">
+        <div class="simmak-card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 class="font-semibold text-slate-800">Daftar Bukti</h3>
+            <form method="GET" action="{{ route('audit.evidence.index') }}" class="flex gap-2">
+                <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama berkas atau uraian…"
+                       class="sim-form-input sim-btn-sm w-64" aria-label="Cari bukti">
+                <x-action action="save" icon="check-circle" label="Cari" size="sm" />
+            </form>
         </div>
         <div class="simmak-card-body overflow-x-auto">
             <table class="w-full text-left text-sm">
@@ -57,16 +62,16 @@
                             <td class="px-4 py-3 text-center">
                                 <div class="sim-action-group">
                                     @if (in_array($evidence->id, $unavailableIds, true))
-                                        <x-action href="{{ route('audit.evidence.show', $evidence) }}" icon="eye" label="Detail" variant="outline" size="sm" />
-                                        <span class="sim-btn sim-btn-outline sim-btn-sm cursor-not-allowed opacity-50" title="Berkas tidak ditemukan di penyimpanan">
+                                        <x-action action="detail" href="{{ route('audit.evidence.show', $evidence) }}" icon="eye" label="Detail" size="sm" />
+                                        <span class="sim-btn sim-btn-download sim-btn-sm cursor-not-allowed opacity-50" title="Berkas tidak ditemukan di penyimpanan">
                                             <span class="inline-flex">@include('partials.icons.download')</span>
                                             <span>Unduh</span>
                                         </span>
                                     @else
-                                        <x-action href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" variant="outline" size="sm" />
+                                        <x-action action="download" href="{{ route('audit.evidence.download', $evidence) }}" icon="download" label="Unduh" size="sm" />
                                     @endif
                                     @can('delete', $evidence)
-                                        <x-action href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" variant="danger" size="sm" method="DELETE" confirm="Hapus bukti ini?" />
+                                        <x-action action="delete" href="{{ route('audit.evidence.destroy', $evidence) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus bukti ini?" />
                                     @endcan
                                 </div>
                             </td>

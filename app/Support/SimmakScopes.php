@@ -31,7 +31,7 @@ class SimmakScopes
     {
         return [
             self::AUDIT_INTERNAL => 'Audit Internal — kelola penuh modul audit',
-            self::MUTU => 'Mutu — kelola indikator, risiko, dan CAPA',
+            self::MUTU => 'Mutu — kelola indikator, risiko, dan tindak lanjut',
             self::AKREDITASI => 'Akreditasi — kelola standar dan bukti akreditasi',
             self::MONITORING => 'Monitoring — baca lintas modul tanpa hak ubah',
             self::AUDITOR => 'Auditor — pelaksanaan pemeriksaan',
