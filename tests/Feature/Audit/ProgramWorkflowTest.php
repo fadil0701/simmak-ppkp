@@ -104,11 +104,10 @@ class ProgramWorkflowTest extends TestCase
         ]);
 
         $response->assertStatus(302);
-        $this->assertDatabaseHas('audit_programs', [
-            'program_code' => 'PROG-2026-001',
-            'name' => 'Audit Tahunan 2026',
-            'organization_id' => $this->org->id,
-        ]);
+        $program = AuditProgram::query()->where('name', 'Audit Tahunan 2026')->firstOrFail();
+        $this->assertSame($this->org->id, $program->organization_id);
+        $this->assertMatchesRegularExpression('/^PROG-\d{4}-\d{4}$/', $program->program_code);
+        $this->assertNotSame('PROG-2026-001', $program->program_code);
     }
 
     /** @test */
@@ -134,7 +133,10 @@ class ProgramWorkflowTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $response->assertSessionHasErrors('program_code');
+        $response->assertStatus(302);
+        $created = AuditProgram::query()->where('name', 'Second Program')->firstOrFail();
+        $this->assertNotSame('PROG-DUPLICATE', $created->program_code);
+        $this->assertMatchesRegularExpression('/^PROG-\d{4}-\d{4}$/', $created->program_code);
     }
 
     /** @test */

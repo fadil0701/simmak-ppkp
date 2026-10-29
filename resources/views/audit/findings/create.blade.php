@@ -16,11 +16,23 @@
             <form method="POST" action="{{ route('findings.store') }}" class="space-y-4">
                 @csrf
 
+                @if ($clinicalAudit)
+                    <input type="hidden" name="clinical_audit_id" value="{{ $clinicalAudit->id }}">
+                    <div class="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-800">
+                        <span class="text-xs font-medium text-teal-700">Temuan dari Audit Klinis</span>
+                        <p class="mt-1 font-medium">{{ $clinicalAudit->audit_number }} — {{ $clinicalAudit->title }}</p>
+                        <p class="mt-1 text-xs text-teal-700">
+                            Temuan ini masuk ke daftar Temuan Audit bersama. Klinik mengikuti audit klinis
+                            ({{ $clinicalAudit->clinic?->name ?? '—' }}); eksekusi audit tidak diperlukan.
+                        </p>
+                    </div>
+                @endif
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="sim-form-group">
-                        <label class="sim-form-label">Eksekusi Audit <span class="sim-form-label-required"></span></label>
-                        <select name="audit_execution_id" class="sim-form-select {{ $errors->has('audit_execution_id') ? 'border-sim-danger' : '' }}" required>
-                            <option value="">— Pilih eksekusi —</option>
+                        <label class="sim-form-label">Eksekusi Audit @unless ($clinicalAudit) <span class="sim-form-label-required"></span> @endunless</label>
+                        <select name="audit_execution_id" class="sim-form-select {{ $errors->has('audit_execution_id') ? 'border-sim-danger' : '' }}" @unless ($clinicalAudit) required @endunless>
+                            <option value="">{{ $clinicalAudit ? '— Tidak terkait eksekusi (audit klinis) —' : '— Pilih eksekusi —' }}</option>
                             @foreach ($executions as $execution)
                                 <option value="{{ $execution->id }}" {{ old('audit_execution_id') === $execution->id ? 'selected' : '' }}>
                                     {{ $execution->execution_code }} — {{ $execution->title }}
@@ -37,7 +49,7 @@
                         <select name="clinic_id" class="sim-form-select {{ $errors->has('clinic_id') ? 'border-sim-danger' : '' }}" required>
                             <option value="">— Pilih klinik —</option>
                             @foreach ($clinics as $clinic)
-                                <option value="{{ $clinic->id }}" {{ old('clinic_id') === $clinic->id ? 'selected' : '' }}>
+                                <option value="{{ $clinic->id }}" {{ old('clinic_id', $clinicalAudit?->clinic_id) === $clinic->id ? 'selected' : '' }}>
                                     {{ $clinic->code }} — {{ $clinic->name }}
                                 </option>
                             @endforeach
@@ -49,14 +61,10 @@
                 </div>
 
                 <div class="sim-form-group">
-                    <label class="sim-form-label">Kode Temuan <span class="sim-form-label-required"></span></label>
-                    <input type="text" name="finding_code" maxlength="80"
-                           value="{{ old('finding_code') }}"
-                           class="sim-form-input {{ $errors->has('finding_code') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: TMN-2026-0001" required>
-                    @if ($errors->has('finding_code'))
-                        <p class="sim-form-error">{{ $errors->first('finding_code') }}</p>
-                    @endif
+                    <label class="sim-form-label">Kode Temuan</label>
+                    <input type="text" value="{{ $suggestedNumber ?? '' }}" readonly tabindex="-1"
+                           class="sim-form-input bg-sim-surface-alt">
+                    <p class="text-xs text-sim-muted mt-1">Dibuat otomatis saat data disimpan. Tidak dapat diubah.</p>
                 </div>
 
                 <div class="sim-form-group">

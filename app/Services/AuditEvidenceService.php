@@ -90,6 +90,7 @@ class AuditEvidenceService
             'organization_id' => $user->organization_id,
             'clinic_id' => $data['clinic_id'] ?? null,
             'audit_execution_id' => $data['audit_execution_id'] ?? null,
+            'clinical_audit_id' => $data['clinical_audit_id'] ?? null,
             'uploaded_by' => $user->id,
             'storage_disk' => 'local',
             'storage_path' => $tempPath,
@@ -266,7 +267,13 @@ class AuditEvidenceService
     public function getEvidenceForUser(User $user, ?string $search = null)
     {
         $query = Evidence::forUserClinics($user)
-            ->with(['clinic', 'execution', 'uploader'])
+            // Konteks dokumen dimuat sekaligus: pemilik tindak lanjut, temuan,
+            // dan eksekusi — supaya arsip bukti tidak tampil sebagai daftar
+            // tanpa keterkaitan.
+            ->with([
+                'clinic', 'execution', 'clinicalAudit', 'uploader',
+                'actionLinks.action.capaCase', 'findingLinks.finding',
+            ])
             ->orderByDesc('uploaded_at');
 
         FullTextSearch::apply($query, ['original_filename', 'description'], $search);

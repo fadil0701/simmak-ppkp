@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActionEvidence;
+use App\Models\AuditReport;
 use App\Models\CapaAction;
 use App\Models\CapaCase;
 use App\Models\CapaRootCauseAnalysis;
 use App\Models\User;
 use App\Services\AuditCapaService;
 use App\Services\AuditEvidenceService;
+use App\Services\AuditReportService;
 use App\Services\AuditTrailService;
 use App\Support\AuditWorkScope;
 use App\Support\SpreadsheetCell;
@@ -25,6 +27,7 @@ class CapaController extends Controller
     public function __construct(
         private AuditCapaService $capaService,
         private AuditEvidenceService $evidenceService,
+        private AuditReportService $reportService,
     ) {}
 
     public function index(Request $request): View
@@ -104,7 +107,11 @@ class CapaController extends Controller
     {
         $this->authorize('view', $capa);
 
-        $capa->load(['clinic', 'owner', 'sourceFinding.execution.assignment', 'actions.assignee', 'actions.evidenceLinks.evidence', 'rca.creator', 'verifications.verifier']);
+        $capa->load([
+            'clinic', 'owner', 'sourceFinding.execution.assignment',
+            'actions.assignee', 'actions.evidenceLinks.evidence', 'actions.reports',
+            'rca.creator', 'verifications.verifier',
+        ]);
 
         $users = User::where('organization_id', $capa->organization_id)
             ->where('is_active', true)
@@ -219,6 +226,104 @@ class CapaController extends Controller
         $this->capaService->submitActionEvidence($action, $validated, $request->user());
 
         return back()->with('status', 'Bukti tindak lanjut telah dikirim. Temuan belum tertutup sampai auditor memvalidasi kesesuaiannya.');
+    }
+
+    /**
+     * Lampirkan bukti arsip tambahan pada satu tindakan tindak lanjut.
+     *
+     * Berbeda dari `submitEvidence()` yang menandai pengiriman bukti dan
+     * mengubah status alur, method ini hanya menambah dokumen sehingga bukti
+     * untuk tindakan tertentu tetap terkelompok pada tindakan tersebut.
+     */
+    public function attachEvidence(Request $request, CapaAction $action): RedirectResponse
+    {
+        $this->authorize('update', $action);
+
+        $capa = $action->capaCase;
+        abort_if($capa === null, 404);
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,csv,txt'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $evidence = $this->evidenceService->store($request->file('file'), $request->user(), [
+            'clinic_id' => $capa->clinic_id,
+            'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
+            'clinical_audit_id' => $capa->sourceFinding?->clinical_audit_id,
+            'evidence_type' => 'capa_follow_up',
+            'description' => $validated['description'] ?? 'Bukti tindak lanjut',
+        ]);
+
+        ActionEvidence::firstOrCreate(
+            ['corrective_action_id' => $action->id, 'evidence_id' => $evidence->id],
+            ['description' => $validated['description'] ?? $evidence->original_filename]
+        );
+
+        (new AuditTrailService)->log(
+            'capa.evidence_attached',
+            $capa,
+            null,
+            ['action_id' => $action->id, 'evidence_id' => $evidence->id, 'original_filename' => $evidence->original_filename],
+            ['actor' => $request->user()->name]
+        );
+
+        return back()->with('status', 'Bukti arsip tindak lanjut berhasil dilampirkan.');
+    }
+
+    /**
+     * Lepas tautan bukti dari satu tindakan tanpa menghapus berkas arsipnya.
+     */
+    public function detachEvidence(Request $request, CapaAction $action, ActionEvidence $link): RedirectResponse
+    {
+        $this->authorize('update', $action);
+
+        abort_unless($link->corrective_action_id === $action->id, 404);
+
+        $link->delete();
+
+        (new AuditTrailService)->log(
+            'capa.evidence_detached',
+            $action->capaCase,
+            null,
+            ['action_id' => $action->id, 'evidence_id' => $link->evidence_id],
+            ['actor' => $request->user()->name]
+        );
+
+        return back()->with('status', 'Tautan bukti dilepas dari tindakan ini. Berkas tetap tersimpan di Arsip Bukti.');
+    }
+
+    /**
+     * Unggah laporan audit untuk satu tindakan tindak lanjut.
+     */
+    public function storeReport(Request $request, CapaAction $action): RedirectResponse
+    {
+        $this->authorize('update', $action);
+        abort_unless($request->user()->can('audit.report.view'), 403, 'Tidak berwenang mengunggah laporan audit.');
+
+        abort_if($action->capaCase === null, 404);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'report_type' => ['nullable', 'string', Rule::in(['capa', 'findings', 'execution', 'summary'])],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:pdf,doc,docx,xls,xlsx'],
+        ]);
+
+        $report = $this->reportService->storeFollowUpReport($action, $validated, $request->user());
+
+        return back()->with('status', 'Laporan "'.$report->title.'" tersimpan pada tindakan ini.');
+    }
+
+    public function destroyReport(Request $request, CapaAction $action, AuditReport $report): RedirectResponse
+    {
+        $this->authorize('delete', $report);
+
+        abort_unless($report->capa_action_id === $action->id, 404);
+
+        $this->reportService->deleteReport($report, $request->user());
+
+        return back()->with('status', 'Laporan tindak lanjut berhasil dihapus.');
     }
 
     public function storeVerification(Request $request, CapaCase $capa): RedirectResponse

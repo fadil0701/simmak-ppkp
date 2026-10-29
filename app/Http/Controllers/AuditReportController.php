@@ -80,9 +80,28 @@ class AuditReportController extends Controller
     {
         $this->authorize('view', $report);
 
-        $report->load(['clinic', 'execution', 'generator']);
+        $report->load(['clinic', 'execution', 'generator', 'action.capaCase', 'finding']);
 
         return view('audit.reports.show', compact('report'));
+    }
+
+    /**
+     * Unduh berkas laporan apa adanya (termasuk laporan tindak lanjut yang
+     * diunggah pengguna). Berkas yang hilang dilaporkan sebagai pesan, bukan 500.
+     */
+    public function downloadFile(Request $request, AuditReport $report): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('view', $report);
+
+        $path = $report->file_path;
+
+        if (! $path || ! Storage::disk('local')->exists($path)) {
+            return redirect()
+                ->back(fallback: route('audit.reports.index'))
+                ->with('error', 'Berkas laporan "'.$report->title.'" tidak tersedia di penyimpanan.');
+        }
+
+        return Storage::disk('local')->download($path, $report->downloadName());
     }
 
     public function downloadPdf(Request $request, AuditReport $report): StreamedResponse

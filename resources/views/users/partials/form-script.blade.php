@@ -149,7 +149,7 @@
             }
 
             var total = form.querySelectorAll('input[name="scope_names[]"]:checked').length;
-            scopeCount.textContent = total + ' scope dipilih';
+            scopeCount.textContent = total + ' tugas dipilih';
         }
 
         function setRule(ruleName, ok) {

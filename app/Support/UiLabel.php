@@ -223,6 +223,23 @@ class UiLabel
         };
     }
 
+    /**
+     * Status jadwal penugasan auditor (tabel audit_assignments).
+     */
+    public static function assignmentStatus(?string $status): string
+    {
+        return match ($status) {
+            'draft' => 'Draf',
+            'proposed' => 'Menunggu Persetujuan Kepala Pusat',
+            'approved' => 'Disetujui/Dipublikasikan',
+            'rejected' => 'Ditolak',
+            'active' => 'Dipublikasikan',
+            'completed' => 'Selesai',
+            'cancelled' => 'Dibatalkan',
+            default => $status ?? '—',
+        };
+    }
+
     public static function auditType(?string $type): string
     {
         return match ($type) {
@@ -234,6 +251,19 @@ class UiLabel
         };
     }
 
+    /**
+     * Peran anggota di dalam satu penugasan audit — bukan peran akun SIMMAK.
+     */
+    public static function teamRole(?string $role): string
+    {
+        return match ($role) {
+            'lead_auditor' => 'Ketua tim auditor',
+            'auditor' => 'Anggota auditor',
+            'observer' => 'Pengamat',
+            default => $role ? str_replace('_', ' ', $role) : '—',
+        };
+    }
+
     public static function clinicType(?string $type): string
     {
         return match ($type) {
@@ -241,6 +271,34 @@ class UiLabel
             'utama' => 'Klinik Utama',
             'pusat' => 'Manajemen',
             default => $type ?? '—',
+        };
+    }
+
+    /**
+     * Status audit klinis (tabel clinical_audits).
+     */
+    public static function clinicalAuditStatus(?string $status): string
+    {
+        return match ($status) {
+            'draft' => 'Draf',
+            'in_progress' => 'Berjalan',
+            'completed' => 'Selesai',
+            'closed' => 'Ditutup',
+            default => $status ?? '—',
+        };
+    }
+
+    /**
+     * Hasil penilaian elemen audit klinis (skala kesesuaian).
+     */
+    public static function clinicalResult(?string $result): string
+    {
+        return match ($result) {
+            'conform' => 'Sesuai',
+            'partial' => 'Sesuai sebagian',
+            'non_conform' => 'Tidak sesuai',
+            'na' => 'Belum dinilai',
+            default => $result ?? '—',
         };
     }
 }

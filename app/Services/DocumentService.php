@@ -6,40 +6,47 @@ use App\Models\Document;
 use App\Models\DocumentQrCode;
 use App\Models\DocumentVersion;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DocumentService
 {
-    public function __construct(private AuditTrailService $auditTrail) {}
+    public function __construct(
+        private AuditTrailService $auditTrail,
+        private DocumentNumberService $numbers,
+    ) {}
 
     public function generateDocumentNumber(User $user, string $typeCode): string
     {
-        $prefix = strtoupper($typeCode);
-        $year = now()->format('Y');
-        $seq = Document::where('organization_id', $user->organization_id)
-            ->whereYear('created_at', $year)
-            ->count() + 1;
-
-        return sprintf('%s-%s-%04d', $prefix, $year, $seq);
+        return $this->numbers->allocatePrefixed(
+            $user->organization_id,
+            $typeCode,
+            Document::class,
+            'document_number',
+        );
     }
 
     public function createVersion(Document $document, User $user, array $data = []): DocumentVersion
     {
-        $nextVersion = ($document->versions()->max('version_number') ?? 0) + 1;
+        return DB::transaction(function () use ($document, $user, $data) {
+            Document::query()->whereKey($document->id)->lockForUpdate()->first();
 
-        $version = DocumentVersion::create([
-            'document_id' => $document->id,
-            'version_number' => $nextVersion,
-            'status' => $data['status'] ?? 'draft',
-            'change_summary' => $data['change_summary'] ?? 'Versi awal',
-            'attachment_id' => $data['attachment_id'] ?? null,
-            'file_name' => $data['file_name'] ?? null,
-            'created_by' => $user->id,
-        ]);
+            $nextVersion = ((int) $document->versions()->withTrashed()->max('version_number')) + 1;
 
-        $document->update(['current_version_id' => $version->id]);
+            $version = DocumentVersion::create([
+                'document_id' => $document->id,
+                'version_number' => $nextVersion,
+                'status' => $data['status'] ?? 'draft',
+                'change_summary' => $data['change_summary'] ?? 'Versi awal',
+                'attachment_id' => $data['attachment_id'] ?? null,
+                'file_name' => $data['file_name'] ?? null,
+                'created_by' => $user->id,
+            ]);
 
-        return $version;
+            $document->update(['current_version_id' => $version->id]);
+
+            return $version;
+        });
     }
 
     public function publish(Document $document, User $user): Document

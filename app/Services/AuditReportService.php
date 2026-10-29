@@ -8,18 +8,23 @@ use App\Models\AuditExecution;
 use App\Models\AuditFinding;
 use App\Models\AuditProgram;
 use App\Models\AuditReport;
+use App\Models\CapaAction;
 use App\Models\CapaCase;
 use App\Models\Clinic;
 use App\Models\User;
 use App\Support\AuditWorkScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AuditReportService
 {
+    public function __construct(private DocumentNumberService $numbers) {}
+
     public function generateReport(array $data, User $user): AuditReport
     {
         $orgId = $user->organization_id;
@@ -105,6 +110,75 @@ class AuditReportService
                 'report_type' => $reportType,
                 'file_type' => 'pdf',
                 'file_size' => $pdfSize,
+            ],
+            ['actor' => $user->name]
+        );
+
+        return $report;
+    }
+
+    /**
+     * Simpan laporan yang diunggah pengguna untuk satu tindakan tindak lanjut.
+     *
+     * Berbeda dari `generateReport()` (PDF/Excel hasil generate), berkas di sini
+     * adalah dokumen yang sudah ada (mis. laporan tindak lanjut yang ditandatangani).
+     * Laporan ditautkan ke tindak lanjut (`capa_action_id`) dan opsional ke temuan,
+     * sehingga dokumen tidak tercampur dengan laporan tindak lanjut lain.
+     */
+    public function storeFollowUpReport(CapaAction $action, array $data, User $user): AuditReport
+    {
+        $capa = $action->capaCase()->with('sourceFinding')->first();
+
+        if (! $capa) {
+            throw new InvalidArgumentException('Tindakan tindak lanjut tidak memiliki kasus induk.');
+        }
+
+        /** @var UploadedFile $file */
+        $file = $data['file'];
+        $orgId = $capa->organization_id;
+        $extension = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        $safeName = Str::uuid().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+        $path = 'reports/'.$orgId.'/tindak-lanjut/'.$safeName;
+
+        Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+
+        $reportType = $data['report_type'] ?? 'capa';
+        $reportNumber = $this->generateReportNumber($orgId, $reportType);
+
+        $report = AuditReport::create([
+            'organization_id' => $orgId,
+            'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
+            'capa_action_id' => $action->id,
+            'audit_finding_id' => $capa->sourceFinding?->id,
+            'clinic_id' => $capa->clinic_id,
+            'report_number' => $reportNumber,
+            'title' => $data['title'],
+            'report_type' => $reportType,
+            'executive_summary' => $data['notes'] ?? null,
+            'file_path' => $path,
+            'original_filename' => $file->getClientOriginalName(),
+            'file_type' => $extension,
+            'file_size' => Storage::disk('local')->size($path),
+            'checksum' => hash_file('sha256', Storage::disk('local')->path($path)),
+            'status' => 'generated',
+            'generated_by' => $user->id,
+            'generated_at' => now(),
+            'metadata' => [
+                'source' => 'follow_up_upload',
+                'uploaded_by_name' => $user->name,
+                'capa_case_number' => $capa->case_number,
+            ],
+        ]);
+
+        (new AuditTrailService)->log(
+            'audit.report.follow_up_uploaded',
+            $report,
+            null,
+            [
+                'report_number' => $reportNumber,
+                'capa_case_id' => $capa->id,
+                'capa_action_id' => $action->id,
+                'original_filename' => $report->original_filename,
             ],
             ['actor' => $user->name]
         );
@@ -228,26 +302,18 @@ class AuditReportService
 
     protected function generateReportNumber(string $orgId, string $reportType): string
     {
-        $year = now()->format('Y');
-        $prefix = strtoupper($reportType).'-'.$year.'-';
-        $last = AuditReport::where('organization_id', $orgId)
-            ->where('report_number', 'like', $prefix.'%')
-            ->orderByDesc('report_number')
-            ->value('report_number');
-
-        $seq = 1;
-        if ($last) {
-            $parts = explode('-', $last);
-            $seq = (int) end($parts) + 1;
-        }
-
-        return $prefix.str_pad($seq, 4, '0', STR_PAD_LEFT);
+        return $this->numbers->allocatePrefixed(
+            $orgId,
+            $reportType,
+            AuditReport::class,
+            'report_number',
+        );
     }
 
     public function getReportsForOrganization(?string $organizationId)
     {
         return AuditReport::forOrganization($organizationId)
-            ->with(['clinic', 'execution', 'generator'])
+            ->with(['clinic', 'execution', 'generator', 'action.capaCase'])
             ->orderByDesc('generated_at')
             ->paginate(15);
     }
@@ -255,7 +321,7 @@ class AuditReportService
     public function getReportsForUser(User $user)
     {
         return AuditReport::forUserClinics($user)
-            ->with(['clinic', 'execution', 'generator'])
+            ->with(['clinic', 'execution', 'generator', 'action.capaCase', 'finding'])
             ->orderByDesc('generated_at')
             ->paginate(15);
     }

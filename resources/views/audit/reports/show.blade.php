@@ -14,19 +14,46 @@
         </div>
 
         <div class="flex gap-2">
-            <a href="{{ route('audit.reports.download-pdf', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Unduh PDF
-            </a>
-            <a href="{{ route('audit.reports.download-excel', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
-                <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Unduh Excel
-            </a>
+            @if ($report->isFollowUpReport())
+                <a href="{{ route('capa.download-report', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Unduh Berkas
+                </a>
+            @else
+                <a href="{{ route('audit.reports.download-pdf', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Unduh PDF
+                </a>
+                <a href="{{ route('audit.reports.download-excel', $report) }}" class="sim-btn sim-btn-download sim-btn-sm">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Unduh Excel
+                </a>
+            @endif
             <a href="{{ route('audit.reports.index') }}" class="sim-btn sim-btn-back">
                 Kembali
             </a>
         </div>
     </div>
+
+    @if ($report->action?->capaCase)
+        <div class="sim-card mb-6 border-teal-100 bg-teal-50">
+            <div class="sim-card-body p-4">
+                <span class="text-xs font-medium text-teal-700">Laporan ini milik tindak lanjut</span>
+                <a href="{{ route('capa.show', $report->action->capaCase) }}" class="mt-1 block font-medium text-teal-800 hover:underline">
+                    {{ $report->action->capaCase->case_number }} — {{ \Illuminate\Support\Str::limit($report->action->description, 90) }}
+                </a>
+            </div>
+        </div>
+    @elseif ($report->finding)
+        <div class="sim-card mb-6 border-teal-100 bg-teal-50">
+            <div class="sim-card-body p-4">
+                <span class="text-xs font-medium text-teal-700">Laporan ini milik temuan</span>
+                <a href="{{ route('findings.show', $report->finding) }}" class="mt-1 block font-medium text-teal-800 hover:underline">
+                    {{ $report->finding->finding_code }} — {{ $report->finding->title }}
+                </a>
+            </div>
+        </div>
+    @endif
 
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="sim-card lg:col-span-2">

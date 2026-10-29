@@ -395,7 +395,10 @@ class UserMultiRoleAndScopeTest extends TestCase
 
         $show = $this->actingAs($this->admin)->get('/users/'.$user->id);
         $show->assertStatus(200);
-        $show->assertSee('Peran &amp; Scope Sistem', false);
+        $show->assertSee('Peran jabatan &amp; tugas di sistem', false);
+        $edit->assertSee('Tiga pengaturan yang tidak boleh tertukar');
+        $edit->assertSee('Tugas di sistem (opsional)');
+        $edit->assertSee('Batas data klinik');
         $show->assertSee(SimmakScopes::labels()[SimmakScopes::AUDITOR]);
         $show->assertSee(SimmakScopes::labels()[SimmakScopes::MONITORING]);
     }

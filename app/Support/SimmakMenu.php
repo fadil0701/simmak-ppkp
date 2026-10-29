@@ -39,6 +39,7 @@ class SimmakMenu
                     ['route' => 'audit.assignments.index', 'label' => 'Penugasan Auditor', 'icon' => 'user-group', 'permission' => 'audit.assignment.view'],
                     ['route' => 'audit.calendar', 'label' => 'Kalender Audit', 'icon' => 'calendar', 'permission' => 'audit.assignment.view'],
                     ['route' => 'audit.executions.index', 'label' => 'Pelaksanaan Audit', 'icon' => 'clipboard-check', 'permission' => 'audit.execution.view'],
+                    ['route' => 'audit.clinical.index', 'label' => 'Audit Klinis', 'icon' => 'clipboard-list', 'permission' => 'audit.clinical.view'],
                     ['route' => 'findings.index', 'label' => 'Temuan Audit', 'icon' => 'alert-triangle', 'permission' => 'audit.finding.view'],
                     ['route' => 'capa.index', 'label' => 'Tindak Lanjut', 'icon' => 'tool', 'permission' => 'capa.view'],
                     ['route' => 'audit.reports.index', 'label' => 'Laporan Audit', 'icon' => 'file-text', 'permission' => 'audit.report.view'],

@@ -78,7 +78,9 @@ Catatan implementasi yang menyimpang dari rencana awal (dan alasannya):
 - `EmployeeController::validated()` memvalidasi satu `clinic_id` dan satu `unit_id` per pegawai.
 - Di sisi akun, akses klinik disimpan terpisah pada `user_clinic_scopes`
   (`2026_07_08_000002_create_users_and_auth_tables.php:34`) dan diisi manual lewat
-  checkbox "Akses Klinik" pada form pengguna (`users/create.blade.php:132`).
+  checkbox batas klinik pada form pengguna (`users/partials/form.blade.php`). Label UI
+  memisahkan peran jabatan, tugas di sistem, dan batas klinik agar tidak diisi ganda
+  (lihat `docs/ROLE_MATRIX.md` §6a).
 
 ### 2.2 Masalah
 

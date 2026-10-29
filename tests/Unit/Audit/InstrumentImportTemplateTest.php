@@ -258,7 +258,7 @@ class InstrumentImportTemplateTest extends TestCase
         $org = Organization::first();
 
         // Pastikan penomoran baru memakai awalan TL- (bukan CAPA-).
-        $number = (new \App\Services\AuditCapaService)->generateCapaNumber($user);
+        $number = app(\App\Services\AuditCapaService::class)->generateCapaNumber($user);
 
         $this->assertMatchesRegularExpression('/^TL-\d{4}-\d{4}$/', $number);
         $this->assertStringStartsWith('TL-', $number);

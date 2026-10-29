@@ -2,7 +2,7 @@
 
 @section('title', 'Ubah Pengguna — SIMMAK PPKP')
 @section('page-title', 'Ubah Pengguna')
-@section('page-subtitle', 'Perbarui data, peran, dan akses klinik pengguna.')
+@section('page-subtitle', 'Peran jabatan, tugas di sistem, dan batas klinik adalah tiga pengaturan terpisah.')
 
 @section('breadcrumb')
     <li class="flex items-center gap-1 text-sim-muted">

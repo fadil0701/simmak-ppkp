@@ -10,6 +10,7 @@ use App\Models\CapaVerification;
 use App\Models\Clinic;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -179,16 +180,19 @@ class FindingAndCAPAWorkflowTest extends TestCase
             'updated_by' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->post('/findings', [
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        AuditFinding::create([
             'organization_id' => $this->org->id,
             'clinic_id' => $this->clinic->id,
             'finding_code' => 'TMN-DUP-001',
             'title' => 'Duplicate Finding',
             'severity' => 'minor',
             'status' => 'draft',
+            'identified_at' => now(),
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
         ]);
-
-        $response->assertSessionHasErrors('finding_code');
     }
 
     /** @test */

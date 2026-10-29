@@ -2,7 +2,7 @@
 
 @section('title', 'Kalender Audit — SIMMAK PPKP')
 @section('page-title', 'Kalender Audit')
-@section('page-subtitle', 'Jadwal penugasan auditor per bulan, sesuai ruang lingkup klinik Anda')
+@section('page-subtitle', 'Hanya jadwal yang sudah disetujui Kepala Pusat, dan hanya yang melibatkan Anda')
 
 @section('content')
     <div class="sim-page-header">
@@ -46,7 +46,7 @@
                                     <div class="space-y-1">
                                         @foreach (array_slice($day['events'], 0, 3) as $event)
                                             <a href="{{ $event['url'] }}" class="block truncate rounded px-1 py-0.5 text-[11px] leading-tight hover:bg-sim-hover
-                                                {{ $event['status'] === 'active' ? 'bg-emerald-50 text-emerald-800' : ($event['status'] === 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-800') }}">
+                                                {{ in_array($event['status'], ['active', 'approved'], true) ? 'bg-emerald-50 text-emerald-800' : ($event['status'] === 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-800') }}">
                                                 <span class="font-mono">{{ $event['code'] }}</span>
                                                 <span class="text-sim-muted"> · {{ $event['clinic'] }}</span>
                                             </a>
@@ -94,7 +94,7 @@
                                 {{ $assignment->scheduled_end?->format('d M Y') }}
                             </td>
                             <td>{{ $assignment->leadAuditor?->name ?? '—' }}</td>
-                            <td>{{ $assignment->status }}</td>
+                            <td>{{ \App\Support\UiLabel::assignmentStatus($assignment->status) }}</td>
                             <td>
                                 <x-action action="detail" href="{{ route('audit.assignments.show', $assignment) }}" icon="eye" label="Detail" size="sm" />
                             </td>

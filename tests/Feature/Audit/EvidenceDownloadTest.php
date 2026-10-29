@@ -79,7 +79,10 @@ class EvidenceDownloadTest extends TestCase
     private function makeEvidence(string $path, string $filename = 'bukti-audit.jpeg', bool $withFile = true): Evidence
     {
         if ($withFile) {
-            Storage::disk('local')->put($path, UploadedFile::fake()->image('bukti.jpg')->getContent());
+            Storage::disk('local')->put(
+                $path,
+                UploadedFile::fake()->create('bukti.jpg', 20, 'image/jpeg')->getContent()
+            );
         }
 
         return Evidence::create([

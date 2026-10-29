@@ -715,7 +715,7 @@ Goals SIMMAK PPKP diterjemahkan menjadi sasaran bisnis yang dapat diukur dan dik
 7.2.KLP-11.4. Klinik Pratama PPKP Tebet harus mencapai sasaran risk register diperbarui sesuai mandat Klinik Pratama.
 7.2.KLP-11.5. Klinik Pratama PPKP Tebet harus mencapai sasaran readiness akreditasi terpantau sesuai mandat Klinik Pratama.
 7.2.KLP-11.6. Klinik Pratama PPKP Tebet harus mencapai sasaran indikator mutu tervalidasi sesuai mandat Klinik Pratama.
-7.2.KLP-11.7. Klinik Pratama PPKP Tebet harus mencapai sasaran dashboard digunakan dalam rapat sesuai mandat Klinik Pratama.
+7.2.KLP-11.7. Klinik Pratama PPKP  harus mencapai sasaran dashboard digunakan dalam rapat sesuai mandat Klinik Pratama.
 7.2.KLP-12.1. Klinik Pratama PPKP Matraman harus mencapai sasaran dokumen aktif terkendali sesuai mandat Klinik Pratama.
 7.2.KLP-12.2. Klinik Pratama PPKP Matraman harus mencapai sasaran audit internal terjadwal sesuai mandat Klinik Pratama.
 7.2.KLP-12.3. Klinik Pratama PPKP Matraman harus mencapai sasaran CAPA overdue terkendali sesuai mandat Klinik Pratama.
@@ -1625,7 +1625,7 @@ flowchart TD
 10.3.KLP-10.QLT. Pada Klinik Pratama PPKP Kebon Jeruk, proses Quality Management as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
 10.3.KLP-10.DSH. Pada Klinik Pratama PPKP Kebon Jeruk, proses Dashboard and Reporting as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
 10.3.KLP-11.DMS. Pada Klinik Pratama PPKP Tebet, proses Document Management System as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
-10.3.KLP-11.AUD. Pada Klinik Pratama PPKP Tebet, proses Audit Internal as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
+10.3.KLP-11.AUD. Pada Klinik Pratama PPKP , proses Audit Internal as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
 10.3.KLP-11.CAPA. Pada Klinik Pratama PPKP Tebet, proses Corrective and Preventive Action as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
 10.3.KLP-11.RSK. Pada Klinik Pratama PPKP Tebet, proses Risk Management as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.
 10.3.KLP-11.ACC. Pada Klinik Pratama PPKP Tebet, proses Accreditation Management as-is berisiko menghasilkan variasi format, variasi interpretasi, dan keterlambatan konsolidasi.

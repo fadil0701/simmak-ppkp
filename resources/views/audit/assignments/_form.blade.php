@@ -103,13 +103,10 @@
         @else
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="sim-form-group !mb-0">
-                    <label class="sim-form-label" for="assignment_code">Kode Tugas<span class="sim-form-label-required"></span></label>
-                    <input type="text" id="assignment_code" name="assignment_code" maxlength="80"
-                           value="{{ $codeValue }}"
-                           class="sim-form-input {{ $errors->has('assignment_code') ? 'border-sim-danger' : '' }}"
-                           placeholder="TUGAS-{{ now()->format('Y') }}-001" required>
-                    @error('assignment_code')<p class="sim-form-error">{{ $message }}</p>@enderror
-                    <p class="sim-form-hint">Dibuat otomatis berurutan. Ubah hanya bila instansi memakai penomoran lain.</p>
+                    <label class="sim-form-label" for="assignment_code">Kode Tugas</label>
+                    <input type="text" id="assignment_code" value="{{ $suggestedCode }}" readonly tabindex="-1"
+                           class="sim-form-input bg-sim-surface-alt">
+                    <p class="sim-form-hint">Dibuat otomatis saat data disimpan. Tidak dapat diubah.</p>
                 </div>
 
                 <div class="sim-form-group !mb-0">
@@ -135,7 +132,7 @@
             <input type="text" id="title" name="title" maxlength="255"
                    value="{{ $titleValue }}"
                    class="sim-form-input {{ $errors->has('title') ? 'border-sim-danger' : '' }}"
-                   placeholder="Audit Tahunan Klinik Pratama Tebet" required>
+                   placeholder="Audit Tahunan Klinik Pratama Satpelkes Balaikota" required>
             @error('title')<p class="sim-form-error">{{ $message }}</p>@enderror
             <p class="sim-form-hint">Terisi otomatis dari program dan klinik yang dipilih; silakan disesuaikan.</p>
         </div>
@@ -222,7 +219,7 @@
                                             {{ $member->user?->employee?->full_name ?? $member->user?->name ?? 'Pengguna tidak ditemukan' }}
                                         </span>
                                         <span class="mt-0.5 block text-xs text-sim-muted">
-                                            {{ ucfirst(str_replace('_', ' ', $member->team_role)) }}
+                                            {{ \App\Support\UiLabel::teamRole($member->team_role) }}
                                             @if ($member->user?->employee?->employee_number)
                                                 · NIP {{ $member->user->employee->employee_number }}
                                             @endif

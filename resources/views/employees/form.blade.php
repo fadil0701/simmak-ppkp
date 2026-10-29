@@ -72,6 +72,10 @@
 
                 <div class="sim-form-group">
                     <span class="sim-form-label">Klinik / Unit Kerja yang Dipegang</span>
+                    <p class="sim-form-hint mb-2">
+                        Ini sumber kebenaran daftar klinik. Akun pengguna yang terhubung ke pegawai
+                        ini akan mengikuti daftar di sini — tidak perlu dicentang ulang di form pengguna.
+                    </p>
                     <div class="space-y-2 rounded-lg border border-sim-border bg-sim-surface-alt p-3">
                         @forelse ($clinics as $clinic)
                             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -97,8 +101,17 @@
                     @error('primary_clinic_id')<p class="sim-form-error">{{ $message }}</p>@enderror
                     <p class="sim-form-hint">
                         Pegawai boleh memegang lebih dari satu klinik/unit kerja. Klinik utama menjadi dasar
-                        penugasan audit dan sumber sinkronisasi akses klinik pada akun pengguna.
+                        penugasan audit dan klinik yang tampil pertama kali pada akun pengguna.
                     </p>
+                    @if (! $isCreate && $employee->relationLoaded('users') && $employee->users->isNotEmpty())
+                        <p class="mt-2 rounded-lg border border-sim-info/30 bg-sim-info-bg px-3 py-2 text-xs text-sim-info">
+                            Daftar klinik ini juga berlaku untuk akun:
+                            @foreach ($employee->users as $akun)
+                                <a href="{{ route('users.edit', $akun) }}" class="font-medium underline">{{ $akun->name }}</a>@if (! $loop->last), @endif
+                            @endforeach
+                            (batas klinik di form pengguna hanya cermin, tidak diubah di sana).
+                        </p>
+                    @endif
                 </div>
 
                 <div class="sim-form-group">

@@ -2,7 +2,7 @@
 
 @section('title', $user->name.' — SIMMAK PPKP')
 @section('page-title', 'Detail Pengguna')
-@section('page-subtitle', 'Informasi akun, peran, dan akses klinik.')
+@section('page-subtitle', 'Peran jabatan, tugas di sistem, dan batas klinik ditampilkan terpisah agar tidak tertukar.')
 
 @section('breadcrumb')
     <li class="flex items-center gap-1 text-sim-muted">
@@ -48,7 +48,7 @@
                             <dd class="mt-1 text-sm text-sim-ink">{{ $user->email }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs uppercase tracking-wide text-sim-muted">Klinik Default</dt>
+                            <dt class="text-xs uppercase tracking-wide text-sim-muted">Klinik yang tampil pertama kali</dt>
                             <dd class="mt-1 text-sm text-sim-ink">{{ $user->defaultClinic?->name ?? 'Semua Klinik' }}</dd>
                         </div>
                         <div>
@@ -66,10 +66,11 @@
             </div>
 
             <div class="sim-card">
-                <div class="sim-card-header"><h3 class="sim-card-title">Peran &amp; Scope Sistem</h3></div>
+                <div class="sim-card-header"><h3 class="sim-card-title">Peran jabatan &amp; tugas di sistem</h3></div>
                 <div class="sim-card-body space-y-4">
+                    <p class="text-xs text-sim-muted">Peran jabatan mengatur menu. Tugas di sistem menambah modul yang boleh dikerjakan. Keduanya bukan daftar klinik dan bukan peran di tim audit.</p>
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-sim-muted">Peran</p>
+                        <p class="text-xs uppercase tracking-wide text-sim-muted">Peran jabatan</p>
                         <div class="mt-2 flex flex-wrap gap-2">
                             @forelse ($user->getRoleNames() as $roleName)
                                 <span class="sim-badge sim-badge-status bg-sim-surface-alt text-sim-ink border border-sim-border">
@@ -82,7 +83,7 @@
                         </div>
                     </div>
                     <div>
-                        <p class="text-xs uppercase tracking-wide text-sim-muted">Scope Sistem</p>
+                        <p class="text-xs uppercase tracking-wide text-sim-muted">Tugas di sistem</p>
                         <div class="mt-2 flex flex-wrap gap-2">
                             @forelse ($user->scopeNames() as $scopeName)
                                 <span class="sim-badge sim-badge-status bg-sim-surface-alt text-sim-ink border border-sim-border">
@@ -90,7 +91,7 @@
                                     <span class="text-sim-mono text-[10px] text-sim-muted">{{ $scopeName }}</span>
                                 </span>
                             @empty
-                                <span class="text-sm text-sim-muted">Tidak ada scope tambahan.</span>
+                                <span class="text-sm text-sim-muted">Tidak ada tugas modul tambahan.</span>
                             @endforelse
                         </div>
                     </div>
@@ -98,7 +99,7 @@
             </div>
 
             <div class="sim-card">
-                <div class="sim-card-header"><h3 class="sim-card-title">Akses Klinik ({{ $scopeClinics->count() }})</h3></div>
+                <div class="sim-card-header"><h3 class="sim-card-title">Batas data klinik ({{ $scopeClinics->count() }})</h3></div>
                 <div class="sim-card-body">
                     @if ($user->viewsAllClinics())
                         <div class="sim-alert sim-alert-info">
@@ -106,7 +107,7 @@
                             <span>Administrator sistem — akses ke seluruh klinik lintas organisasi.</span>
                         </div>
                     @elseif ($scopeClinics->isEmpty())
-                        <p class="text-sm text-sim-muted">Belum ada akses klinik yang ditetapkan.</p>
+                        <p class="text-sm text-sim-muted">Belum ada batas klinik. Jika akun terhubung ke pegawai, isi daftar klinik di master pegawai.</p>
                     @else
                         <div class="flex flex-wrap gap-2">
                             @foreach ($scopeClinics as $clinic)

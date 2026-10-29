@@ -95,8 +95,8 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center">
-                                <span class="simmak-badge {{ $assignment->status === 'active' ? 'bg-emerald-100 text-emerald-800' : ($assignment->status === 'draft' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-800') }}">
-                                    {{ ucfirst($assignment->status) }}
+                                <span class="simmak-badge {{ in_array($assignment->status, ['active', 'approved'], true) ? 'bg-emerald-100 text-emerald-800' : ($assignment->status === 'rejected' ? 'bg-rose-100 text-rose-800' : ($assignment->status === 'draft' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-800')) }}">
+                                    {{ \App\Support\UiLabel::assignmentStatus($assignment->status) }}
                                 </span>
                                 @if ($assignment->conflict_check_status !== 'resolved')
                                     <span class="simmak-badge mt-1 bg-amber-100 text-amber-800 text-xs">Konflik Belum Diselesaikan</span>
@@ -105,7 +105,7 @@
                             <td class="px-4 py-3 text-center">
                                 <div class="sim-action-group">
                                     <x-action action="detail" href="{{ route('audit.assignments.show', $assignment) }}" icon="users" label="Detail Tim" size="sm" />
-                                    @can('audit.assignment.manage', $assignment)
+                                    @can('update', $assignment)
                                         <x-action action="edit" href="{{ route('audit.assignments.edit', $assignment) }}" icon="pencil" label="Edit" size="sm" />
                                     @endcan
                                 </div>

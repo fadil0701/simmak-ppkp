@@ -113,15 +113,17 @@ Rincian lengkap ada di `docs/PERBAIKAN_MASTER_PEGAWAI_PENGGUNA_PENUGASAN.md`.
    pilihan klinik manual pada form pengguna dinonaktifkan dan klinik diturunkan dari master
    pegawai (klinik default = klinik utama pegawai). Akun tanpa pegawai tetap boleh memilih
    klinik manual.
-3. **Satu pengguna boleh memiliki beberapa peran** (checkbox "Peran") dari katalog 8 peran
-   resmi: Super Admin, Admin Sistem, Kepala Pusat, Kasubbag TU, Kasatpel UKP, Kasatpel UKM,
-   Kepala Klinik/Unit, Admin Klinik/Unit. Peran lama (`auditor`, `auditi`, `ketua-tim-*`,
-   alias `admin-mutu`/`pj-mutu`/`tim-akreditasi`/`staff`) tetap tampil pada akun yang sudah
-   memilikinya, tetapi tidak dapat dipilih untuk akun baru.
-4. **Scope Sistem multi-pilih** (Audit Internal, Mutu, Akreditasi, Monitoring, Auditor,
-   Auditi) menambah kewenangan fungsional di atas peran. Izin efektif = peran ∪ scope; scope
-   tidak menghapus izin peran, tidak melewati segregasi tugas (menyetujui program, menutup
-   temuan, memvalidasi CAPA), dan tidak melewati batas klinik.
+3. **Satu pengguna boleh memiliki beberapa peran jabatan** (checkbox di form pengguna) dari
+   katalog 8 peran resmi: Super Admin, Admin Sistem, Kepala Pusat, Kasubbag TU, Kasatpel UKP,
+   Kasatpel UKM, Kepala Klinik/Unit, Admin Klinik/Unit. Peran lama (`auditor`, `auditi`,
+   `ketua-tim-*`, alias `admin-mutu`/`pj-mutu`/`tim-akreditasi`/`staff`) tetap tampil pada akun
+   yang sudah memilikinya, tetapi tidak dapat dipilih untuk akun baru. Ini **bukan** peran
+   anggota di detail penugasan audit (`team_role`).
+4. **Tugas di sistem** (kode: Scope Sistem — Audit Internal, Mutu, Akreditasi, Monitoring,
+   Auditor, Auditi) menambah kewenangan fungsional di atas peran jabatan. Izin efektif =
+   peran ∪ tugas; tugas tidak menghapus izin peran, tidak melewati segregasi tugas (menyetujui
+   program, menutup temuan, memvalidasi CAPA), dan tidak melewati batas klinik. Tugas **bukan**
+   daftar klinik dan **bukan** keanggotaan tim audit.
 5. **Indeks penugasan** menampilkan Petugas Auditor (ketua tim + NIP + jumlah anggota),
    Lokasi Audit (nama + kota), Tanggal Audit (rentang + penanda "Melewati jadwal"),
    Standar/Instrumen, serta aksi **Detail Tim** yang membuka susunan tim beserta status

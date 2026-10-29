@@ -104,10 +104,10 @@
                                 @error('instrument_version_id')<p class="sim-form-error">{{ $message }}</p>@enderror
                             </div>
                             <div>
-                                <label class="sim-form-label sim-form-label-required" for="execution_code">Kode Eksekusi</label>
-                                <input type="text" name="execution_code" id="execution_code"
-                                       value="{{ old('execution_code', 'EXEC-'.date('Ymd')) }}" class="sim-form-input" required>
-                                @error('execution_code')<p class="sim-form-error">{{ $message }}</p>@enderror
+                                <label class="sim-form-label" for="execution_code">Kode Eksekusi</label>
+                                <input type="text" id="execution_code" readonly tabindex="-1"
+                                       value="{{ $suggestedExecutionCode ?? '' }}" class="sim-form-input bg-sim-surface-alt">
+                                <p class="sim-form-hint">Dibuat otomatis saat data disimpan.</p>
                             </div>
                             <div class="sm:col-span-2 lg:col-span-3">
                                 <label class="sim-form-label sim-form-label-required" for="title">Judul Eksekusi</label>

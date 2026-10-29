@@ -27,7 +27,7 @@ class AuditFinding extends BaseModel
     ];
 
     protected $fillable = [
-        'organization_id', 'audit_schedule_id', 'audit_execution_id', 'clinic_id', 'finding_code', 'title',
+        'organization_id', 'audit_schedule_id', 'audit_execution_id', 'clinical_audit_id', 'clinic_id', 'finding_code', 'title',
         'severity', 'is_escalated', 'escalated_at', 'escalated_by', 'escalation_reason',
         'finding_type', 'description', 'condition', 'requirement', 'objective_evidence_summary',
         'impact', 'recommendation', 'auditee_response', 'status', 'assigned_to', 'owner_user_id', 'due_at',
@@ -55,6 +55,28 @@ class AuditFinding extends BaseModel
     public function execution(): BelongsTo
     {
         return $this->belongsTo(AuditExecution::class, 'audit_execution_id');
+    }
+
+    /**
+     * Audit klinis asal temuan (null untuk temuan audit internal periodik).
+     */
+    public function clinicalAudit(): BelongsTo
+    {
+        return $this->belongsTo(ClinicalAudit::class, 'clinical_audit_id');
+    }
+
+    /**
+     * Sumber audit temuan: klinis atau audit internal (program/eksekusi).
+     */
+    public function sourceLabel(): string
+    {
+        return $this->clinical_audit_id ? 'Audit Klinis' : 'Audit Internal';
+    }
+
+    /** Laporan yang dilampirkan langsung pada temuan ini. */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(AuditReport::class, 'audit_finding_id');
     }
 
     public function clinic(): BelongsTo

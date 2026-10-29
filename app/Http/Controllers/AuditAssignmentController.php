@@ -9,6 +9,7 @@ use App\Models\Clinic;
 use App\Models\InstrumentVersion;
 use App\Models\User;
 use App\Services\AuditAssignmentService;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,7 +18,10 @@ use Spatie\Permission\Models\Permission;
 
 class AuditAssignmentController extends Controller
 {
-    public function __construct(private AuditAssignmentService $assignmentService) {}
+    public function __construct(
+        private AuditAssignmentService $assignmentService,
+        private DocumentNumberService $numbers,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -48,19 +52,19 @@ class AuditAssignmentController extends Controller
 
         $instrumentVersions = $this->availableInstrumentVersions($orgId);
 
-        $suggestedCode = $this->suggestAssignmentCode($orgId);
+        $suggestedCode = $this->numbers->peek($orgId, DocumentNumberService::ASSIGNMENT);
 
         return view('audit.assignments.create', compact('programs', 'clinics', 'auditors', 'instrumentVersions', 'suggestedCode'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', AuditAssignment::class);
         $orgId = $request->user()->organization_id;
 
         $validated = $request->validate([
             'audit_program_id' => ['required', 'uuid', Rule::exists('audit_programs', 'id')->where('organization_id', $orgId)],
             'clinic_id' => ['required', 'uuid', Rule::exists('clinics', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)->where('is_auditable', true))],
-            'assignment_code' => ['required', 'string', 'max:80', Rule::unique('audit_assignments', 'assignment_code')->where('organization_id', $orgId)],
             'title' => ['required', 'string', 'max:255'],
             'scope_notes' => ['nullable', 'string'],
             'lead_auditor_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('organization_id', $orgId)],
@@ -97,6 +101,8 @@ class AuditAssignmentController extends Controller
             'teamMembers.user.employee',
             'instrumentVersion.standard',
             'executions.instrumentVersion.standard',
+            'approver:id,name',
+            'rejecter:id,name',
         ]);
 
         $instrumentVersions = $this->availableInstrumentVersions($assignment->organization_id);
@@ -104,12 +110,14 @@ class AuditAssignmentController extends Controller
         $auditors = $this->auditorCandidates($assignment->organization_id)
             ->whereNotIn('id', $assignment->teamMembers->pluck('user_id'));
 
-        return view('audit.assignments.show', compact('assignment', 'instrumentVersions', 'auditors'));
+        $suggestedExecutionCode = $this->numbers->peek($assignment->organization_id, DocumentNumberService::EXECUTION);
+
+        return view('audit.assignments.show', compact('assignment', 'instrumentVersions', 'auditors', 'suggestedExecutionCode'));
     }
 
     public function edit(Request $request, AuditAssignment $assignment): View
     {
-        abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
+        $this->authorize('update', $assignment);
 
         $orgId = $request->user()->organization_id;
         $clinics = Clinic::forUserClinics($request->user())
@@ -129,8 +137,8 @@ class AuditAssignmentController extends Controller
 
     public function update(Request $request, AuditAssignment $assignment): RedirectResponse
     {
+        $this->authorize('update', $assignment);
         $orgId = $request->user()->organization_id;
-        abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
 
         $validated = $request->validate([
             'clinic_id' => ['required', 'uuid', Rule::exists('clinics', 'id')->where(fn ($query) => $query->where('organization_id', $orgId)->where('is_auditable', true))],
@@ -149,11 +157,11 @@ class AuditAssignmentController extends Controller
 
     public function addTeamMember(Request $request, AuditAssignment $assignment): RedirectResponse
     {
-        abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
+        $this->authorize('update', $assignment);
 
         $validated = $request->validate([
             'user_id' => ['required', 'uuid', Rule::exists('users', 'id')->where('organization_id', $assignment->organization_id)],
-            'team_role' => ['required', 'string', 'max:80'],
+            'team_role' => ['required', 'string', Rule::in(['lead_auditor', 'auditor', 'observer'])],
             'independence_declared' => ['nullable', 'boolean'],
             'conflict_declared' => ['nullable', 'boolean'],
             'conflict_notes' => ['nullable', 'string'],
@@ -182,22 +190,41 @@ class AuditAssignmentController extends Controller
 
     public function submit(Request $request, AuditAssignment $assignment): RedirectResponse
     {
+        $this->authorize('submit', $assignment);
         $this->assignmentService->submitAssignment($assignment, $request->user());
 
-        return back()->with('status', 'Penugasan audit diajukan untuk aktivasi.');
+        return back()->with('status', 'Jadwal penugasan diajukan untuk persetujuan Kepala Pusat.');
+    }
+
+    public function approve(Request $request, AuditAssignment $assignment): RedirectResponse
+    {
+        $this->authorize('approve', $assignment);
+        $this->assignmentService->approveAssignment($assignment, $request->user());
+
+        return back()->with('status', 'Jadwal penugasan disetujui dan dipublikasikan.');
+    }
+
+    public function reject(Request $request, AuditAssignment $assignment): RedirectResponse
+    {
+        $this->authorize('reject', $assignment);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $this->assignmentService->rejectAssignment($assignment, $request->user(), $validated['reason']);
+
+        return back()->with('status', 'Jadwal penugasan ditolak. Pengelola dapat memperbaiki dan mengajukan ulang.');
     }
 
     public function activate(Request $request, AuditAssignment $assignment): RedirectResponse
     {
-        $this->assignmentService->activateAssignment($assignment, $request->user());
-
-        return back()->with('status', 'Penugasan audit telah diaktifkan.');
+        return $this->approve($request, $assignment);
     }
 
     public function destroy(Request $request, AuditAssignment $assignment): RedirectResponse
     {
-        $orgId = $request->user()->organization_id;
-        abort_unless($request->user()->belongsToOrganization($assignment->organization_id), 403);
+        $this->authorize('delete', $assignment);
 
         if ($assignment->executions()->count() > 0) {
             return back()->with('error', 'Assignment tidak dapat dihapus karena sudah memiliki eksekusi audit.');
@@ -206,28 +233,6 @@ class AuditAssignmentController extends Controller
         $assignment->delete();
 
         return redirect()->route('audit.assignments.index')->with('status', 'Penugasan audit berhasil dihapus.');
-    }
-
-    /**
-     * Usulan kode tugas berikutnya: TUGAS-{tahun}-{urut}, mengikuti kode terakhir
-     * pada tahun berjalan di organisasi ini.
-     */
-    private function suggestAssignmentCode(string $organizationId): string
-    {
-        $prefix = 'TUGAS-'.now()->format('Y').'-';
-
-        $lastCode = AuditAssignment::withTrashed()
-            ->where('organization_id', $organizationId)
-            ->where('assignment_code', 'like', $prefix.'%')
-            ->orderByDesc('assignment_code')
-            ->value('assignment_code');
-
-        $sequence = 1;
-        if ($lastCode && preg_match('/-(\d+)$/', $lastCode, $matches)) {
-            $sequence = (int) $matches[1] + 1;
-        }
-
-        return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
     }
 
     /**

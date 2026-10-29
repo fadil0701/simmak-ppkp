@@ -121,7 +121,7 @@ form pengguna. `SimmakRoles::permissionsFor()` menentukan bundel izin tiap peran
 |----|------------|----------|------------------|
 | 1 | `super-admin` | Super Admin (Akses Penuh Sistem) | Seluruh izin (`allPermissionNames()` ∪ `SimmakScopes::allPermissions()`) + bypass alur kerja & kepemilikan data |
 | 2 | `admin-sistem` | Admin Sistem | Administrasi teknis: pengguna, pengaturan, master klinik/pegawai/jabatan, DMS, konfigurasi audit |
-| 3 | `kepala-pusat` | Kepala Pusat | Monitoring lintas klinik + persetujuan akhir program/laporan |
+| 3 | `kepala-pusat` | Kepala Pusat | Monitoring lintas klinik + persetujuan akhir program/laporan dan jadwal penugasan (`audit.program.approve`) |
 | 4 | `kasubbag-tu` | Kasubbag TU | Administrasi umum, kepegawaian, dokumen, pengaturan |
 | 5 | `kasatpel-ukp` | Kasatpel UKP | Pengawasan mutu/audit lingkup UKP (bundel `$pengawasLingkup`) |
 | 6 | `kasatpel-ukm` | Kasatpel UKM | Pengawasan mutu/audit lingkup UKM (bundel `$pengawasLingkup`) |
@@ -155,6 +155,19 @@ Aturan penerapan:
 4. Scope diberikan sebagai izin langsung (`model_has_permissions`), dicatat `granted_by`/`granted_at`.
 5. Setelah bundel scope berubah: `php artisan simmak:sync-user-scopes` lalu
    `php artisan permission:cache-reset`.
+
+## 6a. Jangan tertukar: tiga lapisan yang sering tampak ganda
+
+Label di antarmuka memakai istilah yang berbeda agar tidak diisi dua kali:
+
+| Di UI | Sumber data | Bukan |
+|-------|-------------|-------|
+| **Peran jabatan** (form pengguna) | Spatie role, katalog `SimmakRoles` | Bukan jabatan master pegawai, bukan `team_role` di tim audit |
+| **Tugas di sistem** (form pengguna; kode: Scope Sistem) | `user_scope_assignments` / `SimmakScopes` | Bukan daftar klinik, bukan anggota penugasan |
+| **Klinik / unit kerja yang dipegang** (master pegawai) | `employee_clinic_assignments` | Sumber kebenaran batas klinik |
+| **Batas data klinik** (form pengguna) | Cermin `user_clinic_scopes` | Jangan diisi ulang bila akun terhubung ke pegawai |
+| **Klinik yang tampil pertama kali** | `users.default_clinic_id` | Hanya konteks layar saat masuk |
+| **Peran dalam tim audit ini** (detail penugasan) | `audit_team_members.team_role` (`lead_auditor` / `auditor` / `observer`) | Bukan peran jabatan akun |
 
 ## 7. Akses klinik diturunkan dari master pegawai
 

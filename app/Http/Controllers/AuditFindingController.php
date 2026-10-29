@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\AuditExecution;
 use App\Models\AuditFinding;
 use App\Models\Clinic;
+use App\Models\ClinicalAudit;
 use App\Models\StandardCriterion;
 use App\Models\User;
 use App\Services\AuditCapaService;
 use App\Services\AuditTrailService;
+use App\Services\DocumentNumberService;
 use App\Support\AuditWorkScope;
 use App\Support\FullTextSearch;
 use App\Support\SpreadsheetCell;
@@ -22,7 +24,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditFindingController extends Controller
 {
-    public function __construct(private AuditCapaService $auditCapa) {}
+    public function __construct(
+        private AuditCapaService $auditCapa,
+        private DocumentNumberService $numbers,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -138,25 +143,39 @@ class AuditFindingController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('audit.findings.create', compact('executions', 'clinics', 'users'));
+        // Temuan dapat lahir dari audit klinis; konteks dibawa ke form supaya
+        // temuan tetap dapat ditelusuri ke audit klinis asalnya.
+        $clinicalAudit = null;
+        if ($request->filled('clinical_audit_id')) {
+            $clinicalAudit = ClinicalAudit::forUserClinics($user)->find($request->string('clinical_audit_id'));
+            abort_if($clinicalAudit === null, 404);
+        }
+
+        $suggestedNumber = $this->numbers->peek($orgId, DocumentNumberService::FINDING);
+
+        return view('audit.findings.create', compact('executions', 'clinics', 'users', 'clinicalAudit', 'suggestedNumber'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        // Super admin: organisasi temuan mengikuti eksekusi audit yang dipilih,
-        // bukan organisasi user (koreksi lintas organisasi).
+        // Super admin: organisasi temuan mengikuti eksekusi audit atau audit
+        // klinis yang dipilih, bukan organisasi user (koreksi lintas organisasi).
         $orgId = $user->hasUnrestrictedAccess()
-            ? (AuditExecution::whereKey($request->input('audit_execution_id'))->value('organization_id') ?? $user->organization_id)
+            ? (
+                AuditExecution::whereKey($request->input('audit_execution_id'))->value('organization_id')
+                ?? ClinicalAudit::whereKey($request->input('clinical_audit_id'))->value('organization_id')
+                ?? $user->organization_id
+            )
             : $user->organization_id;
 
         $clinicIds = $user->clinicScopeIds();
 
         $validated = $request->validate([
-            'audit_execution_id' => ['required', 'uuid', Rule::exists('audit_executions', 'id')->where('organization_id', $orgId)],
+            'audit_execution_id' => ['nullable', 'required_without:clinical_audit_id', 'uuid', Rule::exists('audit_executions', 'id')->where('organization_id', $orgId)],
+            'clinical_audit_id' => ['nullable', 'uuid', Rule::exists('clinical_audits', 'id')->where('organization_id', $orgId)],
             'clinic_id' => ['required', 'uuid', Rule::in($clinicIds->all())],
-            'finding_code' => ['required', 'string', 'max:80', Rule::unique('audit_findings', 'finding_code')->where('organization_id', $orgId)],
             'title' => ['required', 'string', 'max:255'],
             'severity' => ['required', 'string', 'max:50', Rule::in(['minor', 'major', 'critical'])],
             'finding_type' => ['nullable', 'string', 'max:40', Rule::in(['non_conformity', 'observation', 'improvement'])],
@@ -174,12 +193,25 @@ class AuditFindingController extends Controller
             'status' => ['required', 'string', 'max:40', Rule::in(['draft', 'under_review', 'confirmed'])],
         ]);
 
-        $finding = AuditFinding::create(array_merge($validated, [
-            'organization_id' => $orgId,
-            'identified_at' => now(),
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id,
-        ]));
+        $clinicalAudit = filled($validated['clinical_audit_id'] ?? null)
+            ? ClinicalAudit::find($validated['clinical_audit_id'])
+            : null;
+
+        $finding = $this->numbers->insertWithAllocatedNumber(
+            $orgId,
+            DocumentNumberService::FINDING,
+            function (string $code) use ($validated, $orgId, $clinicalAudit, $request) {
+                return AuditFinding::create(array_merge($validated, [
+                    'organization_id' => $orgId,
+                    'finding_code' => $code,
+                    'audit_execution_id' => $validated['audit_execution_id'] ?? null,
+                    'clinic_id' => $clinicalAudit?->clinic_id ?? $validated['clinic_id'],
+                    'identified_at' => now(),
+                    'created_by' => $request->user()->id,
+                    'updated_by' => $request->user()->id,
+                ]));
+            }
+        );
 
         return redirect()->route('findings.show', $finding)->with('status', 'Temuan audit berhasil dibuat.');
     }
@@ -188,7 +220,11 @@ class AuditFindingController extends Controller
     {
         $this->authorize('view', $finding);
 
-        $finding->load(['execution.clinic', 'clinic', 'assignee', 'owner', 'criterion', 'capaCase.owner', 'evidenceLinks.evidence', 'reviewer', 'escalatedBy']);
+        $finding->load([
+            'execution.clinic', 'clinicalAudit.assignment', 'clinic', 'assignee', 'owner', 'criterion',
+            'capaCase.owner', 'capaCase.actions.reports', 'capaCase.actions.evidenceLinks.evidence',
+            'evidenceLinks.evidence', 'reports', 'reviewer', 'escalatedBy',
+        ]);
 
         return view('audit.findings.show', compact('finding'));
     }

@@ -45,4 +45,14 @@ class CapaAction extends BaseModel
     {
         return $this->hasMany(ActionEvidence::class, 'corrective_action_id');
     }
+
+    /**
+     * Laporan audit yang dilampirkan pada tindakan tindak lanjut ini.
+     * Satu tindakan dapat memiliki banyak laporan; laporan tidak dibagi ke
+     * tindakan lain agar dokumen tidak tertukar antartindak lanjut.
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(AuditReport::class, 'capa_action_id')->orderByDesc('generated_at');
+    }
 }

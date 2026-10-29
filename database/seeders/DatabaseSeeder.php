@@ -15,11 +15,11 @@ class DatabaseSeeder extends Seeder
         $organization = Organization::firstOrCreate(
             ['code' => 'PPKP-DKI'],
             [
-                'name' => 'PPKP Provinsi DKI Jakarta',
+                'name' => 'UPT Pusat Pelayanan Kesehatan Pegawai DKI Jakarta',
                 'org_type' => 'central',
                 'address' => 'Jakarta',
-                'phone' => '021-0000000',
-                'email' => 'info@ppkp.jakarta.go.id',
+                'phone' => '021-3823065',
+                'email' => 'puspelkes@jakarta.go.id',
                 'is_active' => true,
             ]
         );

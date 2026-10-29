@@ -4,17 +4,22 @@
 |---------|-------|
 | Sistem | SIMMAK PPKP |
 | Organisasi | PPKP Provinsi DKI Jakarta |
-| Versi | 1.0.0 |
-| Tanggal | 11 Juli 2026 |
+| Versi | 2.1.0 |
+| Tanggal | 29 Oktober 2026 |
 | Format | Markdown + PDF (`pdf/manual/`) |
 
-Dokumen internal tim (bukan PDF panduan pengguna): `docs/UI_PELAKSANAAN_AUDIT_TEMUAN_CAPA.md` — perubahan layar pelaksanaan, temuan, dan CAPA (kesesuaian + rekomendasi, CAPA klinik, validasi auditor).
+**Dokumen utama operasional:** `docs/manual/JUKNIS_PENGGUNAAN_SIMMAK.md` (PDF: `00_Juknis_Penggunaan_SIMMAK.pdf`) — petunjuk teknis lengkap dari masuk sistem sampai laporan.
+
+Bab 01–13 di bawah ini adalah rincian per modul (sebagian masih memakai istilah rilis lama). Jika berbeda dengan juknis, **ikuti juknis**.
+
+Dokumen internal tim (bukan PDF panduan pengguna): `docs/UI_PELAKSANAAN_AUDIT_TEMUAN_CAPA.md` — perubahan layar pelaksanaan, temuan, dan tindak lanjut.
 
 ## Daftar Dokumen
 
 | No | Dokumen | PDF |
 |----|---------|-----|
 | 00 | Indeks (dokumen ini) | — |
+| Juknis | Petunjuk Teknis Penggunaan SIMMAK | `00_Juknis_Penggunaan_SIMMAK.pdf` |
 | 01 | Role, Permission & Matriks Akses | `01_Role_dan_Akses.pdf` |
 | 02 | Login & Autentikasi | `02_Login_dan_Autentikasi.pdf` |
 | 03 | Dashboard Eksekutif | `03_Dashboard_Eksekutif.pdf` |

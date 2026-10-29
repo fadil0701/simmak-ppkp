@@ -85,7 +85,7 @@ class SimmakRoles
         return [
             self::SUPER_ADMIN => 'Akses penuh ke seluruh modul dan organisasi, termasuk melewati pembatasan kebijakan. Hanya untuk pengelola sistem.',
             self::ADMIN_SISTEM => 'Mengelola akun, peran, master klinik/pegawai/jabatan, dan konfigurasi audit. Tidak menjalankan alur program, temuan, atau laporan.',
-            self::KEPALA_PUSAT => 'Memantau audit seluruh klinik dan memberi persetujuan akhir program. Tidak dapat menyetujui program buatannya sendiri.',
+            self::KEPALA_PUSAT => 'Memantau audit seluruh klinik dan memberi persetujuan akhir program serta jadwal penugasan. Tidak dapat menyetujui program buatannya sendiri.',
             self::KASUBBAG_TU => 'Mengelola dokumen, arsip, kepegawaian, dan administrasi umum tingkat pusat.',
             self::KASATPEL_UKP => 'Menyiapkan dan mengawal audit lingkup UKP: program, penugasan, bukti, temuan, dan tindak lanjut. Tidak menyetujui program atau menutup temuan.',
             self::KASATPEL_UKM => 'Menyiapkan dan mengawal audit lingkup UKM: program, penugasan, bukti, temuan, dan tindak lanjut. Tidak menyetujui program atau menutup temuan.',
@@ -238,6 +238,8 @@ class SimmakRoles
             'audit.dashboard.view',
             'audit.log.view',
             'audit.configuration.manage',
+            'audit.clinical.view',
+            'audit.clinical.manage',
         ];
     }
 
@@ -263,6 +265,7 @@ class SimmakRoles
             'audit.finding.view', 'audit.action.view',             'audit.report.view', 'audit.report.export', 'audit.report.publish',
             'audit.log.view', 'capa.view', 'clinics.view', 'employees.view', 'positions.view',
             'risk.view', 'accreditation.view', 'quality.view', 'dms.view',
+            'audit.clinical.view',
         ];
 
         $qualityLead = array_values(array_unique(array_merge($monitorAudit, [
@@ -280,6 +283,7 @@ class SimmakRoles
             'audit.action.view', 'audit.action.update', 'audit.action.submit', 'audit.capa.verify',
             'audit.finding.close', 'audit.finding.reopen', 'audit.finding.escalate',
             'audit.report.view', 'audit.report.manage', 'audit.report.export', 'audit.report.publish',
+            'audit.clinical.view', 'audit.clinical.manage',
         ])));
 
         $auditLead = [
@@ -292,6 +296,7 @@ class SimmakRoles
             'audit.evidence.view', 'audit.evidence.download',
             'audit.report.view', 'audit.report.manage', 'audit.report.export', 'audit.report.publish',
             'audit.log.view', 'capa.view', 'clinics.view',
+            'audit.clinical.view', 'audit.clinical.manage',
         ];
 
         // Pengawas lingkup (Kasatpel UKP/UKM): menyiapkan dan mengawal audit
@@ -307,6 +312,7 @@ class SimmakRoles
             'audit.finding.create', 'audit.finding.update', 'audit.finding.review',
             'audit.action.update', 'audit.capa.verify',
             'audit.report.manage',
+            'audit.clinical.view', 'audit.clinical.manage',
         ])));
 
         return match ($role) {
@@ -319,10 +325,12 @@ class SimmakRoles
                 'employees.view', 'employees.manage',
                 'positions.view', 'positions.manage',
                 'dms.view', 'dms.manage',
+                'audit.standard.view', 'audit.standard.manage',
                 'audit.configuration.manage', 'audit.log.view', 'workflow.manage',
             ],
             self::KEPALA_PUSAT => array_values(array_unique(array_merge($monitorAudit, [
                 'dashboard.clinic', 'clinics.manage',
+                'audit.standard.view',
                 // Persetujuan akhir program audit (matriks kewenangan: monitoring
                 // lintas klinik + approve program). Policy tetap menjaga
                 // segregasi tugas: tidak boleh menyetujui program buatannya sendiri.
@@ -339,8 +347,8 @@ class SimmakRoles
             ],
             self::KETUA_TIM_MUTU => $qualityLead,
             self::KETUA_TIM_AUDIT => $auditLead,
-            self::KASATPEL_UKP => $pengawasLingkup,
-            self::KASATPEL_UKM => $pengawasLingkup,
+            self::KASATPEL_UKP => array_values(array_unique(array_merge($pengawasLingkup, ['audit.standard.manage']))),
+            self::KASATPEL_UKM => array_values(array_unique(array_merge($pengawasLingkup, ['audit.standard.manage']))),
             self::ADMIN_KLINIK => array_values(array_unique(array_merge(
                 self::permissionsFor(self::AUDITI),
                 ['dms.manage', 'audit.evidence.upload'],
@@ -350,7 +358,7 @@ class SimmakRoles
                 'dms.view',
                 'accreditation.view', 'accreditation.manage',
                 'capa.view', 'quality.view',
-                'audit.view', 'audit.standard.view',
+                'audit.view', 'audit.standard.view', 'audit.standard.manage',
                 'clinics.view',
             ],
             self::AUDITOR => [
@@ -361,6 +369,7 @@ class SimmakRoles
                 'audit.finding.view', 'audit.finding.create', 'audit.finding.update',
                 'audit.action.view', 'audit.action.update', 'audit.capa.verify',
                 'audit.report.view', 'capa.view',
+                'audit.clinical.view', 'audit.clinical.manage',
             ],
             // Sisi klinik (07_TEMUAN_AUDIT.md §3, 08_CAPA.md §3): hanya melihat temuan
             // kliniknya, menindaklanjuti CAPA, dan mengajukan eskalasi. Review temuan,
@@ -375,6 +384,7 @@ class SimmakRoles
                 'audit.finding.view', 'audit.action.view', 'audit.action.update', 'audit.action.submit',
                 'audit.finding.escalate',
                 'audit.report.view', 'audit.report.export',
+                'audit.clinical.view',
             ],
             self::AUDITI => [
                 'dashboard.view', 'dashboard.clinic',
@@ -383,6 +393,7 @@ class SimmakRoles
                 'audit.finding.view', 'audit.action.view', 'audit.action.update', 'audit.action.submit',
                 'audit.evidence.view', 'audit.evidence.download',
                 'capa.view', 'capa.manage', 'accreditation.view',
+                'audit.clinical.view',
             ],
             default => [],
         };

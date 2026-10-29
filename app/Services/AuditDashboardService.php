@@ -152,7 +152,7 @@ class AuditDashboardService
     private function upcomingAssignmentsQuery(User $user)
     {
         return AuditWorkScope::assignments(AuditAssignment::query(), $user)
-            ->whereIn('status', ['active', 'proposed'])
+            ->whereIn('status', AuditAssignment::PUBLISHED_STATUSES)
             ->whereDate('scheduled_end', '>=', now()->toDateString());
     }
 

@@ -22,14 +22,10 @@
                 @csrf
 
                 <div class="sim-form-group">
-                    <label class="sim-form-label">Kode Program <span class="sim-form-label-required"></span></label>
-                    <input type="text" name="program_code" maxlength="80"
-                           value="{{ old('program_code') }}"
-                           class="sim-form-input {{ $errors->has('program_code') ? 'border-sim-danger' : '' }}"
-                           placeholder="Contoh: PROG-2026-001" required>
-                    @if ($errors->has('program_code'))
-                        <p class="sim-form-error">{{ $errors->first('program_code') }}</p>
-                    @endif
+                    <label class="sim-form-label">Kode Program</label>
+                    <input type="text" value="{{ $suggestedNumber ?? '' }}" readonly tabindex="-1"
+                           class="sim-form-input bg-sim-surface-alt">
+                    <p class="text-xs text-sim-muted mt-1">Dibuat otomatis saat data disimpan. Tidak dapat diubah.</p>
                 </div>
 
                 <div class="sim-form-group">

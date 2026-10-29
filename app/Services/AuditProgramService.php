@@ -9,20 +9,28 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class AuditProgramService
 {
+    public function __construct(private DocumentNumberService $numbers) {}
+
     public function createProgram(array $data, User $user): AuditProgram
     {
-        return AuditProgram::create([
-            'organization_id' => $user->organization_id,
-            'fiscal_year_id' => $data['fiscal_year_id'] ?? null,
-            'program_code' => $data['program_code'],
-            'audit_type' => $data['audit_type'] ?? null,
-            'scope_notes' => $data['scope_notes'] ?? null,
-            'name' => $data['name'],
-            'objective' => $data['objective'] ?? null,
-            'status' => 'draft',
-            'created_by' => $user->id,
-            'updated_by' => $user->id,
-        ]);
+        return $this->numbers->insertWithAllocatedNumber(
+            $user->organization_id,
+            DocumentNumberService::PROGRAM,
+            function (string $code) use ($data, $user) {
+                return AuditProgram::create([
+                    'organization_id' => $user->organization_id,
+                    'fiscal_year_id' => $data['fiscal_year_id'] ?? null,
+                    'program_code' => $code,
+                    'audit_type' => $data['audit_type'] ?? null,
+                    'scope_notes' => $data['scope_notes'] ?? null,
+                    'name' => $data['name'],
+                    'objective' => $data['objective'] ?? null,
+                    'status' => 'draft',
+                    'created_by' => $user->id,
+                    'updated_by' => $user->id,
+                ]);
+            }
+        );
     }
 
     public function submitProgram(AuditProgram $program, User $user): void

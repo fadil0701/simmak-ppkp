@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\AuditAssignment;
 use App\Models\User;
+use App\Support\SimmakRoles;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -30,13 +31,49 @@ class AuditWorkScope
             ->exists();
     }
 
+    /**
+     * Pengelola jadwal / Kepala Pusat: boleh melihat draf dan antrian persetujuan.
+     */
+    public static function canOverseeSchedules(User $user): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasUnrestrictedAccess()) {
+            return true;
+        }
+
+        if ($user->hasRole(SimmakRoles::KEPALA_PUSAT) && $user->can('audit.program.approve')) {
+            return true;
+        }
+
+        return $user->can('audit.assignment.manage');
+    }
+
     public static function canViewWork(User $user, ?string $clinicId, ?AuditAssignment $assignment = null): bool
     {
         if (! $user->is_active) {
             return false;
         }
 
-        if ($assignment && $user->belongsToOrganization($assignment->organization_id) && self::isAssignedTo($user, $assignment)) {
+        if ($assignment && ! $user->belongsToOrganization($assignment->organization_id)) {
+            return false;
+        }
+
+        if ($assignment && ! $assignment->isPublished()) {
+            if (! self::canOverseeSchedules($user)) {
+                return false;
+            }
+
+            if ($user->hasCrossClinicAccess() || $user->hasUnrestrictedAccess()) {
+                return true;
+            }
+
+            return $clinicId ? $user->hasClinicAccess($clinicId) : false;
+        }
+
+        if ($assignment && self::isAssignedTo($user, $assignment)) {
             return true;
         }
 
@@ -53,17 +90,28 @@ class AuditWorkScope
             return $query;
         }
 
-        if ($user->hasCrossClinicAccess()) {
-            return $query->where($query->getModel()->getTable().'.organization_id', $user->organization_id);
+        $table = $query->getModel()->getTable();
+
+        if (self::canOverseeSchedules($user)) {
+            if ($user->hasCrossClinicAccess()) {
+                return $query->where($table.'.organization_id', $user->organization_id);
+            }
+
+            return $query->forUserClinics($user);
         }
 
-        if (self::isFieldAuditor($user)) {
-            return $query->whereHas('teamMembers', function (Builder $members) use ($user) {
+        $query->whereIn($table.'.status', AuditAssignment::PUBLISHED_STATUSES);
+
+        return $query->where(function (Builder $inner) use ($user, $table) {
+            $inner->whereHas('teamMembers', function (Builder $members) use ($user) {
                 $members->where('user_id', $user->id)->where('active', true);
             });
-        }
 
-        return $query->forUserClinics($user);
+            $clinicIds = $user->clinics()->pluck('clinics.id')->filter()->all();
+            if ($clinicIds !== []) {
+                $inner->orWhereIn($table.'.clinic_id', $clinicIds);
+            }
+        });
     }
 
     public static function executions(Builder $query, User $user): Builder

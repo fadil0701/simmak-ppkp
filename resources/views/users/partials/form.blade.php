@@ -51,8 +51,10 @@
         </div>
     @endif
 
+    @include('users.partials.access-map')
+
     <x-form-section step="1" title="Data Dasar"
-                    description="Pilih pegawai agar nama, surel, dan akses klinik terisi otomatis. Kolom bertanda * wajib diisi.">
+                    description="Pilih pegawai agar nama, surel, dan batas klinik mengikuti master pegawai. Kolom bertanda * wajib diisi.">
         <div class="sim-form-group">
             <label class="sim-form-label" for="employee_id">Pegawai (master)</label>
             <select id="employee_id" name="employee_id"
@@ -71,8 +73,8 @@
             </select>
             @error('employee_id')<p class="sim-form-error">{{ $message }}</p>@enderror
             <p class="sim-form-hint">
-                Nama, surel, dan klinik akan mengikuti master pegawai.
-                <a href="{{ route('employees.create') }}" class="text-sim-primary hover:underline" class="sim-btn sim-btn-create">Tambah data pegawai baru</a>.
+                Nama, surel, dan klinik yang dipegang mengikuti master pegawai — jangan diisi ulang di bagian batas klinik.
+                <a href="{{ route('employees.create') }}" class="text-sim-primary hover:underline">Tambah data pegawai baru</a>.
             </p>
         </div>
 
@@ -163,12 +165,12 @@
             </li>
         </ul>
     </x-form-section>
-    <x-form-section step="3" title="Peran &amp; Kewenangan"
-                    description="Satu akun boleh memegang lebih dari satu peran. Hak akses efektif adalah gabungan seluruh peran yang dicentang.">
+    <x-form-section step="3" title="Peran jabatan di SIMMAK"
+                    description="Pilih jabatan organisasi untuk akun ini. Ini mengatur menu dan wewenang persetujuan — bukan jabatan di master pegawai, dan bukan peran anggota di tim audit.">
         <div class="sim-form-group">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <span class="sim-form-label mb-0">
-                    Peran <span class="sim-form-label-required"></span>
+                    Peran jabatan <span class="sim-form-label-required"></span>
                 </span>
                 <span class="sim-badge border-sim-border-light bg-sim-surface-alt font-normal text-sim-muted" data-role-count>
                     {{ count($peranTerpilih) }} peran dipilih
@@ -211,79 +213,20 @@
                 </div>
                 <p class="sim-form-hint">
                     Peran lama tidak dapat ditambahkan ke akun lain dan tidak dapat dipilih ulang
-                    setelah dilepas. Gantikan dengan peran resmi atau Scope Sistem di bawah.
+                    setelah dilepas. Gantikan dengan peran jabatan resmi atau tugas di sistem di bawah.
                 </p>
             </div>
         @endif
 
-        <div class="sim-form-group">
-            <label class="sim-form-label" for="default_clinic_id">Klinik Default</label>
-            <select id="default_clinic_id" name="default_clinic_id"
-                    class="sim-form-select {{ $errors->has('default_clinic_id') ? 'border-sim-danger' : '' }}">
-                <option value="">— Tidak ada (lintas klinik) —</option>
-                @foreach ($clinics as $clinic)
-                    <option value="{{ $clinic->id }}" @selected((string) $klinikDefaultTerpilih === (string) $clinic->id)>
-                        {{ $clinic->name }} ({{ $clinic->code }})
-                    </option>
-                @endforeach
-            </select>
-            @error('default_clinic_id')<p class="sim-form-error">{{ $message }}</p>@enderror
-            <p class="sim-form-hint">Konteks klinik yang aktif saat pengguna masuk.</p>
-        </div>
     </x-form-section>
 
-    <x-form-section step="4" title="Akses Klinik"
-                    description="Akun hanya dapat menyentuh data klinik yang dicentang di sini.">
-        <div class="sim-form-group">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="sim-form-label mb-0">Klinik yang dapat diakses</span>
-                <span class="flex items-center gap-2">
-                    <span class="sim-badge border-sim-border-light bg-sim-surface-alt font-normal text-sim-muted" data-clinic-count>
-                        {{ count($klinikTerpilih) }} klinik dipilih
-                    </span>
-                    <span class="flex items-center gap-1" data-clinic-bulk>
-                        <button type="button" class="text-xs text-sim-primary underline-offset-2 hover:underline" data-clinic-bulk-all>Pilih semua</button>
-                        <span class="text-xs text-sim-muted" aria-hidden="true">·</span>
-                        <button type="button" class="text-xs text-sim-primary underline-offset-2 hover:underline" data-clinic-bulk-none>Kosongkan</button>
-                    </span>
-                </span>
-            </div>
-
-            <div class="sim-form-alert-inline mt-1.5 hidden rounded-lg border border-sim-info/30 bg-sim-info-bg px-3 py-2 text-xs text-sim-info"
-                 id="clinic-source-note" hidden>
-                Akses klinik mengikuti master pegawai yang dipilih. Daftar di bawah hanya menampilkan
-                hasilnya dan tidak dapat diubah dari sini — ubah penugasan klinik pada data pegawai.
-            </div>
-
-            <p class="sim-form-hint" id="clinic-manual-note">
-                Akun ini tidak terhubung ke pegawai, jadi klinik dipilih manual di bawah.
-            </p>
-
-            <div class="sim-check-grid mt-2" id="clinic-options">
-                @foreach ($clinics as $clinic)
-                    <x-check-card
-                        name="clinic_ids[]"
-                        :value="$clinic->id"
-                        :checked="in_array($clinic->id, $klinikTerpilih, true)"
-                        :title="$clinic->name"
-                        :description="trim(($clinic->code ?? '').($clinic->city ? ' · '.$clinic->city : '')) ?: null"
-                        :meta="\App\Models\Clinic::typeOptions()[$clinic->clinic_type] ?? null"
-                        data-clinic-card />
-                @endforeach
-            </div>
-
-            @error('clinic_ids')<p class="sim-form-error">{{ $message }}</p>@enderror
-            @error('clinic_ids.*')<p class="sim-form-error">{{ $message }}</p>@enderror
-        </div>
-    </x-form-section>
-
-    <x-form-section step="5" title="Scope Sistem (opsional)"
-                    description="Scope menambah izin fungsional di luar peran struktural. Scope tidak melewati batas klinik maupun segregasi tugas (menyetujui program, menutup temuan).">
+    <x-form-section step="4" title="Tugas di sistem (opsional)"
+                    description="Centang modul yang boleh dikerjakan akun ini, di atas peran jabatan. Tugas tidak menambah klinik dan tidak menempatkan orang ke tim audit.">
         <div class="sim-form-group">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <span class="sim-form-label mb-0">Scope yang diberikan</span>
+                <span class="sim-form-label mb-0">Modul tugas</span>
                 <span class="sim-badge border-sim-border-light bg-sim-surface-alt font-normal text-sim-muted" data-scope-count>
-                    {{ $scopeTerpilihCount }} scope dipilih
+                    {{ $scopeTerpilihCount }} tugas dipilih
                 </span>
             </div>
 
@@ -307,6 +250,73 @@
 
             @error('scope_names')<p class="sim-form-error">{{ $message }}</p>@enderror
             @error('scope_names.*')<p class="sim-form-error">{{ $message }}</p>@enderror
+            <p class="sim-form-hint">
+                Izin efektif = peran jabatan + tugas yang dicentang. Tugas tidak melewati batas klinik
+                maupun larangan menyetujui pekerjaan sendiri.
+            </p>
+        </div>
+    </x-form-section>
+
+    <x-form-section step="5" title="Batas data klinik"
+                    description="Klinik yang datanya boleh dilihat akun ini. Jika akun terhubung ke pegawai, daftar ini hanya cermin master pegawai.">
+        <div class="sim-form-group">
+            <label class="sim-form-label" for="default_clinic_id">Klinik yang tampil pertama kali</label>
+            <select id="default_clinic_id" name="default_clinic_id"
+                    class="sim-form-select {{ $errors->has('default_clinic_id') ? 'border-sim-danger' : '' }}">
+                <option value="">— Tidak ada (lintas klinik) —</option>
+                @foreach ($clinics as $clinic)
+                    <option value="{{ $clinic->id }}" @selected((string) $klinikDefaultTerpilih === (string) $clinic->id)>
+                        {{ $clinic->name }} ({{ $clinic->code }})
+                    </option>
+                @endforeach
+            </select>
+            @error('default_clinic_id')<p class="sim-form-error">{{ $message }}</p>@enderror
+            <p class="sim-form-hint">Hanya konteks layar saat masuk, bukan daftar klinik yang dipegang pegawai.</p>
+        </div>
+
+        <div class="sim-form-group">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="sim-form-label mb-0">Klinik yang datanya boleh dilihat</span>
+                <span class="flex items-center gap-2">
+                    <span class="sim-badge border-sim-border-light bg-sim-surface-alt font-normal text-sim-muted" data-clinic-count>
+                        {{ count($klinikTerpilih) }} klinik dipilih
+                    </span>
+                    <span class="flex items-center gap-1" data-clinic-bulk>
+                        <button type="button" class="text-xs text-sim-primary underline-offset-2 hover:underline" data-clinic-bulk-all>Pilih semua</button>
+                        <span class="text-xs text-sim-muted" aria-hidden="true">·</span>
+                        <button type="button" class="text-xs text-sim-primary underline-offset-2 hover:underline" data-clinic-bulk-none>Kosongkan</button>
+                    </span>
+                </span>
+            </div>
+
+            <div class="sim-form-alert-inline mt-1.5 rounded-lg border border-sim-info/30 bg-sim-info-bg px-3 py-2 text-xs text-sim-info"
+                 id="clinic-source-note" hidden>
+                Daftar ini mengikuti <strong>Klinik / unit kerja yang dipegang</strong> di master pegawai.
+                Ubah di
+                <a href="{{ route('employees.index') }}" class="font-medium underline">Master Pegawai</a>
+                — jangan diisi ulang di sini.
+            </div>
+
+            <p class="sim-form-hint" id="clinic-manual-note">
+                Akun teknis tanpa data pegawai: pilih klinik manual di bawah. Untuk staf klinik, hubungkan
+                ke pegawai agar daftar ini tidak dobel.
+            </p>
+
+            <div class="sim-check-grid mt-2" id="clinic-options">
+                @foreach ($clinics as $clinic)
+                    <x-check-card
+                        name="clinic_ids[]"
+                        :value="$clinic->id"
+                        :checked="in_array($clinic->id, $klinikTerpilih, true)"
+                        :title="$clinic->name"
+                        :description="trim(($clinic->code ?? '').($clinic->city ? ' · '.$clinic->city : '')) ?: null"
+                        :meta="\App\Models\Clinic::typeOptions()[$clinic->clinic_type] ?? null"
+                        data-clinic-card />
+                @endforeach
+            </div>
+
+            @error('clinic_ids')<p class="sim-form-error">{{ $message }}</p>@enderror
+            @error('clinic_ids.*')<p class="sim-form-error">{{ $message }}</p>@enderror
         </div>
     </x-form-section>
 

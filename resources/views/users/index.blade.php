@@ -39,7 +39,7 @@
                             <option value="active" @selected(request('status') === 'active')>Aktif</option>
                             <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
                         </select>
-                        <x-action action="search" icon="sliders" label="Terapkan" />
+                        <x-action action="search" icon="sliders" label="Filter" />
                     </div>
                 </div>
             </form>
@@ -54,8 +54,8 @@
                         <th>Nama</th>
                         <th>Username</th>
                         <th>Surel</th>
-                        <th>Klinik Default</th>
-                        <th>Peran</th>
+                        <th>Klinik pertama</th>
+                        <th>Peran jabatan</th>
                         <th>Status</th>
                         <th class="text-right">Aksi</th>
                     </tr>

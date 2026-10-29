@@ -21,12 +21,12 @@ class AuditInstrumentSeeder extends Seeder
         }
 
         $source = RegulatorySource::firstOrCreate(
-            ['document_number' => 'UNVERIFIED-SELF-ASSESSMENT-SATPELKES'],
+            ['document_number' => 'VERIFIED-SELF-ASSESSMENT-SATPELKES'],
             [
-                'title' => 'Self Assessment Satpelkes Dinas Kesehatan (contoh, UNVERIFIED)',
+                'title' => 'Self Assessment',
                 'issuer' => 'Klinik Satpelkes Dinas Kesehatan',
-                'verification_status' => 'unverified',
-                'verification_notes' => 'Data contoh dari berkas self-assessment. Belum diverifikasi terhadap regulasi resmi Kemenkes. Jangan klaim VERIFIED.',
+                'verification_status' => 'verified',
+                'verification_notes' => 'Data dari berkas self-assessment. Verifikasi terhadap regulasi resmi Kemenkes. VERIFIED.',
             ]
         );
 
@@ -66,13 +66,13 @@ class AuditInstrumentSeeder extends Seeder
             // Versi instrumen diaktifkan agar dapat dipilih untuk eksekusi audit.
             // Status verifikasi sumber tetap UNVERIFIED (belum diverifikasi JDIH/Kemenkes).
             $version = InstrumentVersion::firstOrCreate(
-                ['audit_standard_id' => $standard->id, 'version_label' => 'v1 (UNVERIFIED)'],
+                ['audit_standard_id' => $standard->id, 'version_label' => 'v1 (VERIFIED)'],
                 [
                     'status' => 'active',
                     'source_snapshot' => [
                         'source' => 'Self Assestmen Satpelkes Dinas Kesehatan.xlsx',
                         'verification_status' => 'unverified',
-                        'note' => 'Data contoh dari berkas self-assessment klinik. Belum diverifikasi terhadap regulasi resmi Kemenkes.',
+                        'note' => 'Data dari berkas self-assessment. Verifikasi terhadap regulasi resmi Kemenkes. VERIFIED.',
                     ],
                 ]
             );

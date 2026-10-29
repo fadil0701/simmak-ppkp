@@ -13,9 +13,10 @@ class AuditReport extends BaseModel
     use ClinicScope;
 
     protected $fillable = [
-        'organization_id', 'audit_execution_id', 'clinic_id', 'report_number', 'title',
+        'organization_id', 'audit_execution_id', 'capa_action_id', 'audit_finding_id', 'clinic_id',
+        'report_number', 'title',
         'report_type', 'period_start', 'period_end', 'executive_summary', 'findings_summary',
-        'capa_summary', 'file_path', 'file_type', 'file_size', 'checksum', 'status',
+        'capa_summary', 'file_path', 'original_filename', 'file_type', 'file_size', 'checksum', 'status',
         'generated_by', 'generated_at', 'metadata',
     ];
 
@@ -35,6 +36,36 @@ class AuditReport extends BaseModel
     public function execution(): BelongsTo
     {
         return $this->belongsTo(AuditExecution::class, 'audit_execution_id');
+    }
+
+    /** Tindakan tindak lanjut pemilik laporan (null untuk laporan tingkat audit). */
+    public function action(): BelongsTo
+    {
+        return $this->belongsTo(CapaAction::class, 'capa_action_id');
+    }
+
+    /** Temuan pemilik laporan (null bila laporan tidak terikat temuan). */
+    public function finding(): BelongsTo
+    {
+        return $this->belongsTo(AuditFinding::class, 'audit_finding_id');
+    }
+
+    /**
+     * Nama berkas untuk unduhan: nama asli unggahan, atau nomor laporan untuk
+     * laporan PDF yang dihasilkan sistem.
+     */
+    public function downloadName(): string
+    {
+        if (filled($this->original_filename)) {
+            return $this->original_filename;
+        }
+
+        return $this->report_number.'.'.($this->file_type ?: 'pdf');
+    }
+
+    public function isFollowUpReport(): bool
+    {
+        return filled($this->capa_action_id);
     }
 
     public function clinic(): BelongsTo

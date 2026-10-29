@@ -2,40 +2,51 @@
 
 namespace App\Services;
 
+use App\Models\ApprovalEvent;
 use App\Models\AuditAssignment;
 use App\Models\AuditTeamMember;
 use App\Models\User;
 use App\Support\AuditWorkScope;
+use App\Support\SimmakRoles;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 class AuditAssignmentService
 {
+    public function __construct(private DocumentNumberService $numbers) {}
+
     public function createAssignment(array $data, User $user): AuditAssignment
     {
-        return DB::transaction(function () use ($data, $user) {
-            $assignment = AuditAssignment::create([
-                'organization_id' => $user->organization_id,
-                'audit_program_id' => $data['audit_program_id'],
-                'clinic_id' => $data['clinic_id'] ?? null,
-                'instrument_version_id' => $data['instrument_version_id'] ?? null,
-                'assignment_code' => $data['assignment_code'],
-                'title' => $data['title'],
-                'scope_notes' => $data['scope_notes'] ?? null,
-                'lead_auditor_id' => $data['lead_auditor_id'] ?? null,
-                'scheduled_start' => $data['scheduled_start'],
-                'scheduled_end' => $data['scheduled_end'],
-                'status' => 'draft',
-                'conflict_check_status' => 'pending',
-                'created_by' => $user->id,
-                'updated_by' => $user->id,
-            ]);
+        return $this->numbers->insertWithAllocatedNumber(
+            $user->organization_id,
+            DocumentNumberService::ASSIGNMENT,
+            function (string $code) use ($data, $user) {
+                return DB::transaction(function () use ($data, $user, $code) {
+                    $assignment = AuditAssignment::create([
+                        'organization_id' => $user->organization_id,
+                        'audit_program_id' => $data['audit_program_id'],
+                        'clinic_id' => $data['clinic_id'] ?? null,
+                        'instrument_version_id' => $data['instrument_version_id'] ?? null,
+                        'assignment_code' => $code,
+                        'title' => $data['title'],
+                        'scope_notes' => $data['scope_notes'] ?? null,
+                        'lead_auditor_id' => $data['lead_auditor_id'] ?? null,
+                        'scheduled_start' => $data['scheduled_start'],
+                        'scheduled_end' => $data['scheduled_end'],
+                        'status' => 'draft',
+                        'conflict_check_status' => 'pending',
+                        'created_by' => $user->id,
+                        'updated_by' => $user->id,
+                    ]);
 
-            $this->ensureLeadOnTeam($assignment, $user);
-            $this->refreshConflictStatus($assignment, $user);
+                    $this->ensureLeadOnTeam($assignment, $user);
+                    $this->refreshConflictStatus($assignment, $user);
 
-            return $assignment->fresh(['program', 'clinic', 'leadAuditor', 'teamMembers']);
-        });
+                    return $assignment->fresh(['program', 'clinic', 'leadAuditor', 'teamMembers']);
+                });
+            }
+        );
     }
 
     public function updateAssignment(AuditAssignment $assignment, array $data, User $user): AuditAssignment
@@ -108,28 +119,76 @@ class AuditAssignmentService
 
     public function activateAssignment(AuditAssignment $assignment, User $user): void
     {
-        // Super admin boleh mengaktifkan penugasan dari status mana pun.
+        $this->approveAssignment($assignment, $user);
+    }
+
+    public function approveAssignment(AuditAssignment $assignment, User $user): void
+    {
+        $this->assertFinalApprover($user);
+
         if ($assignment->status !== 'proposed' && ! $user->hasUnrestrictedAccess()) {
-            throw new ModelNotFoundException('Hanya assignment yang diajukan yang dapat diaktifkan.');
+            throw new ModelNotFoundException('Hanya jadwal yang menunggu persetujuan Kepala Pusat yang dapat disetujui.');
         }
         if (! $assignment->clinic_id) {
-            throw new ModelNotFoundException('Klinik sasaran harus ditetapkan sebelum assignment diaktifkan.');
+            throw new ModelNotFoundException('Klinik sasaran harus ditetapkan sebelum jadwal disetujui.');
         }
         if ($assignment->conflict_check_status !== 'resolved') {
-            throw new ModelNotFoundException('Konflik kepentingan harus diselesaikan sebelum assignment diaktifkan.');
+            throw new ModelNotFoundException('Konflik kepentingan harus diselesaikan sebelum jadwal disetujui.');
         }
+
+        $oldStatus = $assignment->status;
+
         $assignment->update([
-            'status' => 'active',
-            'activated_at' => now(),
+            'status' => 'approved',
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+            'activated_at' => $assignment->activated_at ?? now(),
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
             'updated_by' => $user->id,
+        ]);
+
+        $this->recordDecision($assignment, $user, 'approved', 'Jadwal penugasan disetujui dan dipublikasikan.', [
+            'status' => 'approved',
+            'from_status' => $oldStatus,
+            'approved_by' => $user->id,
+            'approved_at' => now()->toISOString(),
+        ]);
+    }
+
+    public function rejectAssignment(AuditAssignment $assignment, User $user, string $reason): void
+    {
+        $this->assertFinalApprover($user);
+
+        if ($assignment->status !== 'proposed' && ! $user->hasUnrestrictedAccess()) {
+            throw new ModelNotFoundException('Hanya jadwal yang menunggu persetujuan Kepala Pusat yang dapat ditolak.');
+        }
+
+        $oldStatus = $assignment->status;
+
+        $assignment->update([
+            'status' => 'rejected',
+            'rejected_by' => $user->id,
+            'rejected_at' => now(),
+            'rejection_reason' => $reason,
+            'updated_by' => $user->id,
+        ]);
+
+        $this->recordDecision($assignment, $user, 'rejected', $reason, [
+            'status' => 'rejected',
+            'from_status' => $oldStatus,
+            'rejected_by' => $user->id,
+            'rejected_at' => now()->toISOString(),
+            'rejection_reason' => $reason,
         ]);
     }
 
     public function submitAssignment(AuditAssignment $assignment, User $user): void
     {
-        // Super admin boleh mengajukan penugasan dari status mana pun.
-        if ($assignment->status !== 'draft' && ! $user->hasUnrestrictedAccess()) {
-            throw new ModelNotFoundException('Hanya assignment draft yang dapat diajukan.');
+        $allowed = ['draft', 'rejected'];
+        if (! in_array($assignment->status, $allowed, true) && ! $user->hasUnrestrictedAccess()) {
+            throw new ModelNotFoundException('Hanya draf atau jadwal yang ditolak yang dapat diajukan.');
         }
         if (! $assignment->clinic_id) {
             throw new ModelNotFoundException('Klinik sasaran harus ditetapkan sebelum penugasan diajukan.');
@@ -144,8 +203,70 @@ class AuditAssignmentService
         $assignment->update([
             'status' => 'proposed',
             'submitted_at' => now(),
+            'rejected_by' => null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
             'updated_by' => $user->id,
         ]);
+
+        ApprovalEvent::create([
+            'organization_id' => $assignment->organization_id,
+            'entity_type' => 'audit_assignment',
+            'entity_id' => $assignment->id,
+            'step_key' => 'submit',
+            'actor_user_id' => $user->id,
+            'decision' => 'submitted',
+            'reason' => 'Jadwal diajukan untuk persetujuan akhir Kepala Pusat.',
+            'metadata' => ['status' => 'proposed', 'submitted_at' => now()->toISOString()],
+            'acted_at' => now(),
+        ]);
+
+        (new AuditTrailService)->log(
+            'audit.assignment.submitted',
+            $assignment,
+            null,
+            ['status' => 'proposed', 'submitted_at' => now()->toISOString()],
+            ['actor' => $user->name]
+        );
+    }
+
+    private function assertFinalApprover(User $user): void
+    {
+        if ($user->hasUnrestrictedAccess()) {
+            return;
+        }
+
+        if ($user->hasRole(SimmakRoles::KEPALA_PUSAT) && $user->can('audit.program.approve')) {
+            return;
+        }
+
+        throw new AuthorizationException('Hanya Kepala Pusat yang berwenang memberi persetujuan akhir jadwal penugasan.');
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function recordDecision(AuditAssignment $assignment, User $user, string $decision, string $reason, array $metadata): void
+    {
+        ApprovalEvent::create([
+            'organization_id' => $assignment->organization_id,
+            'entity_type' => 'audit_assignment',
+            'entity_id' => $assignment->id,
+            'step_key' => 'final_approval',
+            'actor_user_id' => $user->id,
+            'decision' => $decision,
+            'reason' => $reason,
+            'metadata' => $metadata,
+            'acted_at' => now(),
+        ]);
+
+        (new AuditTrailService)->log(
+            'audit.assignment.'.$decision,
+            $assignment,
+            ['status' => $metadata['from_status'] ?? null],
+            $metadata,
+            ['actor' => $user->name, 'reason' => $reason]
+        );
     }
 
     public function getAssignmentsForOrganization(?string $organizationId)
@@ -172,7 +293,7 @@ class AuditAssignmentService
             ->orderByDesc('created_at');
 
         if ($upcomingOnly) {
-            $query->whereIn('status', ['active', 'proposed'])
+            $query->whereIn('status', AuditAssignment::PUBLISHED_STATUSES)
                 ->whereDate('scheduled_end', '>=', now()->toDateString())
                 ->reorder()
                 ->orderBy('scheduled_start');

@@ -91,6 +91,8 @@ class EmployeeController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($employee->organization_id), 403);
 
+        $employee->load('users:id,employee_id,name,username');
+
         return view('employees.form', [
             'employee' => $employee,
             'clinics' => Clinic::forUserClinics($request->user())->orderBy('code')->get(),

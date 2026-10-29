@@ -38,6 +38,7 @@ class AuditCalendarService
         $gridEnd = $monthEnd->copy()->endOfWeek(CarbonInterface::SUNDAY);
 
         $assignments = AuditWorkScope::assignments(AuditAssignment::query(), $user)
+            ->published()
             ->whereNotNull('scheduled_start')
             ->whereNotNull('scheduled_end')
             ->whereDate('scheduled_start', '<=', $monthEnd->toDateString())
@@ -54,6 +55,7 @@ class AuditCalendarService
                 'title' => $assignment->title,
                 'clinic' => $assignment->clinic?->name ?? '—',
                 'status' => $assignment->status,
+                'status_label' => \App\Support\UiLabel::assignmentStatus($assignment->status),
                 'url' => route('audit.assignments.show', $assignment),
             ];
 

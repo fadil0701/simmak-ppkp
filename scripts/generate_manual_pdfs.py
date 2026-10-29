@@ -25,6 +25,7 @@ FONT_BOLD_CANDIDATES = [
 ]
 
 MANUALS = [
+    ("JUKNIS_PENGGUNAAN_SIMMAK.md", "00_Juknis_Penggunaan_SIMMAK.pdf", "Petunjuk Teknis Penggunaan SIMMAK PPKP"),
     ("01_ROLE_DAN_AKSES.md", "01_Role_dan_Akses.pdf", "Role, Permission & Matriks Akses"),
     ("02_LOGIN.md", "02_Login_dan_Autentikasi.pdf", "Login & Autentikasi"),
     ("03_DASHBOARD_EKSEKUTIF.md", "03_Dashboard_Eksekutif.pdf", "Dashboard Eksekutif"),
@@ -109,8 +110,8 @@ class ManualPDF(FPDF):
         self.multi_cell(
             180,
             6,
-            "Panduan fitur: kegunaan, cara pengisian/penggunaan, dan akses per role.\n"
-            "PPKP Provinsi DKI Jakarta — Versi 1.0.0 — Juli 2026",
+            "Petunjuk teknis operasional: alur kerja, cara pengisian, dan pemisahan peran/klinik.\n"
+            "PPKP Provinsi DKI Jakarta — Versi 2.1.0 — Oktober 2026",
         )
         self.ln(6)
         self.set_draw_color(20, 184, 166)
@@ -288,17 +289,16 @@ def build_index_pdf(font_regular: Path, font_bold: Path | None) -> None:
         rows.append([str(idx).zfill(2), title, filename])
     pdf.table(rows)
     pdf.h2("Akun Demo")
-    pdf.para("Password semua akun berasal dari environment DEMO_ACCOUNT_PASSWORD (tidak ditulis di codebase). Jika kosong, seeder membuat password acak dan mencetaknya sekali ke console.")
+    pdf.para("Password akun uji berasal dari DEFAULT_USER_PASSWORD / SUPERADMIN_PASSWORD di server (tidak ditulis di dokumen). Super admin dibuat terpisah: php artisan simmak:create-superadmin.")
     pdf.table(
         [
-            ["Email", "Role"],
-            ["admin@simmak.ppkp.local", "super-admin"],
-            ["mutu@simmak.ppkp.local", "admin-mutu"],
+            ["Email", "Peran jabatan"],
+            ["SUPERADMIN_EMAIL (default admin@simmak.ppkp.local)", "super-admin"],
+            ["sistem@simmak.ppkp.local", "admin-sistem"],
+            ["kepalapusat@simmak.ppkp.local", "kepala-pusat"],
+            ["tu@simmak.ppkp.local", "kasubbag-tu"],
             ["kepala@simmak.ppkp.local", "kepala-klinik"],
-            ["pjmutu@simmak.ppkp.local", "pj-mutu"],
-            ["akreditasi@simmak.ppkp.local", "tim-akreditasi"],
-            ["auditor@simmak.ppkp.local", "auditor"],
-            ["staff@simmak.ppkp.local", "staff"],
+            ["auditor@simmak.ppkp.local", "auditor (lama)"],
         ]
     )
     pdf.h2("Cara Generate Ulang")

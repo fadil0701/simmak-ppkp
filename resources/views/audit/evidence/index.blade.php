@@ -32,6 +32,7 @@
                 <thead class="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Nama Berkas</th>
+                        <th class="px-4 py-3">Terkait</th>
                         <th class="px-4 py-3">Tipe</th>
                         <th class="px-4 py-3">Ukuran</th>
                         <th class="px-4 py-3">Klasifikasi</th>
@@ -52,6 +53,35 @@
                                     </div>
                                 @elseif ($evidence->description)
                                     <div class="text-xs text-slate-500">{{ \Illuminate\Support\Str::limit($evidence->description, 60) }}</div>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-xs text-slate-600">
+                                {{-- Konteks dokumen: pemilik tindak lanjut, temuan, audit
+                                     klinis, atau eksekusi — bukan daftar tanpa keterkaitan. --}}
+                                @php($followUp = $evidence->linkedFollowUp())
+                                @if ($followUp?->capaCase)
+                                    <a href="{{ route('capa.show', $followUp->capaCase) }}" class="font-medium text-teal-700 hover:underline">
+                                        {{ $followUp->capaCase->case_number }}
+                                    </a>
+                                    <div class="text-[11px] text-slate-500">Tindak lanjut: {{ \Illuminate\Support\Str::limit($followUp->description, 40) }}</div>
+                                @elseif ($evidence->findingLinks->isNotEmpty())
+                                    @php($linkedFinding = $evidence->findingLinks->first()->finding)
+                                    @if ($linkedFinding)
+                                        <a href="{{ route('findings.show', $linkedFinding) }}" class="font-medium text-teal-700 hover:underline">
+                                            {{ $linkedFinding->finding_code }}
+                                        </a>
+                                        <div class="text-[11px] text-slate-500">Temuan audit</div>
+                                    @endif
+                                @elseif ($evidence->clinicalAudit)
+                                    <a href="{{ route('audit.clinical.show', $evidence->clinicalAudit) }}" class="font-medium text-teal-700 hover:underline">
+                                        {{ $evidence->clinicalAudit->audit_number }}
+                                    </a>
+                                    <div class="text-[11px] text-slate-500">Audit klinis</div>
+                                @elseif ($evidence->execution)
+                                    <span class="font-medium text-slate-700">{{ $evidence->execution->execution_code }}</span>
+                                    <div class="text-[11px] text-slate-500">Eksekusi audit</div>
+                                @else
+                                    <span class="text-slate-400">Tidak tertaut</span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-slate-600">{{ $evidence->mime_type }}</td>
@@ -78,7 +108,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-8 text-center text-slate-500">Belum ada bukti audit.</td>
+                            <td colspan="8" class="px-4 py-8 text-center text-slate-500">Belum ada bukti audit.</td>
                         </tr>
                     @endforelse
                 </tbody>

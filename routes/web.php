@@ -13,6 +13,7 @@ use App\Http\Controllers\AuditReportController;
 use App\Http\Controllers\AuditStandardController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CapaController;
+use App\Http\Controllers\ClinicalAuditController;
 use App\Http\Controllers\ClinicController;
 use App\Http\Controllers\ClinicDashboardController;
 use App\Http\Controllers\DashboardController;
@@ -269,6 +270,11 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/audit/assignments/{assignment}/activate', [AuditAssignmentController::class, 'activate'])->name('audit.assignments.activate');
     });
 
+    Route::middleware('permission:audit.program.approve')->group(function () {
+        Route::post('/audit/assignments/{assignment}/approve', [AuditAssignmentController::class, 'approve'])->name('audit.assignments.approve');
+        Route::post('/audit/assignments/{assignment}/reject', [AuditAssignmentController::class, 'reject'])->name('audit.assignments.reject');
+    });
+
     Route::middleware('permission:audit.execution.view')->group(function () {
         Route::get('/audit/executions', [AuditExecutionController::class, 'index'])->name('audit.executions.index');
         Route::get('/audit/executions/{execution}/checklist', [AuditExecutionController::class, 'checklist'])->name('audit.executions.checklist');
@@ -294,6 +300,27 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::delete('/audit/evidence/{evidence}', [AuditEvidenceController::class, 'destroy'])->name('audit.evidence.destroy');
     });
 
+    // Audit Klinis: jenis audit tersendiri, memakai Temuan Audit, Tindak Lanjut,
+    // Laporan, dan Arsip Bukti yang sama (tidak membuat alur baru).
+    Route::middleware('permission:audit.clinical.view')->group(function () {
+        Route::get('/clinical-audits', [ClinicalAuditController::class, 'index'])->name('audit.clinical.index');
+        Route::get('/clinical-audits/{clinicalAudit}', [ClinicalAuditController::class, 'show'])
+            ->whereUuid('clinicalAudit')->name('audit.clinical.show');
+    });
+
+    Route::middleware('permission:audit.clinical.manage')->group(function () {
+        Route::get('/clinical-audits/create', [ClinicalAuditController::class, 'create'])->name('audit.clinical.create');
+        Route::post('/clinical-audits', [ClinicalAuditController::class, 'store'])->name('audit.clinical.store');
+        Route::get('/clinical-audits/{clinicalAudit}/edit', [ClinicalAuditController::class, 'edit'])->name('audit.clinical.edit');
+        Route::put('/clinical-audits/{clinicalAudit}', [ClinicalAuditController::class, 'update'])->name('audit.clinical.update');
+        Route::delete('/clinical-audits/{clinicalAudit}', [ClinicalAuditController::class, 'destroy'])->name('audit.clinical.destroy');
+        Route::post('/clinical-audits/{clinicalAudit}/status', [ClinicalAuditController::class, 'updateStatus'])->name('audit.clinical.status');
+        Route::post('/clinical-audits/{clinicalAudit}/items', [ClinicalAuditController::class, 'storeItem'])->name('audit.clinical.items.store');
+        Route::delete('/clinical-audits/{clinicalAudit}/items/{item}', [ClinicalAuditController::class, 'destroyItem'])->name('audit.clinical.items.destroy');
+        Route::post('/clinical-audits/{clinicalAudit}/evidence', [ClinicalAuditController::class, 'storeEvidence'])->name('audit.clinical.evidence.store');
+        Route::delete('/clinical-audits/{clinicalAudit}/evidence/{evidence}', [ClinicalAuditController::class, 'destroyEvidence'])->name('audit.clinical.evidence.destroy');
+    });
+
     Route::middleware('permission:capa.view')->group(function () {
         Route::get('/capa', [CapaController::class, 'index'])->name('capa.index');
         Route::get('/capa/export', [CapaController::class, 'export'])->name('capa.export');
@@ -303,6 +330,19 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/capa/{capa}/rca', [CapaController::class, 'storeRca'])->name('capa.store-rca');
         Route::post('/capa/{capa}/actions', [CapaController::class, 'storeAction'])->name('capa.store-action');
         Route::post('/capa/actions/{action}/evidence', [CapaController::class, 'submitEvidence'])->name('capa.submit-evidence');
+        // Dokumen per tindak lanjut: bukti arsip tambahan (tanpa mengubah status
+        // alur) dan laporan audit milik tindakan tersebut.
+        Route::post('/capa/actions/{action}/evidence/attach', [CapaController::class, 'attachEvidence'])->name('capa.attach-evidence');
+        Route::delete('/capa/actions/{action}/evidence/{link}', [CapaController::class, 'detachEvidence'])->name('capa.detach-evidence');
+        Route::post('/capa/actions/{action}/report', [CapaController::class, 'storeReport'])->name('capa.store-report');
+        Route::delete('/capa/actions/{action}/report/{report}', [CapaController::class, 'destroyReport'])->name('capa.destroy-report');
+    });
+
+    // Unduhan laporan memakai izin laporan audit ATAU izin tindak lanjut supaya
+    // pengguna klinik dapat membaca dokumen tindak lanjutnya sendiri; policy
+    // AuditReportPolicy tetap memeriksa organisasi dan ruang lingkup klinik.
+    Route::middleware('permission:audit.report.view|capa.view')->group(function () {
+        Route::get('/capa/reports/{report}/download', [AuditReportController::class, 'downloadFile'])->name('capa.download-report');
     });
     Route::middleware('permission:audit.capa.verify')->group(function () {
         Route::post('/capa/{capa}/verification', [CapaController::class, 'storeVerification'])->name('capa.store-verification');

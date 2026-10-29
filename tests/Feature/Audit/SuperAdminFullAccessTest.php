@@ -294,10 +294,12 @@ class SuperAdminFullAccessTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('audit_executions', [
-            'execution_code' => 'EXEC-SA-002',
-            'created_by' => $this->superAdmin->id,
-        ]);
+        $execution = \App\Models\AuditExecution::query()
+            ->where('created_by', $this->superAdmin->id)
+            ->where('title', 'Eksekusi dibuat super admin')
+            ->firstOrFail();
+        $this->assertMatchesRegularExpression('/^EXEC-\d{4}-\d{4}$/', $execution->execution_code);
+        $this->assertNotSame('EXEC-SA-002', $execution->execution_code);
     }
 
     /** @test */

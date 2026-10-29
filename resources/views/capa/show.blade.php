@@ -64,28 +64,113 @@
                                 · Tenggat {{ $action->due_date->format('d M Y') }}
                             @endif
                         </p>
-                        @if ($action->hasSubmittedEvidence())
-                            <p class="mt-2 text-xs text-slate-600 whitespace-pre-wrap">Bukti: {{ $action->evidence_notes }}</p>
-                            @foreach ($action->evidenceLinks as $link)
-                                @if ($link->evidence)
-                                    <p class="text-xs">
-                                        <a href="{{ route('audit.evidence.download', $link->evidence) }}" class="text-teal-700 hover:underline">{{ $link->evidence->original_filename }}</a>
-                                    </p>
-                                @endif
-                            @endforeach
-                            <p class="text-[11px] text-slate-400">Dikirim {{ $action->evidence_submitted_at?->format('d M Y H:i') }} · menunggu validasi auditor</p>
-                        @elseif ($capa->status !== 'closed')
+                        {{-- Laporan audit milik tindakan ini saja — tidak digabung
+                             dengan tindakan lain agar dokumen tidak tertukar. --}}
+                        <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Laporan Tindak Lanjut</h4>
+                                <span class="text-[11px] text-slate-400">{{ $action->reports->count() }} laporan</span>
+                            </div>
+
+                            @forelse ($action->reports as $report)
+                                <div class="mt-2 flex items-start justify-between gap-2 rounded-md border border-slate-100 bg-white p-2">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-medium text-slate-800">{{ $report->title }}</div>
+                                        <div class="text-[11px] text-slate-500">
+                                            {{ $report->report_number }} ·
+                                            {{ strtoupper($report->file_type ?: 'PDF') }} ·
+                                            {{ $report->generated_at?->format('d M Y') ?? '—' }}
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-shrink-0 gap-1">
+                                        @can('view', $report)
+                                            <x-action action="download" href="{{ route('capa.download-report', $report) }}" icon="download" label="Unduh" size="sm" />
+                                        @endcan
+                                        @can('delete', $report)
+                                            <x-action action="delete" href="{{ route('capa.destroy-report', [$action, $report]) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus laporan ini dari tindakan tersebut?" />
+                                        @endcan
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="mt-2 text-xs text-slate-500">Belum ada laporan untuk tindakan ini.</p>
+                            @endforelse
+
                             @can('update', $action)
-                                <form method="POST" action="{{ route('capa.submit-evidence', $action) }}" class="mt-2 space-y-2" enctype="multipart/form-data">
-                                    @csrf
-                                    <label class="sim-form-label">Uraian tindak lanjut</label>
-                                    <textarea name="evidence_notes" rows="2" class="sim-form-textarea" placeholder="Uraikan tindakan yang sudah dikerjakan.">{{ old('evidence_notes') }}</textarea>
-                                    <label class="sim-form-label">Upload bukti (PDF/gambar/Office, maks. 10 MB)</label>
-                                    <input type="file" name="file" class="sim-form-input text-sm" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
-                                    <x-action action="upload" icon="upload" label="Kirim Bukti Tindak Lanjut" size="sm" />
-                                </form>
+                                @can('audit.report.view')
+                                    <form method="POST" action="{{ route('capa.store-report', $action) }}" enctype="multipart/form-data"
+                                          class="mt-3 space-y-2 border-t border-slate-200 pt-2">
+                                        @csrf
+                                        <input type="text" name="title" maxlength="255" required class="sim-form-input text-sm"
+                                               placeholder="Judul laporan tindak lanjut">
+                                        <input type="file" name="file" required class="sim-form-input text-sm"
+                                               accept=".pdf,.doc,.docx,.xls,.xlsx">
+                                        <x-action action="upload" icon="upload" label="Unggah Laporan" size="sm" />
+                                    </form>
+                                @endcan
                             @endcan
-                        @endif
+                        </div>
+
+                        {{-- Bukti arsip (berkas) milik tindakan ini, terpisah dari laporan. --}}
+                        <div class="mt-2 rounded-lg border border-slate-100 bg-white p-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Bukti Arsip</h4>
+                                <span class="text-[11px] text-slate-400">{{ $action->evidenceLinks->count() }} berkas</span>
+                            </div>
+
+                            @if ($action->hasSubmittedEvidence())
+                                <p class="mt-2 text-xs text-slate-600 whitespace-pre-wrap">Uraian: {{ $action->evidence_notes }}</p>
+                            @endif
+
+                            @forelse ($action->evidenceLinks as $link)
+                                @if ($link->evidence)
+                                    <div class="mt-2 flex items-center justify-between gap-2 rounded-md border border-slate-100 p-2">
+                                        <div class="min-w-0">
+                                            <a href="{{ route('audit.evidence.show', $link->evidence) }}"
+                                               class="block truncate text-sm text-teal-700 hover:underline">{{ $link->evidence->original_filename }}</a>
+                                            <div class="text-[11px] text-slate-500">{{ $link->description ?: ($link->evidence->description ?: '—') }}</div>
+                                        </div>
+                                        <div class="flex flex-shrink-0 gap-1">
+                                            <x-action action="download" href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" size="sm" />
+                                            @can('update', $action)
+                                                <x-action action="delete" href="{{ route('capa.detach-evidence', [$action, $link]) }}" icon="trash" label="Lepas" size="sm" method="DELETE"
+                                                          confirm="Lepas tautan berkas ini dari tindakan? Berkas tetap tersimpan di Arsip Bukti." />
+                                            @endcan
+                                        </div>
+                                    </div>
+                                @endif
+                            @empty
+                                <p class="mt-2 text-xs text-slate-500">Belum ada berkas bukti untuk tindakan ini.</p>
+                            @endforelse
+
+                            @if ($action->hasSubmittedEvidence())
+                                <p class="mt-2 text-[11px] text-slate-400">Dikirim {{ $action->evidence_submitted_at?->format('d M Y H:i') }} · menunggu validasi auditor</p>
+                            @endif
+
+                            @if ($capa->status !== 'closed')
+                                @can('update', $action)
+                                    @unless ($action->hasSubmittedEvidence())
+                                        <form method="POST" action="{{ route('capa.submit-evidence', $action) }}" class="mt-3 space-y-2 border-t border-slate-100 pt-2" enctype="multipart/form-data">
+                                            @csrf
+                                            <label class="sim-form-label">Uraian tindak lanjut</label>
+                                            <textarea name="evidence_notes" rows="2" class="sim-form-textarea" placeholder="Uraikan tindakan yang sudah dikerjakan.">{{ old('evidence_notes') }}</textarea>
+                                            <label class="sim-form-label">Upload bukti (PDF/gambar/Office, maks. 10 MB)</label>
+                                            <input type="file" name="file" class="sim-form-input text-sm" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                                            <x-action action="upload" icon="upload" label="Kirim Bukti Tindak Lanjut" size="sm" />
+                                        </form>
+                                    @endunless
+
+                                    <form method="POST" action="{{ route('capa.attach-evidence', $action) }}" class="mt-2 space-y-2 border-t border-slate-100 pt-2" enctype="multipart/form-data">
+                                        @csrf
+                                        <label class="sim-form-label">Lampirkan berkas bukti tambahan</label>
+                                        <input type="file" name="file" required class="sim-form-input text-sm"
+                                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.csv,.txt">
+                                        <input type="text" name="description" maxlength="500" class="sim-form-input text-sm"
+                                               placeholder="Keterangan berkas (opsional)">
+                                        <x-action action="upload" icon="upload" label="Tambah Bukti Arsip" size="sm" />
+                                    </form>
+                                @endcan
+                            @endif
+                        </div>
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">Belum ada tindakan terdaftar.</p>

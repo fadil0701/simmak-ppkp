@@ -10,6 +10,7 @@ use App\Models\InstrumentVersion;
 use App\Models\StandardCriterion;
 use App\Services\AuditCapaService;
 use App\Services\AuditExecutionService;
+use App\Services\DocumentNumberService;
 use App\Support\AuditScoreScale;
 use App\Support\AuditWorkScope;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,8 @@ class AuditExecutionController extends Controller
 {
     public function __construct(
         private AuditExecutionService $executionService,
-        private AuditCapaService $findingService
+        private AuditCapaService $findingService,
+        private DocumentNumberService $numbers,
     ) {}
 
     public function index(Request $request): View
@@ -63,7 +65,8 @@ class AuditExecutionController extends Controller
         $executions = $executionsQuery->paginate(15)->withQueryString();
 
         $assignments = AuditWorkScope::assignments(AuditAssignment::query(), $user)
-            ->where('status', 'active')
+            ->published()
+            ->where('status', '!=', 'completed')
             ->with('clinic')
             ->orderBy('assignment_code')
             ->get();
@@ -81,13 +84,15 @@ class AuditExecutionController extends Controller
             ->get();
 
         $executionTotal = (int) $statusCounts->sum();
+        $suggestedExecutionCode = $this->numbers->peek($orgId, DocumentNumberService::EXECUTION);
 
         return view('audit.executions.index', compact(
             'executions',
             'assignments',
             'instrumentVersions',
             'statusCounts',
-            'executionTotal'
+            'executionTotal',
+            'suggestedExecutionCode'
         ));
     }
 
@@ -97,7 +102,6 @@ class AuditExecutionController extends Controller
 
         $validated = $request->validate([
             'instrument_version_id' => ['required', 'uuid', Rule::exists('instrument_versions', 'id')],
-            'execution_code' => ['required', 'string', 'max:80', Rule::unique('audit_executions', 'execution_code')->where('organization_id', $assignment->organization_id)],
             'title' => ['required', 'string', 'max:255'],
         ]);
 
@@ -116,7 +120,8 @@ class AuditExecutionController extends Controller
 
         abort_unless($versionBelongsToOrg, 403, 'Versi instrumen tidak tersedia untuk organisasi ini.');
         // Super admin boleh memulai pelaksanaan walau penugasan belum aktif.
-        abort_unless($assignment->status === 'active' || $request->user()->hasUnrestrictedAccess(), 422, 'Hanya penugasan aktif yang dapat memulai pelaksanaan.');
+        $executable = $assignment->isPublished() && $assignment->status !== 'completed';
+        abort_unless($executable || $request->user()->hasUnrestrictedAccess(), 422, 'Hanya jadwal yang sudah disetujui Kepala Pusat yang dapat memulai pelaksanaan.');
         abort_unless($assignment->clinic_id, 422, 'Penugasan belum memiliki klinik sasaran.');
 
         $canStart = $assignment->teamMembers()
@@ -127,18 +132,24 @@ class AuditExecutionController extends Controller
         // Super admin boleh memulai eksekusi untuk penugasan mana pun.
         abort_unless($canStart || $request->user()->hasUnrestrictedAccess(), 403);
 
-        $execution = AuditExecution::create([
-            'organization_id' => $assignment->organization_id,
-            'audit_program_id' => $assignment->audit_program_id,
-            'audit_assignment_id' => $assignment->id,
-            'clinic_id' => $assignment->clinic_id,
-            'instrument_version_id' => $validated['instrument_version_id'],
-            'execution_code' => $validated['execution_code'],
-            'title' => $validated['title'],
-            'status' => 'preparation',
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id,
-        ]);
+        $execution = $this->numbers->insertWithAllocatedNumber(
+            $assignment->organization_id,
+            DocumentNumberService::EXECUTION,
+            function (string $code) use ($assignment, $validated, $request) {
+                return AuditExecution::create([
+                    'organization_id' => $assignment->organization_id,
+                    'audit_program_id' => $assignment->audit_program_id,
+                    'audit_assignment_id' => $assignment->id,
+                    'clinic_id' => $assignment->clinic_id,
+                    'instrument_version_id' => $validated['instrument_version_id'],
+                    'execution_code' => $code,
+                    'title' => $validated['title'],
+                    'status' => 'preparation',
+                    'created_by' => $request->user()->id,
+                    'updated_by' => $request->user()->id,
+                ]);
+            }
+        );
 
         return redirect()->route('audit.executions.checklist', $execution)->with('status', 'Eksekusi audit berhasil dibuat.');
     }
@@ -160,7 +171,6 @@ class AuditExecutionController extends Controller
         $validated = $request->validate([
             'audit_assignment_id' => ['required', 'uuid', Rule::exists('audit_assignments', 'id')],
             'instrument_version_id' => ['required', 'uuid', Rule::exists('instrument_versions', 'id')],
-            'execution_code' => ['required', 'string', 'max:80', Rule::unique('audit_executions', 'execution_code')->where('organization_id', $assignment->organization_id)],
             'title' => ['required', 'string', 'max:255'],
         ]);
 

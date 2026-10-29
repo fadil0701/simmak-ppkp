@@ -17,14 +17,11 @@ use InvalidArgumentException;
 
 class AuditCapaService
 {
+    public function __construct(private DocumentNumberService $numbers) {}
+
     public function generateFindingCode(User $user): string
     {
-        $year = now()->format('Y');
-        $seq = AuditFinding::where('organization_id', $user->organization_id)
-            ->whereYear('created_at', $year)
-            ->count() + 1;
-
-        return sprintf('TMN-%s-%04d', $year, $seq);
+        return $this->numbers->allocate($user->organization_id, DocumentNumberService::FINDING);
     }
 
     /**
@@ -82,12 +79,7 @@ class AuditCapaService
 
     public function generateCapaNumber(User $user): string
     {
-        $year = now()->format('Y');
-        $seq = CapaCase::where('organization_id', $user->organization_id)
-            ->whereYear('created_at', $year)
-            ->count() + 1;
-
-        return sprintf('TL-%s-%04d', $year, $seq);
+        return $this->numbers->allocate($user->organization_id, DocumentNumberService::CAPA);
     }
 
     public function createCapaFromFinding(AuditFinding $finding, User $user): CapaCase

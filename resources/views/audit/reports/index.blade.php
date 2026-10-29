@@ -28,6 +28,7 @@
                     <tr>
                         <th>Nomor Laporan</th>
                         <th>Judul</th>
+                        <th>Konteks</th>
                         <th>Tipe</th>
                         <th>Periode</th>
                         <th class="text-center">Klinik</th>
@@ -44,6 +45,21 @@
                             <td>
                                 <div class="font-medium text-sim-ink">{{ $report->title }}</div>
                             </td>
+                            <td class="text-sim-muted text-xs">
+                                @if ($report->action?->capaCase)
+                                    <a href="{{ route('capa.show', $report->action->capaCase) }}" class="font-medium text-teal-700 hover:underline">
+                                        {{ $report->action->capaCase->case_number }}
+                                    </a>
+                                    <div class="text-[11px] text-slate-500">Laporan tindak lanjut</div>
+                                @elseif ($report->finding)
+                                    <a href="{{ route('findings.show', $report->finding) }}" class="font-medium text-teal-700 hover:underline">
+                                        {{ $report->finding->finding_code }}
+                                    </a>
+                                    <div class="text-[11px] text-slate-500">Laporan temuan</div>
+                                @else
+                                    <span class="text-slate-500">Laporan audit{{ $report->execution ? ' ('.$report->execution->execution_code.')' : '' }}</span>
+                                @endif
+                            </td>
                             <td class="text-sim-muted">{{ ucfirst(str_replace('_', ' ', $report->report_type)) }}</td>
                             <td class="text-sim-muted">
                                 {{ $report->period_start?->format('d M Y') ?? '-' }} – {{ $report->period_end?->format('d M Y') ?? '-' }}
@@ -59,8 +75,14 @@
                             <td class="text-center">
                                 <div class="sim-action-group">
                                     <x-action action="detail" href="{{ route('audit.reports.show', $report) }}" icon="file-text" label="Detail" size="sm" />
-                                    <x-action action="download" href="{{ route('audit.reports.download-pdf', $report) }}" icon="download" label="PDF" size="sm" />
-                                    <x-action action="download" href="{{ route('audit.reports.download-excel', $report) }}" icon="download" label="Excel" size="sm" />
+                                    @if ($report->isFollowUpReport())
+                                        @can('view', $report)
+                                            <x-action action="download" href="{{ route('capa.download-report', $report) }}" icon="download" label="Berkas" size="sm" />
+                                        @endcan
+                                    @else
+                                        <x-action action="download" href="{{ route('audit.reports.download-pdf', $report) }}" icon="download" label="PDF" size="sm" />
+                                        <x-action action="download" href="{{ route('audit.reports.download-excel', $report) }}" icon="download" label="Excel" size="sm" />
+                                    @endif
                                     @can('delete', $report)
                                         <x-action action="delete" href="{{ route('audit.reports.destroy', $report) }}" icon="trash" label="Hapus" size="sm" method="DELETE" confirm="Hapus laporan ini?" />
                                     @endcan
@@ -69,7 +91,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="sim-table-empty">Belum ada laporan audit.</td>
+                            <td colspan="10" class="sim-table-empty">Belum ada laporan audit.</td>
                         </tr>
                     @endforelse
                 </tbody>

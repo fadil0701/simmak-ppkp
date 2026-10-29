@@ -151,7 +151,7 @@ class AssignmentFormViewTest extends TestCase
         $response = $this->actingAs($this->viewer)->get('/audit/assignments/create');
 
         $response->assertStatus(200);
-        $response->assertSee('name="assignment_code"', false);
+        $response->assertDontSee('name="assignment_code"', false);
         $response->assertSee('value="TUGAS-'.now()->format('Y').'-008"', false);
     }
 
@@ -201,6 +201,7 @@ class AssignmentFormViewTest extends TestCase
         $response->assertDontSee('name="audit_program_id"', false);
         // Keanggotaan tim bersifat informatif di halaman ini.
         $response->assertSee('Anggota Tim Saat Ini');
+        $response->assertSee('Anggota auditor');
         $response->assertSee('Anggota Tim Audit');
         $response->assertSee('Kelola tim di halaman detail');
         // Ketua tim tidak diduplikasi sebagai "anggota saat ini" & pemilih anggota tidak dirender.

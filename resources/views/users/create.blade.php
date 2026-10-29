@@ -2,7 +2,7 @@
 
 @section('title', 'Tambah Pengguna — SIMMAK PPKP')
 @section('page-title', 'Tambah Pengguna')
-@section('page-subtitle', 'Buat akun pengguna lokal, tetapkan peran, dan atur akses kliniknya.')
+@section('page-subtitle', 'Hubungkan ke pegawai, pilih peran jabatan, lalu tugas di sistem. Batas klinik mengikuti master pegawai.')
 
 @section('breadcrumb')
     <li class="flex items-center gap-1 text-sim-muted">

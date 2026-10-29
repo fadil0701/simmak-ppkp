@@ -7,6 +7,7 @@ use App\Models\AuditProgram;
 use App\Models\FiscalYear;
 use App\Services\AuditProgramService;
 use App\Services\AuditTrailService;
+use App\Services\DocumentNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,7 +15,10 @@ use Illuminate\View\View;
 
 class AuditProgramController extends Controller
 {
-    public function __construct(private AuditProgramService $programService) {}
+    public function __construct(
+        private AuditProgramService $programService,
+        private DocumentNumberService $numbers,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -33,7 +37,9 @@ class AuditProgramController extends Controller
             ->orderByDesc('code')
             ->get();
 
-        return view('audit.programs.create', compact('fiscalYears'));
+        $suggestedNumber = $this->numbers->peek($request->user()->organization_id, DocumentNumberService::PROGRAM);
+
+        return view('audit.programs.create', compact('fiscalYears', 'suggestedNumber'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -41,7 +47,6 @@ class AuditProgramController extends Controller
         $orgId = $request->user()->organization_id;
 
         $validated = $request->validate([
-            'program_code' => ['required', 'string', 'max:80', Rule::unique('audit_programs', 'program_code')->where('organization_id', $orgId)],
             'audit_type' => ['nullable', 'string', 'max:40', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
             'scope_notes' => ['nullable', 'string'],
             'name' => ['required', 'string', 'max:255'],
@@ -90,7 +95,6 @@ class AuditProgramController extends Controller
         $orgId = $program->organization_id;
 
         $validated = $request->validate([
-            'program_code' => ['required', 'string', 'max:80', Rule::unique('audit_programs', 'program_code')->where('organization_id', $orgId)->ignore($program->id)],
             'audit_type' => ['nullable', 'string', 'max:40', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
             'scope_notes' => ['nullable', 'string'],
             'name' => ['required', 'string', 'max:255'],

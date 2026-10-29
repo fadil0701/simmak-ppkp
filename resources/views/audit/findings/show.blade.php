@@ -50,6 +50,22 @@
         </div>
     </div>
 
+    @if ($finding->clinicalAudit)
+        <div class="simmak-card mb-6 border-teal-100 bg-teal-50">
+            <div class="simmak-card-body p-4">
+                <span class="text-xs font-medium text-teal-700">Sumber temuan: Audit Klinis</span>
+                <a href="{{ route('audit.clinical.show', $finding->clinicalAudit) }}"
+                   class="mt-1 block font-medium text-teal-800 hover:underline">
+                    {{ $finding->clinicalAudit->audit_number }} — {{ $finding->clinicalAudit->title }}
+                </a>
+                @if ($finding->clinicalAudit->assignment)
+                    <p class="mt-1 text-xs text-teal-700">Jadwal {{ $finding->clinicalAudit->assignment->assignment_code }}</p>
+                @endif
+                <p class="mt-1 text-xs text-teal-700">Temuan ini masuk ke daftar Temuan Audit bersama dan ditindaklanjuti melalui modul Tindak Lanjut.</p>
+            </div>
+        </div>
+    @endif
+
     @if ($finding->is_escalated)
         <div class="simmak-card mb-6 border-red-200 bg-red-50">
             <div class="simmak-card-body p-4 flex items-start gap-3">
@@ -176,22 +192,97 @@
         </div>
     </div>
 
-    @if ($finding->evidenceLinks->isNotEmpty())
-        <div class="simmak-card mt-6">
-            <div class="simmak-card-header">
-                <h3 class="font-semibold text-slate-800">Bukti Terkait</h3>
-            </div>
-            <div class="simmak-card-body space-y-3">
-                @foreach ($finding->evidenceLinks as $link)
-                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg">
-                        <div>
-                            <div class="font-medium text-slate-800">{{ $link->evidence->original_filename }}</div>
-                            <div class="text-xs text-slate-500">{{ $link->evidence->mime_type }}</div>
+    {{-- Dokumen dipisah: bukti temuan (level temuan) vs dokumen tiap tindak
+         lanjut, supaya berkas satu tindak lanjut tidak tampil sebagai milik
+         tindak lanjut lain. --}}
+    <div class="simmak-card mt-6">
+        <div class="simmak-card-header">
+            <h3 class="font-semibold text-slate-800">Dokumen Audit</h3>
+        </div>
+        <div class="simmak-card-body space-y-4">
+            <div>
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bukti Temuan</h4>
+                @forelse ($finding->evidenceLinks as $link)
+                    @if ($link->evidence)
+                        <div class="mt-2 flex items-center justify-between rounded-lg border border-slate-100 p-3">
+                            <div class="min-w-0">
+                                <div class="truncate font-medium text-slate-800">{{ $link->evidence->original_filename }}</div>
+                                <div class="text-xs text-slate-500">{{ $link->relationship_note ?: $link->evidence->mime_type }}</div>
+                            </div>
+                            <x-action action="download" href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" size="sm" />
                         </div>
-                        <x-action action="download" href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" size="sm" />
+                    @endif
+                @empty
+                    <p class="mt-2 text-sm text-slate-500">Belum ada bukti yang dilampirkan pada temuan ini.</p>
+                @endforelse
+
+                @foreach ($finding->reports as $report)
+                    <div class="mt-2 flex items-center justify-between rounded-lg border border-slate-100 p-3">
+                        <div class="min-w-0">
+                            <div class="truncate font-medium text-slate-800">{{ $report->title }}</div>
+                            <div class="text-xs text-slate-500">{{ $report->report_number }} · {{ strtoupper($report->file_type ?: 'PDF') }}</div>
+                        </div>
+                        @can('view', $report)
+                            <x-action action="download" href="{{ route('capa.download-report', $report) }}" icon="download" label="Unduh" size="sm" />
+                        @endcan
                     </div>
                 @endforeach
             </div>
+
+            <div class="border-t border-slate-100 pt-4">
+                <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Dokumen per Tindak Lanjut</h4>
+                @if ($finding->capaCase && $finding->capaCase->actions->isNotEmpty())
+                    <p class="mt-1 text-xs text-slate-500">Kasus {{ $finding->capaCase->case_number }} — setiap tindakan memiliki laporan dan bukti arsipnya sendiri.</p>
+
+                    @foreach ($finding->capaCase->actions as $action)
+                        <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="text-sm font-medium text-slate-800">
+                                    {{ $action->action_type === 'preventive' ? 'Pencegahan' : 'Korektif' }} — {{ \Illuminate\Support\Str::limit($action->description, 70) }}
+                                </div>
+                                <span class="simmak-badge bg-slate-100 text-slate-700">{{ \App\Support\UiLabel::capaActionStatus($action->status) }}</span>
+                            </div>
+
+                            <div class="mt-2">
+                                <span class="text-[11px] font-semibold uppercase text-slate-500">Laporan ({{ $action->reports->count() }})</span>
+                                @forelse ($action->reports as $report)
+                                    <div class="mt-1 flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-white p-2">
+                                        <div class="min-w-0">
+                                            <div class="truncate text-sm text-slate-800">{{ $report->title }}</div>
+                                            <div class="text-[11px] text-slate-500">{{ $report->report_number }} · {{ $report->generated_at?->format('d M Y') ?? '—' }}</div>
+                                        </div>
+                                        @can('view', $report)
+                                            <x-action action="download" href="{{ route('capa.download-report', $report) }}" icon="download" label="Unduh" size="sm" />
+                                        @endcan
+                                    </div>
+                                @empty
+                                    <p class="mt-1 text-xs text-slate-500">Belum ada laporan.</p>
+                                @endforelse
+                            </div>
+
+                            <div class="mt-2">
+                                <span class="text-[11px] font-semibold uppercase text-slate-500">Bukti Arsip ({{ $action->evidenceLinks->count() }})</span>
+                                @forelse ($action->evidenceLinks as $link)
+                                    @if ($link->evidence)
+                                        <div class="mt-1 flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-white p-2">
+                                            <div class="min-w-0">
+                                                <a href="{{ route('audit.evidence.show', $link->evidence) }}"
+                                                   class="block truncate text-sm text-teal-700 hover:underline">{{ $link->evidence->original_filename }}</a>
+                                                <div class="text-[11px] text-slate-500">{{ $link->description ?: '—' }}</div>
+                                            </div>
+                                            <x-action action="download" href="{{ route('audit.evidence.download', $link->evidence) }}" icon="download" label="Unduh" size="sm" />
+                                        </div>
+                                    @endif
+                                @empty
+                                    <p class="mt-1 text-xs text-slate-500">Belum ada bukti arsip.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    <p class="mt-2 text-sm text-slate-500">Belum ada tindak lanjut sehingga belum ada dokumen tindak lanjut.</p>
+                @endif
+            </div>
         </div>
-    @endif
+    </div>
 @endsection

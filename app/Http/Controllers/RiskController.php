@@ -6,6 +6,7 @@ use App\Models\RiskCategory;
 use App\Models\RiskItem;
 use App\Models\RiskMitigationPlan;
 use App\Models\RiskRegister;
+use App\Services\DocumentNumberService;
 use App\Services\RiskService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,10 @@ use Illuminate\View\View;
 
 class RiskController extends Controller
 {
-    public function __construct(private RiskService $riskService) {}
+    public function __construct(
+        private RiskService $riskService,
+        private DocumentNumberService $numbers,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -118,28 +122,34 @@ class RiskController extends Controller
         $register = RiskRegister::findOrFail($validated['risk_register_id']);
         $inherentScore = $this->riskService->calculateScore($validated['inherent_likelihood'], $validated['inherent_impact']);
         $residualScore = $this->riskService->calculateScore($validated['residual_likelihood'], $validated['residual_impact']);
+        $riskLevel = $this->riskService->riskLevel($inherentScore);
 
-        $seq = RiskItem::forOrganization($orgId)->count() + 1;
-        $risk = RiskItem::create([
-            'organization_id' => $orgId,
-            'risk_register_id' => $register->id,
-            'risk_category_id' => $validated['risk_category_id'],
-            'clinic_id' => $register->clinic_id,
-            'risk_code' => sprintf('RSK-%s-%04d', now()->format('Y'), $seq),
-            'title' => $validated['title'],
-            'risk_description' => $validated['risk_description'] ?? null,
-            'inherent_likelihood' => $validated['inherent_likelihood'],
-            'inherent_impact' => $validated['inherent_impact'],
-            'inherent_score' => $inherentScore,
-            'residual_likelihood' => $validated['residual_likelihood'],
-            'residual_impact' => $validated['residual_impact'],
-            'residual_score' => $residualScore,
-            'risk_level' => $this->riskService->riskLevel($inherentScore),
-            'status' => 'identified',
-            'owner_id' => $user->id,
-            'review_date' => now()->addMonths(3)->toDateString(),
-            'created_by' => $user->id,
-        ]);
+        $risk = $this->numbers->insertWithAllocatedNumber(
+            $orgId,
+            DocumentNumberService::RISK,
+            function (string $code) use ($orgId, $register, $validated, $inherentScore, $residualScore, $riskLevel, $user) {
+                return RiskItem::create([
+                    'organization_id' => $orgId,
+                    'risk_register_id' => $register->id,
+                    'risk_category_id' => $validated['risk_category_id'],
+                    'clinic_id' => $register->clinic_id,
+                    'risk_code' => $code,
+                    'title' => $validated['title'],
+                    'risk_description' => $validated['risk_description'] ?? null,
+                    'inherent_likelihood' => $validated['inherent_likelihood'],
+                    'inherent_impact' => $validated['inherent_impact'],
+                    'inherent_score' => $inherentScore,
+                    'residual_likelihood' => $validated['residual_likelihood'],
+                    'residual_impact' => $validated['residual_impact'],
+                    'residual_score' => $residualScore,
+                    'risk_level' => $riskLevel,
+                    'status' => 'identified',
+                    'owner_id' => $user->id,
+                    'review_date' => now()->addMonths(3)->toDateString(),
+                    'created_by' => $user->id,
+                ]);
+            }
+        );
 
         return redirect()->route('risk.show', $risk)->with('status', 'Risiko berhasil dicatat.');
     }
