@@ -242,6 +242,12 @@
             </div>
         </div>
 
+        @include('audit.programs._document-list', [
+            'documents' => $assignment->program?->documents ?? collect(),
+            'heading' => 'Dokumen Acuan Program Audit',
+            'class' => 'lg:col-span-3',
+        ])
+
         @can('execute', $assignment)
                 <div class="simmak-card lg:col-span-1">
                     <div class="simmak-card-header">

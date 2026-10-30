@@ -91,4 +91,10 @@
             </div>
         </div>
     </div>
+
+    <div class="mt-6">
+        @include('audit.programs._document-list', [
+            'documents' => $program->documents,
+        ])
+    </div>
 @endsection

@@ -18,7 +18,7 @@
             <h3 class="sim-card-title">Tambah Program Audit</h3>
         </div>
         <div class="sim-card-body space-y-4">
-            <form method="POST" action="{{ route('audit.programs.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('audit.programs.store') }}" class="space-y-4" enctype="multipart/form-data">
                 @csrf
 
                 <div class="sim-form-group">
@@ -91,6 +91,8 @@
                         </p>
                     @endcan
                 </div>
+
+                @include('audit.programs._documents-form', ['program' => null])
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
                     <x-action action="back" href="{{ route('audit.programs.index') }}" icon="chevron-left" label="Kembali" />

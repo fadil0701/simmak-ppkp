@@ -95,7 +95,7 @@ class AuditAssignmentController extends Controller
         $this->authorize('view', $assignment);
 
         $assignment->load([
-            'program',
+            'program.documents.uploader',
             'clinic',
             'leadAuditor.employee',
             'teamMembers.user.employee',

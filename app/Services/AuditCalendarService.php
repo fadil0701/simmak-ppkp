@@ -43,7 +43,7 @@ class AuditCalendarService
             ->whereNotNull('scheduled_end')
             ->whereDate('scheduled_start', '<=', $monthEnd->toDateString())
             ->whereDate('scheduled_end', '>=', $monthStart->toDateString())
-            ->with(['clinic:id,code,name', 'program:id,name', 'leadAuditor:id,name'])
+            ->with(['clinic:id,code,name', 'program:id,name', 'program.documents', 'leadAuditor:id,name'])
             ->orderBy('scheduled_start')
             ->get();
 

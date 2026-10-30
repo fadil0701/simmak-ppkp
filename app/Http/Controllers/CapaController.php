@@ -108,7 +108,7 @@ class CapaController extends Controller
         $this->authorize('view', $capa);
 
         $capa->load([
-            'clinic', 'owner', 'sourceFinding.execution.assignment',
+            'clinic', 'owner', 'sourceFinding.clinicalAudit', 'sourceFinding.execution.assignment',
             'actions.assignee', 'actions.evidenceLinks.evidence', 'actions.reports',
             'rca.creator', 'verifications.verifier',
         ]);
@@ -211,6 +211,8 @@ class CapaController extends Controller
                 'clinic_id' => $capa->clinic_id,
                 'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
                 'evidence_type' => 'capa_follow_up',
+                // Tidak menaut ke clinical_audit_id agar bukti penyelesaian
+                // tidak tercampur dengan dokumen temuan awal audit klinis.
                 'description' => $validated['evidence_notes'] ?? 'Bukti tindak lanjut',
             ]);
             ActionEvidence::create([
@@ -250,7 +252,6 @@ class CapaController extends Controller
         $evidence = $this->evidenceService->store($request->file('file'), $request->user(), [
             'clinic_id' => $capa->clinic_id,
             'audit_execution_id' => $capa->sourceFinding?->audit_execution_id,
-            'clinical_audit_id' => $capa->sourceFinding?->clinical_audit_id,
             'evidence_type' => 'capa_follow_up',
             'description' => $validated['description'] ?? 'Bukti tindak lanjut',
         ]);
@@ -347,5 +348,50 @@ class CapaController extends Controller
         };
 
         return back()->with('status', $message);
+    }
+
+    /**
+     * Kirim uraian pelaksanaan untuk satu tindakan pada kasus ini.
+     */
+    public function submitCaseEvidence(Request $request, CapaCase $capa): RedirectResponse
+    {
+        return $this->submitEvidence($request, $this->resolveCaseAction($request, $capa));
+    }
+
+    /**
+     * Unggah bukti arsip yang terikat pada satu tindakan dalam kasus ini.
+     */
+    public function attachCaseEvidence(Request $request, CapaCase $capa): RedirectResponse
+    {
+        return $this->attachEvidence($request, $this->resolveCaseAction($request, $capa));
+    }
+
+    /**
+     * Unggah laporan pelaksanaan yang terikat pada satu tindakan dalam kasus ini.
+     */
+    public function storeCaseReport(Request $request, CapaCase $capa): RedirectResponse
+    {
+        return $this->storeReport($request, $this->resolveCaseAction($request, $capa));
+    }
+
+    private function resolveCaseAction(Request $request, CapaCase $capa): CapaAction
+    {
+        $this->authorize('view', $capa);
+
+        $capa->loadMissing('actions');
+
+        $actionId = $request->input('capa_action_id');
+        if (! filled($actionId) && $capa->actions->count() === 1) {
+            return $capa->actions->first();
+        }
+
+        $action = $capa->actions->firstWhere('id', $actionId);
+        if ($action === null) {
+            throw ValidationException::withMessages([
+                'capa_action_id' => 'Pilih tindakan tindak lanjut yang terkait.',
+            ]);
+        }
+
+        return $action;
     }
 }

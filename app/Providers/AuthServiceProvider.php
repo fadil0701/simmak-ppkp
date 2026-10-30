@@ -7,6 +7,7 @@ use App\Models\AuditAssignment;
 use App\Models\AuditExecution;
 use App\Models\AuditFinding;
 use App\Models\AuditProgram;
+use App\Models\AuditProgramDocument;
 use App\Models\AuditReport;
 use App\Models\CapaAction;
 use App\Models\CapaCase;
@@ -19,6 +20,7 @@ use App\Policies\AuditAssignmentPolicy;
 use App\Policies\AuditExecutionPolicy;
 use App\Policies\AuditFindingPolicy;
 use App\Policies\AuditProgramPolicy;
+use App\Policies\AuditProgramDocumentPolicy;
 use App\Policies\AuditReportPolicy;
 use App\Policies\CapaActionPolicy;
 use App\Policies\CapaCasePolicy;
@@ -32,6 +34,7 @@ class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
         AuditProgram::class => AuditProgramPolicy::class,
+        AuditProgramDocument::class => AuditProgramDocumentPolicy::class,
         AuditAssignment::class => AuditAssignmentPolicy::class,
         AuditExecution::class => AuditExecutionPolicy::class,
         ChecklistResponse::class => ChecklistResponsePolicy::class,

@@ -33,82 +33,91 @@ class AuditEvidenceService
 
     public function store(UploadedFile $file, User $user, array $data): Evidence
     {
-        $originalName = $file->getClientOriginalName();
-        $safeName = Str::uuid().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
         $folder = 'audit_evidence/'.$user->organization_id.'/'.($data['clinic_id'] ?? 'org');
+        $stored = $this->storeValidatedUpload($file, $user, $folder);
 
-        // 1. Validasi ukuran file
-        if ($file->getSize() > $this->maxFileSize * 1024) {
-            throw ValidationException::withMessages([
-                'file' => __('File terlalu besar. Maksimal 10 MB.'),
-            ]);
-        }
-
-        // 2. Validasi extension file
-        $clientExtension = strtolower($file->getClientOriginalExtension());
-        if (empty($clientExtension)) {
-            throw new ValidationException(
-                __('File tidak memiliki extension yang valid.')
-            );
-        }
-
-        // 3. Simpan sementara ke local untuk scanning
-        $tempPath = $file->storeAs($folder, $safeName, 'local');
-
-        // 4. Magic bytes validation — verifikasi isi file sebenarnya cocok dengan extension
-        $realMime = $this->detectRealMimeType(Storage::disk('local')->path($tempPath));
-        $realExtension = $this->mimeToExtension($realMime);
-
-        if ($realExtension === null || ! in_array($clientExtension, $realExtension, true)) {
-            // Hapus file yang tidak valid dan karantinakan
-            Storage::disk('local')->delete($tempPath);
-            $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Mismatched file extension (magic bytes validation failed)');
-
-            throw ValidationException::withMessages([
-                'file' => __('Jenis file tidak sesuai dengan isi berkas. Berkas telah dikarantinakan.'),
-            ]);
-        }
-
-        // 5. ClamAV scanning (dengan fallback gracefully jika tidak tersedia)
-        $scanResult = $this->scanWithClamav(Storage::disk('local')->path($tempPath));
-
-        if ($scanResult['infected']) {
-            // Hapus file terinfeksi dan karantinakan
-            Storage::disk('local')->delete($tempPath);
-            $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Malware detected: '.$scanResult['threat']);
-
-            throw ValidationException::withMessages([
-                'file' => __('Berkas terindikasi mengandung malware. Berkas telah dikarantinakan.'),
-            ]);
-        }
-
-        // 6. Hitung checksum SHA-256
-        $checksum = hash_file('sha256', Storage::disk('local')->path($tempPath));
-
-        // 7. Buat record Evidence
-        $evidence = Evidence::create([
+        return Evidence::create([
             'organization_id' => $user->organization_id,
             'clinic_id' => $data['clinic_id'] ?? null,
             'audit_execution_id' => $data['audit_execution_id'] ?? null,
             'clinical_audit_id' => $data['clinical_audit_id'] ?? null,
             'uploaded_by' => $user->id,
+            'storage_disk' => $stored['storage_disk'],
+            'storage_path' => $stored['storage_path'],
+            'original_filename' => $stored['original_filename'],
+            'mime_type' => $stored['mime_type'],
+            'size_bytes' => $stored['size_bytes'],
+            'checksum' => $stored['checksum'],
+            'evidence_type' => $data['evidence_type'] ?? null,
+            'access_classification' => $data['access_classification'] ?? 'internal',
+            'description' => $data['description'] ?? null,
+            'metadata' => $stored['metadata'],
+        ]);
+    }
+
+    /**
+     * Validasi dan simpan berkas privat (ukuran, ekstensi, magic bytes, ClamAV).
+     *
+     * @return array{storage_disk: string, storage_path: string, original_filename: string, mime_type: string, size_bytes: int, checksum: string, metadata: array<string, mixed>}
+     */
+    public function storeValidatedUpload(UploadedFile $file, User $user, string $folder, string $errorKey = 'file'): array
+    {
+        $originalName = $file->getClientOriginalName();
+        $safeName = Str::uuid().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+
+        if ($file->getSize() > $this->maxFileSize * 1024) {
+            throw ValidationException::withMessages([
+                $errorKey => __('File terlalu besar. Maksimal 10 MB.'),
+            ]);
+        }
+
+        $clientExtension = strtolower($file->getClientOriginalExtension());
+        if ($clientExtension === '') {
+            throw ValidationException::withMessages([
+                $errorKey => __('File tidak memiliki extension yang valid.'),
+            ]);
+        }
+
+        $tempPath = $file->storeAs($folder, $safeName, 'local');
+
+        $realMime = $this->detectRealMimeType(Storage::disk('local')->path($tempPath));
+        $realExtension = $this->mimeToExtension($realMime);
+
+        if ($realExtension === null || ! in_array($clientExtension, $realExtension, true)) {
+            Storage::disk('local')->delete($tempPath);
+            $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Mismatched file extension (magic bytes validation failed)');
+
+            throw ValidationException::withMessages([
+                $errorKey => __('Jenis file tidak sesuai dengan isi berkas. Berkas telah dikarantinakan.'),
+            ]);
+        }
+
+        $scanResult = $this->scanWithClamav(Storage::disk('local')->path($tempPath));
+
+        if ($scanResult['infected']) {
+            Storage::disk('local')->delete($tempPath);
+            $this->quarantineFile($tempPath, $originalName, $user->organization_id, 'Malware detected: '.$scanResult['threat']);
+
+            throw ValidationException::withMessages([
+                $errorKey => __('Berkas terindikasi mengandung malware. Berkas telah dikarantinakan.'),
+            ]);
+        }
+
+        $checksum = hash_file('sha256', Storage::disk('local')->path($tempPath));
+
+        return [
             'storage_disk' => 'local',
             'storage_path' => $tempPath,
             'original_filename' => $originalName,
             'mime_type' => $realMime,
-            'size_bytes' => $file->getSize(),
+            'size_bytes' => (int) $file->getSize(),
             'checksum' => $checksum,
-            'evidence_type' => $data['evidence_type'] ?? null,
-            'access_classification' => $data['access_classification'] ?? 'internal',
-            'description' => $data['description'] ?? null,
             'metadata' => [
                 'scan_result' => $scanResult,
                 'scanned_at' => now()->toISOString(),
                 'magic_bytes_verified' => true,
             ],
-        ]);
-
-        return $evidence;
+        ];
     }
 
     /**

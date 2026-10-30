@@ -18,7 +18,7 @@
             <h3 class="sim-card-title">Edit Program Audit</h3>
         </div>
         <div class="sim-card-body space-y-4">
-            <form method="POST" action="{{ route('audit.programs.update', $program) }}" class="space-y-4">
+            <form method="POST" action="{{ route('audit.programs.update', $program) }}" class="space-y-4" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -91,6 +91,8 @@
                         </p>
                     @endcan
                 </div>
+
+                @include('audit.programs._documents-form', ['program' => $program])
 
                 <div class="flex justify-end gap-2 pt-4 border-t border-sim-border-light">
                     <x-action action="back" href="{{ route('audit.programs.show', $program) }}" icon="chevron-left" label="Kembali" />

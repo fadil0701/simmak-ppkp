@@ -80,10 +80,21 @@ class ClinicalAudit extends BaseModel
         return $this->hasMany(AuditFinding::class);
     }
 
-    /** Dokumentasi pendukung audit klinis (tabel evidence yang sudah ada). */
+    /** Semua berkas yang menaut ke audit klinis (termasuk jejak lama). */
     public function evidences(): HasMany
     {
         return $this->hasMany(Evidence::class)->orderByDesc('uploaded_at');
+    }
+
+    /**
+     * Dokumentasi temuan awal audit klinis saja — bukan bukti penyelesaian
+     * tindak lanjut yang kebetulan menaut ke audit klinis yang sama.
+     */
+    public function initialEvidences(): HasMany
+    {
+        return $this->hasMany(Evidence::class)
+            ->where('evidence_type', 'clinical_audit')
+            ->orderByDesc('uploaded_at');
     }
 
     public function isLocked(): bool

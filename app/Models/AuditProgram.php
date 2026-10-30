@@ -27,6 +27,11 @@ class AuditProgram extends BaseModel
         return $this->hasMany(AuditSchedule::class);
     }
 
+    public function documents(): HasMany
+    {
+        return $this->hasMany(AuditProgramDocument::class)->orderBy('created_at');
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

@@ -175,9 +175,13 @@ class FollowUpDocumentSeparationTest extends TestCase
 
         $response = $this->actingAs($this->user)->get(route('capa.show', $capa));
         $response->assertOk();
+        $response->assertSee('Informasi Tindak Lanjut');
         $response->assertSee('Laporan Tindak Lanjut');
-        $response->assertSee('Bukti Arsip');
+        $response->assertSee('Bukti Arsip Tindak Lanjut');
+        $response->assertSee('Rencana Tindakan');
         $response->assertSee('bukti-tindakan-a.pdf');
+        $response->assertDontSee('Kirim Bukti Tindak Lanjut');
+        $response->assertDontSee('Lampirkan berkas bukti tambahan');
 
         $capaView = $response->viewData('capa');
         $this->assertCount(1, $capaView->actions->firstWhere('id', $actionA->id)->evidenceLinks);

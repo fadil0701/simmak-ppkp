@@ -211,8 +211,17 @@ class ClinicalAuditTest extends TestCase
             ->get(route('audit.clinical.show', $audit))
             ->assertOk()
             ->assertSee($audit->audit_number)
-            ->assertSee('Elemen Penilaian')
-            ->assertSee('Temuan Audit Klinis');
+            ->assertSee('Temuan Audit Klinis')
+            ->assertSee('Buat Temuan')
+            ->assertSee('Jadwal Penugasan')
+            ->assertSee('Rekam Medis')
+            ->assertSee('Uraian Ketidaksesuaian')
+            ->assertDontSee('Elemen Penilaian')
+            ->assertDontSee('Tambah Elemen')
+            ->assertDontSee('Unggah Dokumentasi')
+            ->assertDontSee('Penanggung Jawab')
+            ->assertDontSee('Nilai Kesesuaian')
+            ->assertDontSee('Standar Acuan');
     }
 
     /** @test */

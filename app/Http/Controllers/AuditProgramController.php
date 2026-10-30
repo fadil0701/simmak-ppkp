@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalEvent;
 use App\Models\AuditProgram;
 use App\Models\FiscalYear;
+use App\Services\AuditProgramDocumentService;
 use App\Services\AuditProgramService;
 use App\Services\AuditTrailService;
 use App\Services\DocumentNumberService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -17,6 +19,7 @@ class AuditProgramController extends Controller
 {
     public function __construct(
         private AuditProgramService $programService,
+        private AuditProgramDocumentService $documents,
         private DocumentNumberService $numbers,
     ) {}
 
@@ -46,21 +49,20 @@ class AuditProgramController extends Controller
     {
         $orgId = $request->user()->organization_id;
 
-        $validated = $request->validate([
-            'audit_type' => ['nullable', 'string', 'max:40', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
-            'scope_notes' => ['nullable', 'string'],
-            'name' => ['required', 'string', 'max:255'],
-            'objective' => ['nullable', 'string'],
-            'fiscal_year_id' => ['nullable', 'uuid', Rule::exists('fiscal_years', 'id')->where('organization_id', $orgId)],
-        ]);
+        $validated = $this->validateProgram($request, $orgId);
 
-        $program = $this->programService->createProgram($validated, $request->user());
+        $program = DB::transaction(function () use ($validated, $request) {
+            $program = $this->programService->createProgram($validated, $request->user());
+            $this->documents->syncFromRequest($program, $request, $request->user());
+
+            return $program;
+        });
 
         (new AuditTrailService)->log(
             'audit.program.created',
             $program,
             null,
-            ['program_code' => $program->program_code, 'name' => $program->name],
+            ['program_code' => $program->program_code, 'name' => $program->name, 'documents' => $program->documents()->count()],
             ['actor' => $request->user()->name]
         );
 
@@ -71,7 +73,7 @@ class AuditProgramController extends Controller
     {
         abort_unless($request->user()->belongsToOrganization($program->organization_id), 403);
 
-        $program->load(['schedules.clinic', 'creator']);
+        $program->load(['schedules.clinic', 'creator', 'documents.uploader']);
 
         return view('audit.programs.show', compact('program'));
     }
@@ -85,6 +87,8 @@ class AuditProgramController extends Controller
             ->orderByDesc('code')
             ->get();
 
+        $program->load('documents');
+
         return view('audit.programs.edit', compact('program', 'fiscalYears'));
     }
 
@@ -94,15 +98,13 @@ class AuditProgramController extends Controller
 
         $orgId = $program->organization_id;
 
-        $validated = $request->validate([
-            'audit_type' => ['nullable', 'string', 'max:40', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
-            'scope_notes' => ['nullable', 'string'],
-            'name' => ['required', 'string', 'max:255'],
-            'objective' => ['nullable', 'string'],
-            'fiscal_year_id' => ['nullable', 'uuid', Rule::exists('fiscal_years', 'id')->where('organization_id', $orgId)],
-        ]);
+        $validated = $this->validateProgram($request, $orgId);
+        unset($validated['documents']);
 
-        $program->update(array_merge($validated, ['updated_by' => $request->user()->id]));
+        DB::transaction(function () use ($program, $validated, $request) {
+            $program->update(array_merge($validated, ['updated_by' => $request->user()->id]));
+            $this->documents->syncFromRequest($program, $request, $request->user());
+        });
 
         return redirect()->route('audit.programs.show', $program)->with('status', 'Program audit berhasil diperbarui.');
     }
@@ -212,5 +214,24 @@ class AuditProgramController extends Controller
         $program->delete();
 
         return redirect()->route('audit.programs.index')->with('status', 'Program audit berhasil dihapus.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validateProgram(Request $request, string $orgId): array
+    {
+        return $request->validate([
+            'audit_type' => ['nullable', 'string', 'max:40', Rule::in(['periodic', 'thematic', 'special', 'follow_up'])],
+            'scope_notes' => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'objective' => ['nullable', 'string'],
+            'fiscal_year_id' => ['nullable', 'uuid', Rule::exists('fiscal_years', 'id')->where('organization_id', $orgId)],
+            'documents' => ['nullable', 'array', 'max:20'],
+            'documents.*.id' => ['nullable', 'uuid'],
+            'documents.*.title' => ['nullable', 'string', 'max:255'],
+            'documents.*.description' => ['nullable', 'string', 'max:500'],
+            'documents.*.file' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,csv,txt'],
+        ]);
     }
 }

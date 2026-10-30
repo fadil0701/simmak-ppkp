@@ -98,15 +98,12 @@ class ClinicalAuditController extends Controller
 
         $clinicalAudit->load([
             'clinic', 'auditor', 'pic', 'standard.sourceDocument', 'creator', 'assignment.leadAuditor',
-            'items', 'evidences.uploader',
+            'initialEvidences.uploader',
             'findings.capaCase', 'findings.owner',
         ]);
 
         return view('audit.clinical.show', [
             'audit' => $clinicalAudit,
-            'results' => ClinicalAuditItem::RESULTS,
-            'scores' => ClinicalAuditItem::SCORES,
-            'users' => $this->assignableUsers($clinicalAudit->organization_id),
         ]);
     }
 
@@ -146,7 +143,7 @@ class ClinicalAuditController extends Controller
             return back()->with('error', 'Audit klinis tidak dapat dihapus karena sudah memiliki temuan audit.');
         }
 
-        if ($clinicalAudit->evidences()->exists()) {
+        if ($clinicalAudit->initialEvidences()->exists()) {
             return back()->with('error', 'Audit klinis tidak dapat dihapus karena masih memiliki dokumentasi pendukung.');
         }
 
@@ -404,12 +401,4 @@ class ClinicalAuditController extends Controller
             });
     }
 
-    private function assignableUsers(string $organizationId)
-    {
-        return User::query()
-            ->where('organization_id', $organizationId)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-    }
 }

@@ -99,6 +99,36 @@
                                 <x-action action="detail" href="{{ route('audit.assignments.show', $assignment) }}" icon="eye" label="Detail" size="sm" />
                             </td>
                         </tr>
+                        @if ($assignment->program?->documents?->isNotEmpty())
+                            <tr>
+                                <td colspan="6" class="bg-slate-50 px-4 py-3">
+                                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Dokumen Acuan Audit — {{ $assignment->assignment_code }}</p>
+                                    <div class="space-y-2">
+                                        @foreach ($assignment->program->documents as $document)
+                                            <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-3 py-2">
+                                                <div class="min-w-0">
+                                                    <div class="truncate text-sm font-medium text-slate-800">{{ $document->title }}</div>
+                                                    <div class="text-xs text-slate-500">
+                                                        {{ $document->original_filename }}
+                                                        @if ($document->description)
+                                                            · {{ $document->description }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-shrink-0 gap-1">
+                                                    @can('view', $document)
+                                                        <x-action action="detail" href="{{ route('audit.program-documents.show', $document) }}" icon="file-text" label="Lihat" size="sm" />
+                                                    @endcan
+                                                    @can('download', $document)
+                                                        <x-action action="download" href="{{ route('audit.program-documents.download', $document) }}" icon="download" label="Unduh" size="sm" />
+                                                    @endcan
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </td>
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="6" class="sim-table-empty">Tidak ada penugasan terjadwal pada bulan ini.</td>

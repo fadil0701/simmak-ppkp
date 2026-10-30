@@ -9,6 +9,7 @@ use App\Http\Controllers\AuditEvidenceController;
 use App\Http\Controllers\AuditExecutionController;
 use App\Http\Controllers\AuditFindingController;
 use App\Http\Controllers\AuditProgramController;
+use App\Http\Controllers\AuditProgramDocumentController;
 use App\Http\Controllers\AuditReportController;
 use App\Http\Controllers\AuditStandardController;
 use App\Http\Controllers\Auth\LoginController;
@@ -252,6 +253,15 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
         Route::post('/audit/programs/{program}/return', [AuditProgramController::class, 'returnRevision'])->name('audit.programs.return');
     });
 
+    Route::middleware('permission:audit.program.view|audit.assignment.view')->group(function () {
+        Route::get('/audit/program-documents/{document}', [AuditProgramDocumentController::class, 'show'])
+            ->whereUuid('document')
+            ->name('audit.program-documents.show');
+        Route::get('/audit/program-documents/{document}/download', [AuditProgramDocumentController::class, 'download'])
+            ->whereUuid('document')
+            ->name('audit.program-documents.download');
+    });
+
     Route::middleware('permission:audit.assignment.view')->group(function () {
         Route::get('/audit/calendar', AuditCalendarController::class)->name('audit.calendar');
         Route::get('/audit/assignments', [AuditAssignmentController::class, 'index'])->name('audit.assignments.index');
@@ -329,6 +339,9 @@ Route::middleware(['auth', 'clinic.context'])->group(function () {
     Route::middleware('permission:audit.action.update|capa.manage')->group(function () {
         Route::post('/capa/{capa}/rca', [CapaController::class, 'storeRca'])->name('capa.store-rca');
         Route::post('/capa/{capa}/actions', [CapaController::class, 'storeAction'])->name('capa.store-action');
+        Route::post('/capa/{capa}/evidence', [CapaController::class, 'submitCaseEvidence'])->name('capa.submit-case-evidence');
+        Route::post('/capa/{capa}/evidence/attach', [CapaController::class, 'attachCaseEvidence'])->name('capa.attach-case-evidence');
+        Route::post('/capa/{capa}/report', [CapaController::class, 'storeCaseReport'])->name('capa.store-case-report');
         Route::post('/capa/actions/{action}/evidence', [CapaController::class, 'submitEvidence'])->name('capa.submit-evidence');
         // Dokumen per tindak lanjut: bukti arsip tambahan (tanpa mengubah status
         // alur) dan laporan audit milik tindakan tersebut.

@@ -71,7 +71,7 @@
 
 /* Custom utilities that can be @apply'ed by other utilities in Tailwind v4 */
 @utility sim-btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed;
 }
 
 @utility sim-badge {
@@ -96,6 +96,10 @@
 
 @utility sim-form-textarea {
     @apply block w-full rounded-md border border-sim-border bg-sim-white px-3 py-2 text-sm text-sim-ink focus:border-sim-navy-800 focus:ring-1 focus:ring-sim-navy-800 transition-colors;
+}
+
+@utility sim-form-file {
+    @apply block w-full cursor-pointer rounded-md border border-sim-teal-600 bg-sim-teal-50 px-2 py-1.5 text-sm text-sim-ink file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-sim-teal-600 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white hover:file:bg-sim-teal-700;
 }
 
 @layer components {
@@ -594,6 +598,80 @@
 
     .sim-btn-icon {
         @apply sim-btn p-2;
+    }
+
+    /* Tombol nonaktif: tetap kontras, jangan pudar hingga tidak terbaca */
+    .sim-btn:disabled,
+    .sim-btn[disabled],
+    .sim-btn[aria-disabled='true'] {
+        background-color: #94a3b8;
+        border-color: #64748b;
+        color: #ffffff;
+        opacity: 1;
+        box-shadow: none;
+    }
+
+    /* Input hanya-baca / nonaktif */
+    .sim-form-input:read-only,
+    .sim-form-input[readonly],
+    .sim-form-select:disabled,
+    .sim-form-input:disabled,
+    .sim-form-textarea:disabled {
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e3a5f;
+        cursor: default;
+        opacity: 1;
+    }
+
+    .sim-form-input:disabled,
+    .sim-form-select:disabled,
+    .sim-form-textarea:disabled {
+        cursor: not-allowed;
+        background-color: #cbd5e1;
+    }
+
+    /*
+     * Tombol native "Choose file" / "Pilih file" sering abu-abu pucat di Windows.
+     * Pakai aksen teal agar tombol unggah terlihat sebagai kontrol aktif.
+     */
+    input[type='file'] {
+        cursor: pointer;
+        color: var(--color-sim-ink);
+        background-color: var(--color-sim-teal-50);
+        border-color: var(--color-sim-teal-600);
+    }
+
+    input[type='file']::file-selector-button,
+    input[type='file']::-webkit-file-upload-button {
+        margin-right: 0.75rem;
+        padding: 0.4rem 0.85rem;
+        border: 0;
+        border-radius: 0.375rem;
+        background-color: var(--color-sim-teal-600);
+        color: #ffffff;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    input[type='file']::file-selector-button:hover,
+    input[type='file']::-webkit-file-upload-button:hover {
+        background-color: var(--color-sim-teal-700);
+    }
+
+    input[type='file']:disabled {
+        cursor: not-allowed;
+        background-color: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e3a5f;
+    }
+
+    input[type='file']:disabled::file-selector-button,
+    input[type='file']:disabled::-webkit-file-upload-button {
+        background-color: #64748b;
+        color: #ffffff;
+        cursor: not-allowed;
     }
 
     /* Grup aksi pada baris tabel: tombol kecil dengan ikon */
